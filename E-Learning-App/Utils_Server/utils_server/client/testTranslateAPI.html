@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test Translate API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        #result {
+            margin-top: 20px;
+        }
+
+        audio {
+            margin-top: 10px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Test Translate API</h1>
+
+    <label for="text">Văn bản cần dịch:</label>
+    <input type="text" id="text" placeholder="Nhập văn bản...">
+
+    <label for="sourceLang">Ngôn ngữ gốc:</label>
+    <select id="sourceLang">
+        <option value="vi">Vietnamese</option>
+        <option value="en">English</option>
+        <option value="fr">French</option>
+        <option value="ja">Japanese</option>
+        <option value="es">Spanish</option>
+    </select>
+
+    <label for="targetLang">Ngôn ngữ đích:</label>
+    <select id="targetLang">
+        <option value="en">English</option>
+        <option value="vi">Vietnamese</option>
+        <option value="fr">French</option>
+        <option value="ja">Japanese</option>
+        <option value="es">Spanish</option>
+    </select>
+
+    <button id="translateBtn">Dịch</button>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById("translateBtn").addEventListener("click", async () => {
+            const text = document.getElementById("text").value.trim();
+            const sourceLang = document.getElementById("sourceLang").value;
+            const targetLang = document.getElementById("targetLang").value;
+
+            if (!text) return alert("Vui lòng nhập văn bản!");
+
+            try {
+                const res = await fetch("http://localhost:3000/translate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text, sourceLang, targetLang })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    document.getElementById("result").innerText = "Error: " + data.error;
+                } else {
+                    // Audio gốc
+                    const originalBlob = new Blob(
+                        [Uint8Array.from(atob(data.originalAudio), c => c.charCodeAt(0))],
+                        { type: "audio/mpeg" }
+                    );
+                    const originalUrl = URL.createObjectURL(originalBlob);
+
+                    // Audio dịch
+                    const translatedBlob = new Blob(
+                        [Uint8Array.from(atob(data.translatedAudio), c => c.charCodeAt(0))],
+                        { type: "audio/mpeg" }
+                    );
+                    const translatedUrl = URL.createObjectURL(translatedBlob);
+
+                    document.getElementById("result").innerHTML = `
+                        <strong>Văn bản gốc (${sourceLang}):</strong> ${text} <br>
+                        <audio controls src="${originalUrl}" autoplay></audio><br>
+                        <strong>Dịch (${targetLang}):</strong> ${data.translated} <br>
+                        <audio controls src="${translatedUrl}" autoplay></audio>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById("result").innerText = "Lỗi server!";
+            }
+        });
+    </script>
+</body>
+
+</html>
