@@ -13,8 +13,9 @@ const app = express();
 //     credentials: true,
 //   })
 // );
-app.use(cors());
 app.use(express.json());
+app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 router(app);
 
 app.listen(PORT, () =>
