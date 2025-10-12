@@ -1,26 +1,235 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Kiểm thử API Chuyển Giọng nói thành Văn bản & Độ chính xác</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        form div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #resultContainer {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #e9ecef;
+        }
+
+        #accuracy {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            /* Màu mặc định */
+        }
+
+        #transcribedText {
+            border-top: 1px dashed #ccc;
+            padding-top: 10px;
+            white-space: pre-wrap;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .loading {
+            color: orange;
+        }
+
+        .success {
+            color: green;
+        }
+    </style>
+</head>
 
 <body>
-    <h2>🎧 Test Pronunciation</h2>
-    <form id="form">
-        <input type="text" name="target" placeholder="Nhập từ tiếng Anh" required />
-        <input type="file" name="audio" accept="audio/*" required />
-        <button type="submit">Gửi</button>
-    </form>
-    <pre id="result"></pre>
+    <div class="container">
+        <h1>Kiểm thử Speech-to-Text & Độ chính xác</h1>
+        <p>Gửi một từ/câu gốc và tệp âm thanh để kiểm tra độ chính xác phát âm.</p>
+
+        <form id="transcribeForm">
+            <div>
+                <label for="primaryText">Văn bản cần so khớp (Gốc):</label>
+                <input type="text" id="primaryText" name="primaryText" placeholder="Ví dụ: Hello World" required>
+
+                <label for="audioFile">Tệp Âm thanh:</label>
+                <input type="file" id="audioFile" name="audio" accept="audio/*" required>
+            </div>
+            <button type="submit" id="submitButton">Kiểm tra Phát âm</button>
+        </form>
+
+        <div id="status" class="loading">Sẵn sàng...</div>
+
+        <h2>Kết quả:</h2>
+        <div id="resultContainer">
+            <div id="accuracy">Độ chính xác: --</div>
+            <p><strong>Văn bản gốc đã gửi:</strong> <span id="originalText">--</span></p>
+            <p><strong>Văn bản phiên âm:</strong></p>
+            <div id="transcribedText">--</div>
+        </div>
+    </div>
 
     <script>
-        document.getElementById("form").onsubmit = async (e) => {
+        const form = document.getElementById('transcribeForm');
+        const audioInput = document.getElementById('audioFile');
+        const primaryTextInput = document.getElementById('primaryText');
+        const statusDiv = document.getElementById('status');
+        const submitButton = document.getElementById('submitButton');
+
+        const accuracyDiv = document.getElementById('accuracy');
+        const originalTextSpan = document.getElementById('originalText');
+        const transcribedTextDiv = document.getElementById('transcribedText');
+
+        // Đảm bảo URL này khớp với URL của server Express.js của bạn
+        const API_URL = 'http://localhost:3000/pronoun';
+
+        // Khởi tạo trạng thái hiển thị
+        function resetResultDisplay() {
+            accuracyDiv.textContent = 'Độ chính xác: --';
+            accuracyDiv.style.color = '#333';
+            originalTextSpan.textContent = '--';
+            transcribedTextDiv.textContent = '--';
+        }
+
+        form.addEventListener('submit', async function (e) {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const res = await fetch("http://localhost:3000/pronoun", {
-                method: "POST",
-                body: formData,
-            });
-            const data = await res.json();
-            document.getElementById("result").textContent = JSON.stringify(data, null, 2);
-        };
+
+            // Đặt trạng thái ban đầu
+            statusDiv.textContent = 'Đang tải lên và xử lý... Vui lòng chờ.';
+            statusDiv.className = 'loading';
+            submitButton.disabled = true;
+            resetResultDisplay();
+
+            const file = audioInput.files[0];
+            const primaryText = primaryTextInput.value.trim();
+
+            if (!file || !primaryText) {
+                statusDiv.textContent = 'Vui lòng điền đủ Văn bản gốc và chọn tệp âm thanh.';
+                statusDiv.className = 'error';
+                submitButton.disabled = false;
+                return;
+            }
+
+            // Sử dụng FormData để gửi tệp và văn bản
+            const formData = new FormData();
+            formData.append('audio', file);
+            formData.append('primaryText', primaryText);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    const rawAccuracy = data.accuracy_percentage;
+                    const transcriptionText = data.transcription || 'Không có văn bản phiên âm.';
+
+                    let accuracy = 'N/A';
+                    let numericAccuracy = 0;
+
+                    if (typeof rawAccuracy === 'number') {
+                        accuracy = rawAccuracy.toFixed(2);
+                        numericAccuracy = rawAccuracy;
+                    }
+                    // ------------------------------------------
+
+                    statusDiv.textContent = 'Phiên âm và tính toán hoàn tất!';
+                    statusDiv.className = 'success';
+
+                    // 1. Hiển thị độ chính xác
+                    accuracyDiv.textContent = `Độ chính xác: ${accuracy}%`;
+
+                    if (numericAccuracy >= 80) {
+                        accuracyDiv.style.color = '#28a745'; // Xanh lá (Tốt)
+                    } else if (numericAccuracy >= 60) {
+                        accuracyDiv.style.color = 'orange'; // Cam (Khá)
+                    } else {
+                        accuracyDiv.style.color = 'red'; // Đỏ (Cần cải thiện)
+                    }
+
+                    // 2. Văn bản gốc
+                    originalTextSpan.textContent = primaryText;
+
+                    // 3. Văn bản phiên âm
+                    transcribedTextDiv.textContent = transcriptionText;
+
+                } else {
+                    // Xử lý lỗi từ server (success: false)
+                    statusDiv.textContent = `Lỗi: ${data.message || 'Lỗi server không xác định.'}`;
+                    statusDiv.className = 'error';
+                    transcribedTextDiv.textContent = `Chi tiết lỗi: ${data.error || 'Kiểm tra log server.'}`;
+                }
+
+            } catch (error) {
+                // Xử lý lỗi Mạng hoặc lỗi JSON Parse
+                statusDiv.textContent = `LỖI MẠNG/PHẢN HỒI: ${error.message}. Đảm bảo server đang chạy và CORS được kích hoạt.`;
+                statusDiv.className = 'error';
+                transcribedTextDiv.textContent = "Không thể kết nối với server hoặc phản hồi không phải JSON. Vui lòng kiểm tra Console (F12) và log server.";
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
     </script>
 </body>
 

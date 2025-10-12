@@ -1,9 +1,63 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
+const fs = require("fs");
+const { AssemblyAI } = require("assemblyai");
+
+const aaiClient = new AssemblyAI({
+  apiKey: process.env.ASSEMBLYAI_API_KEY,
+});
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const AI_MODEL = process.env.AI_MODEL;
 const API_CONTEXT_APP = process.env.API_CONTEXT_APP;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function levenshteinDistance(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      const cost = b.charAt(i - 1) === a.charAt(j - 1) ? 0 : 1;
+
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+function calculateStringSimilarityPercentage(string1, string2) {
+  const a = string1.toLowerCase();
+  const b = string2.toLowerCase();
+
+  const distance = levenshteinDistance(a, b);
+
+  const maxLength = Math.max(a.length, b.length);
+
+  if (maxLength === 0) {
+    return 100.0;
+  }
+
+  const similarityScore = (maxLength - distance) / maxLength;
+
+  return parseFloat((similarityScore * 100).toFixed(2));
+}
 
 class UtilsController {
   aswerQuestion = async (req, res) => {
@@ -33,18 +87,6 @@ class UtilsController {
       res.status(500).json({ error: "Server error" });
     }
   };
-
-  // Giả định đây là môi trường Node.js (Express, serverless function,...)
-  // với thư viện 'node-fetch' hoặc tương đương đã được thiết lập.
-
-  // Giả định đây là môi trường Node.js (Express, serverless function,...)
-  // với thư viện 'node-fetch' hoặc tương đương đã được thiết lập.
-
-  // Giả định đây là môi trường Node.js (Express, serverless function,...)
-  // với thư viện 'node-fetch' hoặc tương đương đã được thiết lập.
-
-  // Giả định đây là môi trường Node.js (Express, serverless function,...)
-  // với thư viện 'node-fetch' hoặc tương đương đã được thiết lập.
 
   translate = async (req, res) => {
     try {
@@ -400,7 +442,112 @@ class UtilsController {
     }
   };
 
-  pronoun = async (req, res) => {};
+  pronoun = async (req, res) => {
+    const { primaryText } = req.body;
+    if (
+      !primaryText ||
+      typeof primaryText !== "string" ||
+      primaryText.trim() === ""
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu 'primaryText' (văn bản gốc) để so khớp.",
+      });
+    }
+
+    if (!req.file) {
+      console.error("[DEBUG-ERROR] Thiếu file.");
+      return res.status(400).json({
+        success: false,
+        message: 'Không có tệp âm thanh nào được tải lên (cần key "audio").',
+      });
+    }
+
+    const audioFilePath = req.file.path;
+
+    try {
+      console.log(`[START] Bắt đầu xử lý tệp tạm: ${req.file.originalname}`);
+
+      const uploadedFile = await aaiClient.files.upload(audioFilePath);
+      let uploadUrl;
+
+      if (
+        typeof uploadedFile === "string" &&
+        uploadedFile.startsWith("https://")
+      ) {
+        uploadUrl = uploadedFile;
+      } else if (uploadedFile && uploadedFile.uploadUrl) {
+        uploadUrl = uploadedFile.uploadUrl;
+      } else if (uploadedFile && uploadedFile.upload_url) {
+        uploadUrl = uploadedFile.upload_url;
+      } else {
+        uploadUrl = undefined;
+      }
+
+      if (!uploadUrl) {
+        const uploadError =
+          "Tải tệp lên AssemblyAI thất bại. Vui lòng kiểm tra API Key và giới hạn sử dụng.";
+        console.error(`[DEBUG-ERROR] ${uploadError}`);
+        throw new Error(uploadError);
+      }
+
+      let transcript = await aaiClient.transcripts.submit({
+        audio_url: uploadUrl,
+        language_code: "en_us",
+      });
+
+      const transcriptId = transcript.id;
+      while (
+        transcript.status !== "completed" &&
+        transcript.status !== "error" &&
+        transcript.status !== "failed"
+      ) {
+        await sleep(3000);
+        transcript = await aaiClient.transcripts.get(transcriptId);
+      }
+
+      if (transcript.status === "completed") {
+        console.log("[SUCCESS] Phiên âm hoàn tất.");
+        transcript.text = transcript.text.endsWith(".")
+          ? transcript.text.slice(0, -1)
+          : transcript.text;
+        const accuracyPercentage = calculateStringSimilarityPercentage(
+          primaryText,
+          transcript.text
+        );
+
+        console.log(`[ACCURACY] Văn bản gốc: "${primaryText}"`);
+        console.log(`[ACCURACY] Văn bản phiên âm: "${transcript.text}"`);
+        console.log(`[ACCURACY] Độ chính xác phát âm: ${accuracyPercentage}%`);
+
+        res.json({
+          success: true,
+          transcription: transcript.text,
+          duration_seconds: transcript.audio_duration,
+          aai_id: transcriptId,
+          accuracy_percentage: accuracyPercentage,
+        });
+      } else {
+        throw new Error(
+          `Phiên âm thất bại. Trạng thái: ${transcript.status}. Chi tiết lỗi AssemblyAI: ${transcript.error}`
+        );
+      }
+    } catch (error) {
+      console.error("LỖI SERVER KHỐI CATCH:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Quá trình chuyển đổi thất bại.",
+        error: error.message,
+      });
+    } finally {
+      // 5. Dọn dẹp
+      if (fs.existsSync(audioFilePath)) {
+        fs.unlinkSync(audioFilePath);
+      }
+      console.log("[CLEANUP] Đã xóa tệp tạm.");
+      console.log("======================================\n");
+    }
+  };
 }
 
 module.exports = new UtilsController();
