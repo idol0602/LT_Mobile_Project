@@ -2,14 +2,30 @@ require("dotenv").config();
 const fetch = require("node-fetch");
 const fs = require("fs");
 const { AssemblyAI } = require("assemblyai");
+const { createClient } = require("redis");
 
 const aaiClient = new AssemblyAI({
   apiKey: process.env.ASSEMBLYAI_API_KEY,
 });
 
+const redisClient = createClient({
+  url: process.env.REDIS_URL,
+});
+
 const API_KEY = process.env.GEMINI_API_KEY;
 const AI_MODEL = process.env.AI_MODEL;
 const API_CONTEXT_APP = process.env.API_CONTEXT_APP;
+
+async function connectRedis() {
+  try {
+    await redisClient.connect();
+    console.log("✅ Redis connected!");
+  } catch (err) {
+    console.error("❌ Redis connection failed:", err);
+  }
+}
+
+connectRedis();
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -62,17 +78,46 @@ function calculateStringSimilarityPercentage(string1, string2) {
 class UtilsController {
   aswerQuestion = async (req, res) => {
     try {
+      const MAX_MESSAGES = 15;
+      const EXPIRE_TIME = 3600;
       const userMessage = req.body.message;
+      const userId = req.body.userId || "guest";
 
+      // 1️⃣ Lưu tin nhắn người dùng vào Redis
+      await redisClient.rPush(
+        `chat:${userId}`,
+        JSON.stringify({ role: "user", text: userMessage })
+      );
+      await redisClient.lTrim(`chat:${userId}`, -MAX_MESSAGES, -1);
+      await redisClient.expire(`chat:${userId}`, EXPIRE_TIME);
+
+      // 2️⃣ Lấy context gần nhất (ví dụ 10 tin)
+      const history = await redisClient.lRange(`chat:${userId}`, -10, -1);
+      const parsedHistory = history
+        .map((msg) => {
+          const { role, text } = JSON.parse(msg);
+          return `${role === "user" ? "Người dùng" : "Bot"}: ${text}`;
+        })
+        .join("\n");
+
+      // 3️⃣ Chuẩn bị prompt gửi lên Gemini
+      const fullPrompt = `
+${API_CONTEXT_APP}
+Cuộc trò chuyện trước đó:
+${parsedHistory}
+
+Người dùng: ${userMessage}
+Bot:
+`;
+
+      // 4️⃣ Gọi Gemini API
       const response = await fetch(
         `${AI_MODEL}:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [
-              { parts: [{ text: API_CONTEXT_APP.concat(" ", userMessage) }] },
-            ],
+            contents: [{ parts: [{ text: fullPrompt }] }],
           }),
         }
       );
@@ -81,9 +126,19 @@ class UtilsController {
       const botMessage =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
         "Xin lỗi, tôi chưa hiểu.";
+
+      // 5️⃣ Lưu phản hồi của bot vào Redis
+      await redisClient.rPush(
+        `chat:${userId}`,
+        JSON.stringify({ role: "bot", text: botMessage })
+      );
+      await redisClient.lTrim(`chat:${userId}`, -MAX_MESSAGES, -1);
+      await redisClient.expire(`chat:${userId}`, EXPIRE_TIME);
+
+      // 6️⃣ Trả phản hồi về client
       res.json({ reply: botMessage });
     } catch (error) {
-      console.error(error);
+      console.error("❌ Lỗi xử lý chatbot:", error);
       res.status(500).json({ error: "Server error" });
     }
   };

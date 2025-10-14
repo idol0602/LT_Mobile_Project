@@ -51,6 +51,14 @@
     </div>
 
     <script>
+        // 🧠 Sinh ra clientId ngẫu nhiên (duy nhất cho mỗi người dùng)
+        // Lưu vào localStorage để giữ nguyên giữa các lần refresh
+        let clientId = localStorage.getItem("clientId");
+        if (!clientId) {
+            clientId = crypto.randomUUID(); // Tạo UUID ngẫu nhiên (Node 16+ / trình duyệt hiện đại hỗ trợ)
+            localStorage.setItem("clientId", clientId);
+        }
+
         async function sendMessage() {
             const input = document.getElementById("message");
             const text = input.value.trim();
@@ -62,12 +70,15 @@
             chatbox.scrollTop = chatbox.scrollHeight;
             input.value = "";
 
-            // Gửi tin nhắn lên server
+            // Gửi tin nhắn + clientId lên server
             try {
                 const res = await fetch("http://localhost:3000/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: text })
+                    body: JSON.stringify({
+                        message: text,
+                        userId: clientId // 🧩 gửi clientId lên server
+                    })
                 });
 
                 const data = await res.json();
