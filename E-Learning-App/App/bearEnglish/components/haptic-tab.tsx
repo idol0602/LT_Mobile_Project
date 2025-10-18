@@ -13,6 +13,9 @@ export function HapticTab(props: BottomTabBarButtonProps) {
         }
         props.onPressIn?.(ev);
       }}
-    />
+    >
+      {/* 🚀 ĐIỂM SỬA CHỮA: Thêm children vào đây để render Icon và Label! */}
+      {props.children} 
+    </PlatformPressable>
   );
 }

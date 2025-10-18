@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { FAB, Card } from 'react-native-paper';
 
-// 🧠 Tạo userId ngẫu nhiên (UUID ngắn gọn)
 const generateUserId = () => {
   return 'user-' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
