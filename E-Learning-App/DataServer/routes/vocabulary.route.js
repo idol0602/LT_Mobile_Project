@@ -1,0 +1,46 @@
+// routes/vocabulary.js
+const express = require("express");
+const router = express.Router();
+const multer = require("multer");
+const vocabularyController = require("../controllers/vocabularyController");
+
+// --- Cấu hình Multer để lưu file vào bộ nhớ (RAM) ---
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// ======================
+// ⚙️ ROUTE TĨNH (Thống kê)
+// ======================
+router.get("/stats", vocabularyController.getVocabularyStats);
+
+// ======================
+// 📚 ROUTE CRUD CHÍNH
+// ======================
+
+// Lấy danh sách tất cả từ vựng (có hỗ trợ tìm kiếm, lọc, phân trang)
+router.get("/", vocabularyController.getAllVocabularies);
+
+// Lấy chi tiết 1 từ theo ID
+router.get("/:id", vocabularyController.getVocabularyById);
+
+// Lấy nhiều từ theo danh sách ID
+router.post("/many", vocabularyController.getVocabulariesByIds);
+
+// ======================
+// ✳️ ROUTE THÊM / CẬP NHẬT / XOÁ
+// ======================
+
+// Thêm một từ vựng mới (có thể kèm ảnh)
+router.post("/", upload.single("image"), vocabularyController.addVocabulary);
+
+// Cập nhật một từ vựng
+router.put(
+  "/:id",
+  upload.single("image"),
+  vocabularyController.updateVocabulary
+);
+
+// Xoá một từ vựng
+router.delete("/:id", vocabularyController.deleteVocabulary);
+
+module.exports = router;
