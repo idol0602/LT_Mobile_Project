@@ -20,7 +20,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline"; // Import extension cho gạch chân
-import { Toolbar } from "../../Toolbar"; // Đường dẫn có thể cần sửa
+import { Toolbar } from "../Toolbar"; // Đường dẫn có thể cần sửa
 import { theme } from "../../../styles/theme";
 import { palette } from "../../../styles/palette";
 

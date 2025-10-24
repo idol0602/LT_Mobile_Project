@@ -24,9 +24,9 @@ import { addLesson, updateLesson } from "../services/api";
 // ==================== INTERFACES ====================
 
 export interface Question {
-  question: string;
-  options: string[];
-  correctAnswer: string;
+  questionText: string;
+  options: [string, string, string, string]; // Mảng 4 chuỗi
+  correctAnswerIndex: number; // Lưu VỊ TRÍ (0, 1, 2, 3) của đáp án đúng
 }
 
 export interface LessonData {

@@ -19,6 +19,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { LessonWizardModal } from "../components/LessonWizardModal";
 import { getLessons, deleteLesson } from "../services/api"; // ✅ Import API
 import { VocabLessonModal } from "../components/lesson/modal/VocabLessonModal";
+import { EditReadingModal } from "../components/lesson/modal/EditReadingModal";
 interface Lesson {
   _id?: string;
   name: string;
@@ -41,6 +42,9 @@ export default function LessonPage() {
   const [selectedVocabLesson, setSelectedVocabLesson] = useState<Lesson | null>(
     null
   );
+  const [openReadingModal, setOpenReadingModal] = useState(false);
+  const [selectedReadingLesson, setSelectedReadingLesson] =
+    useState<Lesson | null>(null);
   // 🔹 Fetch dữ liệu từ DB
   const fetchLessons = async () => {
     setLoading(true);
@@ -71,6 +75,9 @@ export default function LessonPage() {
       case "vocab":
         handleOpenVocabModal(lesson);
         break;
+      case "reading":
+        handleOpenReadingModal(lesson);
+        break;
       default:
         handleOpenWizard(lesson);
         break;
@@ -83,8 +90,13 @@ export default function LessonPage() {
     setSelectedVocabLesson(lesson || null);
     setOpenVocabModal(true);
   };
+  const handleOpenReadingModal = (lesson?: Lesson) => {
+    setSelectedReadingLesson(lesson || null);
+    setOpenReadingModal(true);
+  };
 
   const handleCloseVocabModal = () => setOpenVocabModal(false);
+  const handleCloseReadingModal = () => setOpenReadingModal(false);
   // 🔹 Khi thêm/sửa thành công, reload danh sách
   const handleSaveSuccess = async () => {
     await fetchLessons();
@@ -245,6 +257,12 @@ export default function LessonPage() {
         open={openVocabModal}
         onClose={handleCloseVocabModal}
         selectedLesson={selectedVocabLesson as any}
+        onSaveSuccess={fetchLessons}
+      />
+      <EditReadingModal
+        open={openReadingModal}
+        onClose={handleCloseReadingModal}
+        lesson={selectedReadingLesson as any}
         onSaveSuccess={fetchLessons}
       />
     </Box>
