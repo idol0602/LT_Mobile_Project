@@ -54,6 +54,8 @@ conn.once("open", () => {
   app.use("/api/audio", audioRouter);
   app.use("/api/vocabularies", vocabularyRouter);
   app.use("/api/images", imageRouter);
+  app.use(cors());
+  app.use(express.urlencoded({ extended: true }));
   router(app);
 
   app.listen(PORT, () =>

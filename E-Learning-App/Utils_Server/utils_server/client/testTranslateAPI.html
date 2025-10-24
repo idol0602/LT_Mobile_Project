@@ -2,69 +2,197 @@
 <html lang="vi">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Test Translate API</title>
+    <meta charset="UTF-8" />
+    <title>🌍 BearTranslate</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 50px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #eef2f3, #cfd9df);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #222;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .card {
+            background: #fff;
+            padding: 25px 30px;
+            border-radius: 14px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 650px;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: 600;
+            color: #333;
         }
 
         input,
-        select,
-        button {
-            padding: 8px;
-            margin: 5px 0;
+        select {
+            padding: 10px;
+            margin-top: 6px;
             width: 100%;
-            max-width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
         }
 
         #result {
-            margin-top: 20px;
+            margin-top: 30px;
+            background: #fdfdfd;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #007bff;
+            font-size: 17px;
+        }
+
+        .phonetic {
+            color: #666;
+            font-style: italic;
+            font-size: 15px;
+            margin-top: 3px;
+        }
+
+        .ipa {
+            color: #222;
+            font-family: "Courier New", monospace;
+            font-size: 16px;
+            margin-top: 3px;
+            background: #f7f7f7;
+            padding: 2px 6px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .audio-block {
+            margin-top: 10px;
+            background: #f4f4f4;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         audio {
-            margin-top: 10px;
-            width: 300px;
+            width: 100%;
+            outline: none;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 20px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            button {
+                font-size: 15px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>Test Translate API</h1>
+    <h1>🌍 BearTranslate</h1>
 
-    <label for="text">Văn bản cần dịch:</label>
-    <input type="text" id="text" placeholder="Nhập văn bản...">
+    <div class="card">
+        <label for="text">Văn bản cần dịch:</label>
+        <input type="text" id="text" placeholder="Nhập văn bản..." />
 
-    <label for="sourceLang">Ngôn ngữ gốc:</label>
-    <select id="sourceLang">
-        <option value="vi">Vietnamese</option>
-        <option value="en">English</option>
-        <option value="fr">French</option>
-        <option value="ja">Japanese</option>
-        <option value="es">Spanish</option>
-    </select>
+        <label for="sourceLang">Ngôn ngữ gốc:</label>
+        <select id="sourceLang">
+            <option value="vi">Vietnamese</option>
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="ja">Japanese</option>
+            <option value="es">Spanish</option>
+        </select>
 
-    <label for="targetLang">Ngôn ngữ đích:</label>
-    <select id="targetLang">
-        <option value="en">English</option>
-        <option value="vi">Vietnamese</option>
-        <option value="fr">French</option>
-        <option value="ja">Japanese</option>
-        <option value="es">Spanish</option>
-    </select>
+        <label for="targetLang">Ngôn ngữ đích:</label>
+        <select id="targetLang">
+            <option value="en">English</option>
+            <option value="vi">Vietnamese</option>
+            <option value="fr">French</option>
+            <option value="ja">Japanese</option>
+            <option value="es">Spanish</option>
+        </select>
 
-    <button id="translateBtn">Dịch</button>
+        <button id="translateBtn">🔄 Dịch ngay</button>
 
-    <div id="result"></div>
+        <div id="result"></div>
+    </div>
 
     <script>
-        document.getElementById("translateBtn").addEventListener("click", async () => {
+        const translateBtn = document.getElementById("translateBtn");
+        const resultDiv = document.getElementById("result");
+
+        translateBtn.addEventListener("click", async () => {
             const text = document.getElementById("text").value.trim();
             const sourceLang = document.getElementById("sourceLang").value;
             const targetLang = document.getElementById("targetLang").value;
 
-            if (!text) return alert("Vui lòng nhập văn bản!");
+            if (!text) return alert("⚠️ Vui lòng nhập văn bản!");
+
+            translateBtn.disabled = true;
+            translateBtn.innerText = "⏳ Đang dịch...";
+            resultDiv.innerHTML = "";
 
             try {
                 const res = await fetch("http://localhost:3000/translate", {
@@ -74,34 +202,51 @@
                 });
 
                 const data = await res.json();
+                translateBtn.disabled = false;
+                translateBtn.innerText = "🔄 Dịch ngay";
 
                 if (data.error) {
-                    document.getElementById("result").innerText = "Error: " + data.error;
-                } else {
-                    // Audio gốc
-                    const originalBlob = new Blob(
-                        [Uint8Array.from(atob(data.originalAudio), c => c.charCodeAt(0))],
-                        { type: "audio/mpeg" }
-                    );
-                    const originalUrl = URL.createObjectURL(originalBlob);
-
-                    // Audio dịch
-                    const translatedBlob = new Blob(
-                        [Uint8Array.from(atob(data.translatedAudio), c => c.charCodeAt(0))],
-                        { type: "audio/mpeg" }
-                    );
-                    const translatedUrl = URL.createObjectURL(translatedBlob);
-
-                    document.getElementById("result").innerHTML = `
-                        <strong>Văn bản gốc (${sourceLang}):</strong> ${text} <br>
-                        <audio controls src="${originalUrl}" autoplay></audio><br>
-                        <strong>Dịch (${targetLang}):</strong> ${data.translated} <br>
-                        <audio controls src="${translatedUrl}" autoplay></audio>
-                    `;
+                    resultDiv.innerHTML = `<div style="color:red;">❌ Error: ${data.error}</div>`;
+                    return;
                 }
+
+                const base64ToUrl = (base64) => {
+                    const blob = new Blob(
+                        [Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))],
+                        { type: "audio/mpeg" }
+                    );
+                    return URL.createObjectURL(blob);
+                };
+
+                const originalUrl = base64ToUrl(data.originalAudio);
+                const translatedUrl = base64ToUrl(data.translatedAudio);
+
+                // 💬 Hiển thị IPA nếu có và targetLang là en
+                // After receiving `data` from server
+                const ipaHtml = data.ipa ? `<div class="ipa">${data.ipa}</div>` : "";
+                const romanizedHtml = data.targetPhonetic ? `<div class="phonetic">[${data.targetPhonetic}]</div>` : "";
+
+                resultDiv.innerHTML = `
+                <div class="section">
+                    <strong>📝 Văn bản gốc (${sourceLang}):</strong>
+                    <div>${text}</div>
+                    ${data.sourcePhonetic ? `<div class="phonetic">[${data.sourcePhonetic}]</div>` : ""}
+                    <div class="audio-block"><span>🎧</span><audio controls src="${originalUrl}"></audio></div>
+                </div>
+
+                <div class="section">
+                    <strong>🌐 Bản dịch (${targetLang}):</strong>
+                    <div>${data.translated}</div>
+                    ${ipaHtml}
+                    ${romanizedHtml}
+                    <div class="audio-block"><span>🎧</span><audio controls src="${translatedUrl}"></audio></div>
+                </div>
+                `;
             } catch (err) {
                 console.error(err);
-                document.getElementById("result").innerText = "Lỗi server!";
+                translateBtn.disabled = false;
+                translateBtn.innerText = "🔄 Dịch ngay";
+                resultDiv.innerHTML = "<div style='color:red;'>❌ Lỗi server hoặc kết nối!</div>";
             }
         });
     </script>
