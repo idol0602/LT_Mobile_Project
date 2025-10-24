@@ -31,7 +31,7 @@ interface Topic {
   createdAt?: string;
 }
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "http://localhost:5050";
 
 export default function TopicPage() {
   const [topics, setTopics] = useState<Topic[]>([]);

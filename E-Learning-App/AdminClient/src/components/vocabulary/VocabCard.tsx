@@ -17,7 +17,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "http://localhost:5050";
 
 interface Vocabulary {
   _id: string;

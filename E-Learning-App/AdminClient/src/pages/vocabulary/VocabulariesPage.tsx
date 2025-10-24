@@ -1,4 +1,3 @@
-// src/pages/VocabulariesPage.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -9,8 +8,6 @@ import {
   CircularProgress,
   Container,
   Paper,
-  Grid,
-  type SelectChangeEvent,
   Snackbar,
   Alert,
   Dialog,
@@ -19,10 +16,13 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
-import { BookOpen, Zap, FileText, MessageSquare, Package } from "lucide-react"; // lucide-react chỉ dùng cho icon, có thể thay bằng MUI icons nếu muốn
+import { BookOpen, Zap, FileText, MessageSquare, Package } from "lucide-react";
+import BookIcon from "@mui/icons-material/Book";
+
 import {
   getVocabularies,
   addVocabulary,
+  getVocabulariesByIds,
   updateVocabulary,
   deleteVocabulary,
   getVocabularyStats,
@@ -33,7 +33,8 @@ import { VocabTable } from "../../components/vocabulary/VocabTable";
 import { StatCards } from "../../components/StatCards";
 import { PageHeader } from "../../components/PageHeader";
 import { VocabFilter } from "../../components/vocabulary/VocabFilter";
-import BookIcon from "@mui/icons-material/Book"; // Dùng icon của MUI
+import type { SelectChangeEvent } from "@mui/material";
+
 export default function VocabulariesPage() {
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,41 +43,69 @@ export default function VocabulariesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [posFilter, setPosFilter] = useState("all");
+  const [searchLang, setSearchLang] = useState("both");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [stats, setStats] = useState({ totalWords: 0, countByPos: [] });
+  const [totalVocabs, setTotalVocabs] = useState(0);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: "success" | "error" | "warning" | "info";
   } | null>(null);
-  const [stats, setStats] = useState({ totalWords: 0, countByPos: [] });
-  // 3. State cho Dialog xác nhận xóa (thay thế confirm)
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     vocabId: string | null;
   }>({ open: false, vocabId: null });
+
+  // 🔹 Fetch ban đầu
   useEffect(() => {
-    // Chỉ gọi initialFetch một lần duy nhất khi component mount
     initialFetch();
   }, []);
-
   const initialFetch = async () => {
     setLoading(true);
     try {
       const [vocabResponse, statsResponse] = await Promise.all([
-        getVocabularies(page, rowsPerPage), // Lấy dữ liệu trang đầu tiên
+        getVocabularies(page, rowsPerPage, searchTerm, searchLang, posFilter),
         getVocabularyStats(),
       ]);
       setVocabularies(vocabResponse.data.data);
-      // Giả sử API getVocabularies trả về total trong data
-      // setTotalVocabs(vocabResponse.data.total);
       setStats(statsResponse.data);
     } catch (err) {
       console.error("Lỗi khi tải dữ liệu ban đầu:", err);
+      setError("Không thể tải dữ liệu.");
     } finally {
       setLoading(false);
     }
   };
+
+  // 🔹 Lấy lại dữ liệu khi đổi trang hoặc bộ lọc
+  useEffect(() => {
+    fetchVocabularies();
+  }, [page, rowsPerPage, searchTerm, searchLang, posFilter]);
+
+  const fetchVocabularies = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getVocabularies(
+        page,
+        rowsPerPage,
+        searchTerm,
+        searchLang,
+        posFilter
+      );
+      // 3. LƯU DỮ LIỆU TỪ SERVER
+      setVocabularies(response.data.data); // Dữ liệu của trang hiện tại
+      setTotalVocabs(response.data.total); // Tổng số từ vựng (ví dụ: 6)
+    } catch (err) {
+      console.error("Lỗi khi tải từ vựng:", err);
+      setError("Không thể tải dữ liệu từ server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const statsResponse = await getVocabularyStats();
@@ -85,69 +114,17 @@ export default function VocabulariesPage() {
       console.error("Lỗi khi cập nhật thống kê:", error);
     }
   };
-  useEffect(() => {
-    // Không cần gọi lại initialFetch, chỉ cần lấy dữ liệu cho trang mới
-    const fetchPageData = async () => {
-      setLoading(true);
-      try {
-        const response = await getVocabularies(page, rowsPerPage);
-        setVocabularies(response.data.data);
-        // setTotalVocabs(response.data.total);
-      } catch (err) {
-        console.error("Lỗi khi chuyển trang:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    // Chỉ chạy khi không phải lần tải đầu tiên
-    // (để tránh gọi API 2 lần lúc đầu)
-    if (!loading) {
-      fetchPageData();
-    }
-  }, [page, rowsPerPage]);
-  console.log("Stats:", stats); // Kiểm tra dữ liệu stats nhận được
-  const fetchVocabularies = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await getVocabularies(page, rowsPerPage);
-      setVocabularies(response.data.data);
-    } catch (err) {
-      console.error("Lỗi khi tải từ vựng:", err);
-      setError("Không thể tải dữ liệu từ server.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Luôn quay về trang đầu khi thay đổi số lượng item/trang
-  };
-
-  const filteredData = useMemo(() => {
-    return vocabularies
-      .filter((v) => v.word.toLowerCase().includes(searchTerm.toLowerCase()))
-      .filter((v) => posFilter === "all" || v.partOfSpeech === posFilter);
-  }, [vocabularies, searchTerm, posFilter]);
+  // 🔹 Xử lý thêm / sửa
   const handleSave = async (vocabData: any, imageFile: File | null) => {
     const formData = new FormData();
     const { _id, createdAt, updatedAt, __v, ...rest } = vocabData;
     Object.keys(rest).forEach((key) => formData.append(key, rest[key]));
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
+    if (imageFile) formData.append("image", imageFile);
 
     try {
       if (editingVocab) {
         await updateVocabulary(editingVocab._id, formData);
-        // 4. Gọi Snackbar thay vì alert
         setSnackbar({
           open: true,
           message: "Cập nhật từ vựng thành công!",
@@ -174,12 +151,14 @@ export default function VocabulariesPage() {
       setEditingVocab(null);
     }
   };
+
+  // 🔹 Xử lý xóa
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm({ open: true, vocabId: id });
   };
+
   const handleConfirmDelete = async () => {
     if (!deleteConfirm.vocabId) return;
-
     try {
       await deleteVocabulary(deleteConfirm.vocabId);
       setSnackbar({
@@ -196,45 +175,44 @@ export default function VocabulariesPage() {
         severity: "error",
       });
     } finally {
-      // Đóng dialog sau khi hoàn tất
       setDeleteConfirm({ open: false, vocabId: null });
     }
   };
 
-  const handleCloseSnackbar = () => {
-    if (snackbar) {
-      setSnackbar({ ...snackbar, open: false });
-    }
+  // 🔹 Bộ lọc
+  const handleSearchLangChange = (e: SelectChangeEvent<string>) => {
+    setSearchLang(e.target.value);
   };
-  // ✅ --- HÀM DELETE ĐÃ HOÀN THIỆN ---
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa từ vựng này không?")) {
-      try {
-        await deleteVocabulary(id);
-        fetchVocabularies(); // Tải lại danh sách sau khi xóa
-      } catch (error) {
-        console.error("Lỗi khi xóa:", error);
-        alert("Đã xảy ra lỗi khi xóa từ vựng.");
-      }
-    }
+
+  const handleChangePage = (event: unknown, newPage: number) =>
+    setPage(newPage);
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setPosFilter("all");
+    setSearchLang("both");
+    setPage(0);
   };
 
   const handleEdit = (vocab: any) => {
     setEditingVocab(vocab);
     setIsModalOpen(true);
   };
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setPosFilter("all");
-    setPage(0);
-  };
-  const partOfSpeechConfig: Record<string, { icon: any; color: string }> = {
-    noun: { icon: BookOpen, color: "#A0DDE6" },
-    verb: { icon: Zap, color: "#10b981" },
-    adjective: { icon: FileText, color: "#f59e0b" },
-    adverb: { icon: MessageSquare, color: "#8b5cf6" },
-    default: { icon: Package, color: "#71717a" },
-  };
+
+  const handleCloseSnackbar = () =>
+    snackbar && setSnackbar({ ...snackbar, open: false });
+
+  const filteredData = useMemo(() => {
+    return vocabularies
+      .filter((v) => v.word.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter((v) => posFilter === "all" || v.partOfSpeech === posFilter);
+  }, [vocabularies, searchTerm, posFilter]);
 
   if (error) return <div>Lỗi: {error}</div>;
 
@@ -257,19 +235,15 @@ export default function VocabulariesPage() {
       ) : (
         <>
           <StatCards stats={stats} />
-
           <VocabFilter
             searchTerm={searchTerm}
             onSearchChange={(e) => setSearchTerm(e.target.value)}
             posFilter={posFilter}
             onPosFilterChange={(e) => setPosFilter(e.target.value)}
-            onReset={() => {
-              setSearchTerm("");
-              setPosFilter("all");
-              setPage(0);
-            }}
+            searchLang={searchLang}
+            onSearchLangChange={handleSearchLangChange}
+            onReset={handleResetFilters}
           />
-
           <VocabTable
             vocabularies={filteredData}
             onEdit={handleEdit}
@@ -278,10 +252,12 @@ export default function VocabulariesPage() {
             rowsPerPage={rowsPerPage}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
+            totalCount={totalVocabs}
           />
         </>
       )}
 
+      {/* Form thêm/sửa từ vựng */}
       <VocabForm
         open={isModalOpen}
         onClose={() => {
@@ -291,6 +267,8 @@ export default function VocabulariesPage() {
         onSave={handleSave}
         selectedVocab={editingVocab}
       />
+
+      {/* Snackbar thông báo */}
       <Snackbar
         open={snackbar?.open || false}
         autoHideDuration={6000}
@@ -306,7 +284,7 @@ export default function VocabulariesPage() {
         </Alert>
       </Snackbar>
 
-      {/* Dialog cho xác nhận xóa */}
+      {/* Dialog xác nhận xóa */}
       <Dialog
         open={deleteConfirm.open}
         onClose={() => setDeleteConfirm({ open: false, vocabId: null })}
@@ -314,7 +292,7 @@ export default function VocabulariesPage() {
         <DialogTitle>Xác nhận xóa</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Bạn có thực sự muốn xóa từ vựng này không? Hành động này không thể
+            Bạn có chắc chắn muốn xóa từ vựng này không? Hành động này không thể
             hoàn tác.
           </DialogContentText>
         </DialogContent>

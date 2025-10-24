@@ -10,9 +10,9 @@ const apiClient = axios.create({
 export const getVocabularies = (
   page: number,
   rowsPerPage: number,
-  searchTerm: string,
-  searchLang: string,
-  posFilter: string
+  searchTerm: string = "",
+  searchLang: string = "en",
+  posFilter: string = "all"
 ): Promise<AxiosResponse<any>> => {
   return apiClient.get(`/vocabularies`, {
     params: {
@@ -21,9 +21,10 @@ export const getVocabularies = (
       search: searchTerm,
       lang: searchLang,
       pos: posFilter,
-    }
+    },
   });
 };
+
 export const getVocabulariesByIds = (ids: string[]): Promise<AxiosResponse<any>> => {
   return apiClient.post("/vocabularies/many", { ids });
 };

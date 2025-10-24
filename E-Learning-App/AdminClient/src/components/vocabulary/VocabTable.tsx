@@ -9,7 +9,6 @@ import {
 import InfoIcon from "@mui/icons-material/Info";
 import { VocabCard } from "./VocabCard"; // Import component card
 
-const API_BASE_URL = "http://localhost:3000";
 // Định nghĩa lại interface cho VocabTable
 interface Vocabulary {
   _id: string;
@@ -29,6 +28,7 @@ interface VocabListProps {
   rowsPerPage: number;
   onPageChange: (event: unknown, newPage: number) => void;
   onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  totalCount: number;
 }
 
 export function VocabTable({
@@ -39,9 +39,10 @@ export function VocabTable({
   rowsPerPage,
   onPageChange,
   onRowsPerPageChange,
+  totalCount,
 }: VocabListProps) {
   // Xử lý trường hợp không có dữ liệu
-  if (vocabularies.length === 0) {
+  if (totalCount === 0) {
     return (
       <Paper
         sx={{
@@ -58,38 +59,31 @@ export function VocabTable({
       </Paper>
     );
   }
-  const handlePlayAudio = (word: string) => {
-    // URL này trỏ đến API cache audio mà bạn đã xây dựng trên server
-    const audioUrl = `${API_BASE_URL}/api/audio/play?word=${encodeURIComponent(
-      word
-    )}`;
-    const audio = new Audio(audioUrl);
-    audio.play().catch((err) => console.error("Lỗi khi phát audio:", err));
-  };
+
   // Render một Paper chứa cả danh sách Card và thanh phân trang
   return (
     <Paper sx={{ borderRadius: 3, overflow: "hidden", boxShadow: 3 }}>
       {/* VÙNG CHỨA DANH SÁCH CARD (SỬ DỤNG FLEXBOX) */}
       <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-        {vocabularies
-          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-          .map((vocab, index) => (
-            // Không cần Grid item nữa, VocabCard là con trực tiếp
-            <VocabCard
-              key={vocab._id}
-              vocab={vocab}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              index={index}
-              onPlayAudio={handlePlayAudio}
-            />
-          ))}
+        {/* --- LỖI ĐÃ ĐƯỢC SỬA: BỎ HÀM .slice() --- */}
+        {vocabularies.map((vocab, index) => (
+          // Dữ liệu 'vocabularies' đã được phân trang từ server,
+          // chỉ cần map trực tiếp
+          <VocabCard
+            key={vocab._id}
+            vocab={vocab}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onPlayAudio={handlePlayAudio} // <-- Bạn cũng cần định nghĩa hàm này
+            index={index}
+          />
+        ))}
       </Box>
 
-      {/* THÀNH PHẦN PHÂN TRANG (GIỮ NGUYÊN) */}
+      {/* THÀNH PHẦN PHÂN TRANG (Đã đúng) */}
       <TablePagination
         component="div"
-        count={vocabularies.length}
+        count={totalCount} // Đếm tổng số từ (ví dụ: 6) - CHÍNH XÁC
         page={page}
         onPageChange={onPageChange}
         rowsPerPage={rowsPerPage}
@@ -100,3 +94,13 @@ export function VocabTable({
     </Paper>
   );
 }
+
+// Bạn cần thêm hàm này, vì VocabCard đang gọi nó
+const handlePlayAudio = (word: string) => {
+  const API_BASE_URL = "http://localhost:5050"; // Đảm bảo URL này đúng
+  const audioUrl = `${API_BASE_URL}/api/audio/play?word=${encodeURIComponent(
+    word
+  )}`;
+  const audio = new Audio(audioUrl);
+  audio.play().catch((err) => console.error("Lỗi khi phát audio:", err));
+};

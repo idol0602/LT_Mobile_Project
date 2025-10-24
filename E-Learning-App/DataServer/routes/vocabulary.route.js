@@ -1,36 +1,46 @@
 // routes/vocabulary.js
 const express = require("express");
 const router = express.Router();
-const multer = require("multer"); // 1. Đảm bảo đã import multer
+const multer = require("multer");
 const vocabularyController = require("../controllers/vocabularyController");
 
-// 2. Cấu hình Multer để lưu file tạm thời trong bộ nhớ
+// --- Cấu hình Multer để lưu file vào bộ nhớ (RAM) ---
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
-// === CÁC ROUTE KHÁC ===
-// GET /api/vocabularies -> Lấy tất cả từ
+// ======================
+// ⚙️ ROUTE TĨNH (Thống kê)
+// ======================
+router.get("/stats", vocabularyController.getVocabularyStats);
+
+// ======================
+// 📚 ROUTE CRUD CHÍNH
+// ======================
+
+// Lấy danh sách tất cả từ vựng (có hỗ trợ tìm kiếm, lọc, phân trang)
 router.get("/", vocabularyController.getAllVocabularies);
+
+// Lấy chi tiết 1 từ theo ID
 router.get("/:id", vocabularyController.getVocabularyById);
+
+// Lấy nhiều từ theo danh sách ID
 router.post("/many", vocabularyController.getVocabulariesByIds);
 
-// === ROUTE CẦN SỬA ===
-// POST /api/vocabularies/add -> Thêm một từ mới
-// 3. Đặt middleware của Multer vào ĐÚNG route này
-router.post(
-  "/add",
-  // Middleware này sẽ đọc FormData, tìm file có field name 'image'
-  upload.single("image"),
-  // Sau khi Multer chạy xong, nó mới gọi đến controller
-  vocabularyController.addVocabulary
-);
+// ======================
+// ✳️ ROUTE THÊM / CẬP NHẬT / XOÁ
+// ======================
+
+// Thêm một từ vựng mới (có thể kèm ảnh)
+router.post("/", upload.single("image"), vocabularyController.addVocabulary);
+
+// Cập nhật một từ vựng
 router.put(
-  "/update/:id",
-  upload.single("image"), // Dùng single vì chỉ update ảnh
+  "/:id",
+  upload.single("image"),
   vocabularyController.updateVocabulary
 );
 
-router.delete("/delete/:id", vocabularyController.deleteVocabulary);
-// (Bạn có thể thêm các route cho update và delete ở đây sau)
-router.get("/stats", vocabularyController.getVocabularyStats);
+// Xoá một từ vựng
+router.delete("/:id", vocabularyController.deleteVocabulary);
+
 module.exports = router;

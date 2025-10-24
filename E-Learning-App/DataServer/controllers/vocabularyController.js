@@ -225,28 +225,27 @@ exports.deleteVocabulary = async (req, res) => {
       .json({ message: "Lỗi server khi xóa", error: error.message });
   }
 };
+// --- LẤY THỐNG KÊ TỪ VỰNG ---
 exports.getVocabularyStats = async (req, res) => {
   try {
+    // Hàm này giờ đã có thể thấy 'Vocabulary'
     const stats = await Vocabulary.aggregate([
-      // Giai đoạn 1: Nhóm tất cả document theo partOfSpeech và đếm
       {
         $group: {
-          _id: "$partOfSpeech", // Nhóm theo trường 'partOfSpeech'
-          count: { $sum: 1 }, // Đếm số lượng trong mỗi nhóm
+          _id: "$partOfSpeech",
+          count: { $sum: 1 },
         },
       },
-      // Giai đoạn 2: Sắp xếp các nhóm theo số lượng giảm dần
-      {
-        $sort: { count: -1 },
-      },
+      { $sort: { count: -1 } },
     ]);
 
-    // Lấy tổng số từ vựng
     const totalWords = await Vocabulary.countDocuments();
 
-    // Định dạng lại dữ liệu cho dễ dùng ở frontend
+    // Xử lý khi _id có thể null hoặc rỗng
     const countByPos = stats.map((item) => ({
-      name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
+      name: item._id
+        ? item._id.charAt(0).toUpperCase() + item._id.slice(1)
+        : "Chưa xác định", // Gán tên 'Chưa xác định'
       count: item.count,
     }));
 
@@ -255,8 +254,10 @@ exports.getVocabularyStats = async (req, res) => {
       countByPos,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Lỗi server khi lấy thống kê", error: error.message });
+    console.error("❌ Lỗi khi lấy thống kê từ vựng:", error);
+    res.status(500).json({
+      message: "Lỗi server khi lấy thống kê",
+      error: error.message,
+    });
   }
 };
