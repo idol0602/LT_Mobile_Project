@@ -23,20 +23,21 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
+import { QuillEditor } from "../../QuillEditor";
 import { updateLesson } from "../../../services/api";
 
 interface Question {
   questionText: string;
   options: [string, string, string, string];
-  correctAnswer: string;
+  correctAnswerIndex: number;
 }
 
 interface ReadingData {
-  name?: string;
-  level?: string;
-  topic?: string;
-  readingContent?: string;
-  questions?: Question[];
+  name: string;
+  level: string;
+  topic: string;
+  readingContent: string;
+  questions: Question[];
 }
 
 interface Lesson {
@@ -64,14 +65,14 @@ export function EditReadingModal({
 }: EditReadingModalProps) {
   const [editingData, setEditingData] = useState<ReadingData>({
     name: "",
-    level: "",
+    level: "Beginner",
     topic: "",
     readingContent: "",
     questions: [],
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Cấu hình toolbar cho QuillJS
+  // Cấu hình toolbar QuillJS
   const modules = {
     toolbar: [
       [{ header: [1, 2, 3, false] }],
@@ -96,37 +97,57 @@ export function EditReadingModal({
     "image",
   ];
 
-  // Khởi tạo QuillJS
-  const { quill, quillRef } = useQuill({
-    theme: "snow",
-    modules,
-    formats,
-  });
+  const { quill, quillRef } = useQuill({ theme: "snow", modules, formats });
 
-  // Load dữ liệu ban đầu
+  // Load dữ liệu từ lesson khi mở modal
   useEffect(() => {
-    if (lesson && open) {
-      const data: ReadingData = {
-        name: lesson.name,
-        level: lesson.level,
-        topic: lesson.topic,
-        readingContent: lesson.readingContent || "",
-        questions: lesson.questions || [],
-      };
-      setEditingData(data);
-    }
-  }, [lesson, open]);
+    if (!lesson) return;
+    const loadedData: ReadingData = {
+      name: lesson.name || "",
+      level: lesson.level || "Beginner",
+      topic: lesson.topic || "",
+      readingContent: lesson.readingContent || "",
+      questions:
+        lesson.questions?.map((q) => ({
+          questionText: q.questionText || "",
+          options: q.options || ["", "", "", ""],
+          correctAnswerIndex:
+            typeof q.correctAnswerIndex === "number" ? q.correctAnswerIndex : 0,
+        })) || [],
+    };
+    setEditingData(loadedData);
 
-  // Khi Quill khởi tạo, gán nội dung ban đầu và lắng nghe thay đổi
-  useEffect(() => {
     if (quill) {
-      quill.root.innerHTML = editingData.readingContent || "";
-      quill.on("text-change", () => {
-        const html = quill.root.innerHTML;
-        handleDataChange("readingContent", html);
+      quill.setContents([]); // reset
+      quill.clipboard.dangerouslyPasteHTML(loadedData.readingContent || "");
+    }
+  }, [lesson, quill, open]);
+  useEffect(() => {
+    if (!open) {
+      setEditingData({
+        name: "",
+        level: "Beginner",
+        topic: "",
+        readingContent: "",
+        questions: [],
       });
     }
-  }, [quill, editingData.readingContent]);
+  }, [open]);
+
+  // Khi Quill khởi tạo, gán nội dung và lắng nghe thay đổi
+  useEffect(() => {
+    if (quill) {
+      const handleChange = () => {
+        const html = quill.root.innerHTML;
+        setEditingData((prev) => ({ ...prev, readingContent: html }));
+      };
+
+      quill.on("text-change", handleChange);
+      return () => {
+        quill.off("text-change", handleChange);
+      };
+    }
+  }, [quill]);
 
   const handleDataChange = (field: keyof ReadingData, value: any) => {
     setEditingData((prev) => ({ ...prev, [field]: value }));
@@ -136,22 +157,19 @@ export function EditReadingModal({
     const newQuestion: Question = {
       questionText: "",
       options: ["", "", "", ""],
-      correctAnswer: "",
+      correctAnswerIndex: 0,
     };
-    handleDataChange("questions", [
-      ...(editingData.questions || []),
-      newQuestion,
-    ]);
+    handleDataChange("questions", [...editingData.questions, newQuestion]);
   };
 
   const handleRemoveQuestion = (index: number) => {
-    const newQuestions = [...(editingData.questions || [])];
+    const newQuestions = [...editingData.questions];
     newQuestions.splice(index, 1);
     handleDataChange("questions", newQuestions);
   };
 
   const handleQuestionTextChange = (index: number, value: string) => {
-    const newQuestions = [...(editingData.questions || [])];
+    const newQuestions = [...editingData.questions];
     newQuestions[index].questionText = value;
     handleDataChange("questions", newQuestions);
   };
@@ -161,7 +179,7 @@ export function EditReadingModal({
     optIndex: number,
     value: string
   ) => {
-    const newQuestions = [...(editingData.questions || [])];
+    const newQuestions = [...editingData.questions];
     const newOptions = [...newQuestions[qIndex].options] as [
       string,
       string,
@@ -173,13 +191,12 @@ export function EditReadingModal({
     handleDataChange("questions", newQuestions);
   };
 
-  const handleCorrectAnswerChange = (qIndex: number, value: string) => {
-    const newQuestions = [...(editingData.questions || [])];
-    newQuestions[qIndex].correctAnswer = value;
+  const handleCorrectAnswerChange = (qIndex: number, value: number) => {
+    const newQuestions = [...editingData.questions];
+    newQuestions[qIndex].correctAnswerIndex = value;
     handleDataChange("questions", newQuestions);
   };
 
-  // Lưu dữ liệu
   const handleSave = async () => {
     if (!lesson) return;
     setIsSaving(true);
@@ -217,7 +234,7 @@ export function EditReadingModal({
       </DialogTitle>
 
       <DialogContent dividers>
-        {/* ====== THÔNG TIN CHUNG ====== */}
+        {/* THÔNG TIN CHUNG */}
         <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
           <TextField
             label="Tên bài học"
@@ -244,7 +261,7 @@ export function EditReadingModal({
           />
         </Box>
 
-        {/* ====== BỐ CỤC 2 CỘT ====== */}
+        {/* BỐ CỤC 2 CỘT */}
         <Box
           sx={{
             display: "flex",
@@ -252,7 +269,7 @@ export function EditReadingModal({
             gap: 4,
           }}
         >
-          {/* --- CỘT TRÁI: BÀI ĐỌC --- */}
+          {/* CỘT TRÁI: BÀI ĐỌC */}
           <Box sx={{ flex: 1.2 }}>
             <Typography variant="h6" gutterBottom>
               Nội dung Bài đọc
@@ -268,12 +285,14 @@ export function EditReadingModal({
                 overflowY: "auto",
               }}
             >
-              {/* QuillJS Editor */}
-              <div ref={quillRef} style={{ height: "320px" }} />
+              <QuillEditor
+                value={editingData.readingContent}
+                onChange={(html) => handleDataChange("readingContent", html)}
+              />
             </Paper>
           </Box>
 
-          {/* --- CỘT PHẢI: CÂU HỎI --- */}
+          {/* CỘT PHẢI: CÂU HỎI */}
           <Box sx={{ flex: 1 }}>
             <Box
               sx={{
@@ -294,7 +313,7 @@ export function EditReadingModal({
             </Box>
 
             <Box sx={{ maxHeight: 500, overflowY: "auto" }}>
-              {(editingData.questions || []).map((q, qIndex) => (
+              {editingData.questions.map((q, qIndex) => (
                 <Paper
                   key={qIndex}
                   sx={{
@@ -337,15 +356,18 @@ export function EditReadingModal({
                   <FormControl fullWidth>
                     <FormLabel>Lựa chọn đáp án</FormLabel>
                     <RadioGroup
-                      value={q.correctAnswer}
+                      value={q.correctAnswerIndex}
                       onChange={(e) =>
-                        handleCorrectAnswerChange(qIndex, e.target.value)
+                        handleCorrectAnswerChange(
+                          qIndex,
+                          Number(e.target.value)
+                        )
                       }
                     >
                       {q.options.map((opt, optIndex) => (
                         <FormControlLabel
                           key={optIndex}
-                          value={opt}
+                          value={optIndex}
                           control={<Radio />}
                           label={
                             <TextField
