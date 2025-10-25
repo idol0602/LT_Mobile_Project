@@ -21,13 +21,8 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-
-// Import Tiptap
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-
-// Import API
+import { useQuill } from "react-quilljs";
+import "quill/dist/quill.snow.css";
 import { updateLesson } from "../../../services/api";
 
 interface Question {
@@ -76,19 +71,36 @@ export function EditReadingModal({
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Tiptap editor
-  const editor = useEditor({
-    extensions: [StarterKit, Underline],
-    content: "",
-    onUpdate: ({ editor }) => {
-      handleDataChange("readingContent", editor.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class:
-          "tiptap-editor-content focus:outline-none p-2 min-h-[300px] max-h-[500px] overflow-y-auto",
-      },
-    },
+  // Cấu hình toolbar cho QuillJS
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline", "strike"],
+      [{ align: [] }],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["link", "image"],
+      ["clean"],
+    ],
+  };
+
+  const formats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "align",
+    "list",
+    "bullet",
+    "link",
+    "image",
+  ];
+
+  // Khởi tạo QuillJS
+  const { quill, quillRef } = useQuill({
+    theme: "snow",
+    modules,
+    formats,
   });
 
   // Load dữ liệu ban đầu
@@ -102,15 +114,24 @@ export function EditReadingModal({
         questions: lesson.questions || [],
       };
       setEditingData(data);
-      editor?.commands.setContent(data.readingContent || "");
     }
-  }, [lesson, open, editor]);
+  }, [lesson, open]);
+
+  // Khi Quill khởi tạo, gán nội dung ban đầu và lắng nghe thay đổi
+  useEffect(() => {
+    if (quill) {
+      quill.root.innerHTML = editingData.readingContent || "";
+      quill.on("text-change", () => {
+        const html = quill.root.innerHTML;
+        handleDataChange("readingContent", html);
+      });
+    }
+  }, [quill, editingData.readingContent]);
 
   const handleDataChange = (field: keyof ReadingData, value: any) => {
     setEditingData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Thêm / xóa câu hỏi
   const handleAddQuestion = () => {
     const newQuestion: Question = {
       questionText: "",
@@ -247,7 +268,8 @@ export function EditReadingModal({
                 overflowY: "auto",
               }}
             >
-              <EditorContent editor={editor} />
+              {/* QuillJS Editor */}
+              <div ref={quillRef} style={{ height: "320px" }} />
             </Paper>
           </Box>
 

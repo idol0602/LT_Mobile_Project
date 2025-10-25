@@ -1,5 +1,5 @@
 // src/components/LessonSteps/Step2_Reading.tsx
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   TextField,
@@ -15,20 +15,14 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import Quill from "quill";
+import "quill/dist/quill.snow.css"; // giao diện mặc định
 
-// 1. Import Tiptap
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline"; // Import extension cho gạch chân
-import { Toolbar } from "../Toolbar"; // Đường dẫn có thể cần sửa
-import { theme } from "../../../styles/theme";
-import { palette } from "../../../styles/palette";
-
-// 2. Định nghĩa kiểu dữ liệu cho câu hỏi (SỬA LẠI CHO TRỰC QUAN HƠN)
+// =================== ĐỊNH NGHĨA KIỂU DỮ LIỆU ===================
 interface Question {
   questionText: string;
-  options: [string, string, string, string]; // Mảng 4 chuỗi
-  correctAnswerIndex: number; // Lưu VỊ TRÍ (0, 1, 2, 3) của đáp án đúng
+  options: [string, string, string, string];
+  correctAnswerIndex: number;
 }
 
 interface ReadingData {
@@ -41,6 +35,7 @@ interface Step2ReadingProps {
   onDataChange: (field: keyof ReadingData, value: any) => void;
 }
 
+// =================== COMPONENT CHÍNH ===================
 export function Step2_Reading({
   readingData,
   onDataChange,
@@ -48,28 +43,52 @@ export function Step2_Reading({
   const content = readingData.readingContent || "";
   const questions = readingData.questions || [];
 
-  // 3. Thiết lập Tiptap Editor (thêm Underline)
-  const editor = useEditor({
-    extensions: [
-      StarterKit, // Kích hoạt các tính năng cơ bản
-      Underline, // Thêm tính năng gạch chân
-    ],
-    content: content,
-    onUpdate: ({ editor }) => {
-      onDataChange("readingContent", editor.getHTML());
-    },
-    editorProps: {
-      attributes: { class: "tiptap-editor-content" },
-    },
-  });
+  const quillRef = useRef<HTMLDivElement | null>(null);
+  const quillInstance = useRef<Quill | null>(null);
 
-  // --- HÀM XỬ LÝ CHO CÂU HỎI ---
+  // ====== KHỞI TẠO QUILL ======
+  useEffect(() => {
+    if (quillRef.current && !quillInstance.current) {
+      quillInstance.current = new Quill(quillRef.current, {
+        theme: "snow",
+        placeholder: "Nhập nội dung bài đọc...",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ["bold", "italic", "underline", "strike"],
+            [{ align: [] }],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["link", "image"],
+            ["clean"],
+          ],
+        },
+      });
 
+      // Set giá trị ban đầu (HTML)
+      quillInstance.current.root.innerHTML = content;
+
+      // Lắng nghe thay đổi nội dung
+      quillInstance.current.on("text-change", () => {
+        const html = quillInstance.current!.root.innerHTML;
+        onDataChange("readingContent", html);
+      });
+    }
+
+    // Nếu content thay đổi từ ngoài (ví dụ: khi load dữ liệu)
+    if (
+      quillInstance.current &&
+      content !== quillInstance.current.root.innerHTML
+    ) {
+      quillInstance.current.root.innerHTML = content;
+    }
+  }, [content, onDataChange]);
+
+  // ====== CÂU HỎI ======
   const handleAddQuestion = () => {
     const newQuestion: Question = {
       questionText: "",
       options: ["", "", "", ""],
-      correctAnswerIndex: 0, // Mặc định chọn đáp án đầu tiên
+      correctAnswerIndex: 0,
     };
     onDataChange("questions", [...questions, newQuestion]);
   };
@@ -103,7 +122,6 @@ export function Step2_Reading({
     onDataChange("questions", newQuestions);
   };
 
-  // Sửa lại: Hàm này nhận index (0-3) của đáp án đúng
   const handleCorrectAnswerChange = (
     qIndex: number,
     newCorrectIndex: number
@@ -113,32 +131,42 @@ export function Step2_Reading({
     onDataChange("questions", newQuestions);
   };
 
+  // =================== GIAO DIỆN ===================
   return (
-    // 4. CHIA LAYOUT 2 CỘT (Không dùng Grid)
     <Box
       sx={{
         display: "flex",
-        flexDirection: { xs: "column", lg: "row" }, // 1 cột trên mobile, 2 cột trên desktop
+        flexDirection: { xs: "column", lg: "row" },
         gap: 4,
         pt: 1,
       }}
     >
-      {/* --- CỘT BÊN TRÁI: SOẠN THẢO VĂN BẢN --- */}
+      {/* --- CỘT TRÁI: BÀI ĐỌC --- */}
       <Box sx={{ flex: 1.2, minWidth: 0 }}>
         <Typography variant="h6" gutterBottom>
           Nội dung Bài đọc
         </Typography>
         <Paper
-          sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}
+          sx={{
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 2,
+            p: 2,
+            minHeight: 400,
+            maxHeight: 500,
+            overflowY: "auto",
+          }}
         >
-          <Toolbar editor={editor} />
-          <Box sx={{ p: 2, minHeight: 400, maxHeight: 500, overflowY: "auto" }}>
-            <EditorContent editor={editor} />
-          </Box>
+          {/* Container cho Quill */}
+          <div
+            ref={quillRef}
+            style={{ height: "320px" }}
+            className="quill-editor"
+          />
         </Paper>
       </Box>
 
-      {/* --- CỘT BÊN PHẢI: QUẢN LÝ CÂU HỎI --- */}
+      {/* --- CỘT PHẢI: CÂU HỎI --- */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box
           sx={{
@@ -158,8 +186,7 @@ export function Step2_Reading({
           </Button>
         </Box>
 
-        {/* Danh sách câu hỏi có thể cuộn */}
-        <Box sx={{ maxHeight: "500px", overflowY: "auto", p: 0.5 }}>
+        <Box sx={{ maxHeight: 500, overflowY: "auto" }}>
           {questions.map((q, qIndex) => (
             <Paper
               key={qIndex}
@@ -169,7 +196,6 @@ export function Step2_Reading({
                 border: "1px solid",
                 borderColor: "divider",
                 borderRadius: 2,
-                bgcolor: palette.surface,
               }}
             >
               <Box
@@ -188,52 +214,42 @@ export function Step2_Reading({
                   <DeleteIcon />
                 </IconButton>
               </Box>
+
               <TextField
-                label={`Nội dung câu hỏi ${qIndex + 1}`}
+                label="Nội dung câu hỏi"
+                fullWidth
                 value={q.questionText}
                 onChange={(e) =>
                   handleQuestionTextChange(qIndex, e.target.value)
                 }
-                fullWidth
                 margin="normal"
               />
 
-              {/* 5. THIẾT KẾ LẠI GIAO DIỆN CÂU HỎI */}
-              <FormControl fullWidth margin="normal">
-                <FormLabel>Các lựa chọn trả lời (Chọn 1 đáp án đúng)</FormLabel>
+              <FormControl fullWidth>
+                <FormLabel>Lựa chọn đáp án (chọn 1 đáp án đúng)</FormLabel>
                 <RadioGroup
-                  // Giá trị của RadioGroup là VỊ TRÍ của đáp án đúng
                   value={q.correctAnswerIndex}
                   onChange={(e) =>
                     handleCorrectAnswerChange(qIndex, parseInt(e.target.value))
                   }
                 >
                   {q.options.map((opt, optIndex) => (
-                    // Mỗi FormControlLabel có giá trị là index của nó
                     <FormControlLabel
                       key={optIndex}
-                      value={optIndex} // Giá trị là 0, 1, 2, hoặc 3
+                      value={optIndex}
                       control={<Radio />}
                       label={
                         <TextField
-                          label={`Lựa chọn ${optIndex + 1}`}
                           value={opt}
                           onChange={(e) =>
                             handleOptionChange(qIndex, optIndex, e.target.value)
                           }
                           fullWidth
-                          size="small"
                           variant="standard"
-                          sx={{ ml: -1 }} // Căn chỉnh TextField
+                          placeholder={`Lựa chọn ${optIndex + 1}`}
                         />
                       }
-                      sx={{
-                        width: "100%",
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                        pb: 1,
-                        mb: 1,
-                      }}
+                      sx={{ mb: 1 }}
                     />
                   ))}
                 </RadioGroup>
@@ -244,21 +260,13 @@ export function Step2_Reading({
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ textAlign: "center", mt: 4 }}
+              sx={{ textAlign: "center", mt: 3 }}
             >
               Nhấn "Thêm" để tạo câu hỏi đầu tiên.
             </Typography>
           )}
         </Box>
       </Box>
-
-      {/* 6. Thêm CSS cho Tiptap (quan trọng) */}
-      <style>{`
-        .tiptap-editor-content:focus { outline: none; }
-        .tiptap-editor-content p { margin: 0; }
-        .tiptap-editor-content ul, .tiptap-editor-content ol { padding-left: 2em; }
-        .tiptap-editor-content blockquote { border-left: 3px solid #ccc; margin-left: 1em; padding-left: 1em; }
-      `}</style>
     </Box>
   );
 }
