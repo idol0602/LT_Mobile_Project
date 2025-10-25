@@ -3,6 +3,7 @@ const Vocabulary = require("../models/vocabulary.model");
 const { Readable } = require("stream");
 const XLSX = require("xlsx");
 
+const fetch = require("node-fetch");
 // --- HÀM TIỆN ÍCH ĐỂ UPLOAD VÀO GRIDFS ---
 const uploadStreamToGridFS = (buffer, filename, bucket) => {
   return new Promise((resolve, reject) => {
@@ -14,6 +15,21 @@ const uploadStreamToGridFS = (buffer, filename, bucket) => {
     uploadStream.on("error", (err) => reject(err));
   });
 };
+
+async function getUnsplashImage(word) {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY; // lưu trong .env
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
+    word
+  )}&per_page=1&client_id=${accessKey}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (data.results && data.results.length > 0) {
+    return data.results[0].urls.small; // lấy ảnh kích thước nhỏ
+  }
+  return null; // không tìm thấy ảnh
+}
 
 // --- GET ALL: LẤY TẤT CẢ TỪ VỰNG ---
 exports.getAllVocabularies = async (req, res) => {
@@ -264,35 +280,53 @@ exports.getVocabularyStats = async (req, res) => {
 };
 exports.importVocabularies = async (req, res) => {
   try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ message: "No file uploaded" });
+    if (!req.file)
+      return res.status(400).json({ message: "Không có file Excel" });
 
-    // Đọc buffer file Excel
-    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    // Chuyển sang JSON
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: "images",
+    });
 
-    // Kiểm tra dữ liệu
-    if (!data || data.length === 0)
-      return res.status(400).json({ message: "File trống hoặc không hợp lệ" });
-
-    // Lưu vào DB (ví dụ Mongoose)
-    const inserted = await Vocabulary.insertMany(
-      data.map((row) => ({
+    const vocabPromises = data.map(async (row) => {
+      const vocab = {
         word: row.word,
         definition: row.definition,
-        partOfSpeech: row.partOfSpeech,
         pronunciation: row.pronunciation,
+        partOfSpeech: row.partOfSpeech,
         exampleSentence: row.exampleSentence,
-      }))
-    );
+        topic: row.topic || null,
+      };
 
-    res.json({ message: `Import thành công ${inserted.length} từ vựng!` });
+      // Nếu có URL ảnh, download và lưu vào GridFS
+      if (row.image) {
+        const response = await axios.get(row.image, {
+          responseType: "arraybuffer",
+        });
+        const buffer = Buffer.from(response.data, "binary");
+
+        const uploadStream = bucket.openUploadStream(
+          `${row.word}-${Date.now()}.jpg`
+        );
+        uploadStream.end(buffer);
+        const file = await new Promise((resolve, reject) => {
+          uploadStream.on("finish", resolve);
+          uploadStream.on("error", reject);
+        });
+
+        vocab.imageFileId = file._id; // Lưu ObjectId vào document
+      }
+
+      return Vocabulary.create(vocab);
+    });
+
+    await Promise.all(vocabPromises);
+    res.json({ message: "Import thành công" });
   } catch (err) {
-    console.error("❌ Import failed:", err);
+    console.error(err);
     res.status(500).json({ message: "Import thất bại", error: err.message });
   }
 };
