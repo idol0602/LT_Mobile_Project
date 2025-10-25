@@ -17,7 +17,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 
 import { LessonWizardModal } from "../components/LessonWizardModal";
-import { getLessons, deleteLesson } from "../services/api"; // ✅ Import API
+import { getLessons, deleteLesson } from "../services/lessonApi"; // ✅ Import API
 import { VocabLessonModal } from "../components/lesson/modal/VocabLessonModal";
 import { EditReadingModal } from "../components/lesson/modal/EditReadingModal";
 interface Lesson {

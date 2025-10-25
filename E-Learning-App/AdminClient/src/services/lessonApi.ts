@@ -6,50 +6,6 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// --- Vocabulary API ---
-export const getVocabularies = (
-  page: number,
-  rowsPerPage: number,
-  searchTerm: string = "",
-  searchLang: string = "en",
-  posFilter: string = "all"
-): Promise<AxiosResponse<any>> => {
-  return apiClient.get(`/vocabularies`, {
-    params: {
-      page: page + 1,
-      limit: rowsPerPage,
-      search: searchTerm,
-      lang: searchLang,
-      pos: posFilter,
-    },
-  });
-};
-
-export const getVocabulariesByIds = (ids: string[]): Promise<AxiosResponse<any>> => {
-  return apiClient.post("/vocabularies/many", { ids });
-};
-
-
-export const addVocabulary = (formData: FormData): Promise<AxiosResponse<any>> => {
-  return apiClient.post("/vocabularies/add", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-};
-
-export const updateVocabulary = (id: string, formData: FormData): Promise<AxiosResponse<any>> => {
-  return apiClient.put(`/vocabularies/update/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-};
-
-export const deleteVocabulary = (id: string): Promise<AxiosResponse<any>> => {
-  return apiClient.delete(`/vocabularies/delete/${id}`);
-};
-
-export const getVocabularyStats = (): Promise<AxiosResponse<any>> => {
-  return apiClient.get("/vocabularies/stats");
-};
-
 // --- Lesson API ---
 
 // Định nghĩa kiểu dữ liệu cho Lesson (nên tách ra file types.ts sau này)

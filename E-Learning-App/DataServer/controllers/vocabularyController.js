@@ -1,6 +1,7 @@
 // controllers/vocabularyController.js
 const Vocabulary = require("../models/vocabulary.model");
 const { Readable } = require("stream");
+const XLSX = require("xlsx");
 
 // --- HÀM TIỆN ÍCH ĐỂ UPLOAD VÀO GRIDFS ---
 const uploadStreamToGridFS = (buffer, filename, bucket) => {
@@ -259,5 +260,39 @@ exports.getVocabularyStats = async (req, res) => {
       message: "Lỗi server khi lấy thống kê",
       error: error.message,
     });
+  }
+};
+exports.importVocabularies = async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: "No file uploaded" });
+
+    // Đọc buffer file Excel
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    // Chuyển sang JSON
+    const data = XLSX.utils.sheet_to_json(sheet);
+
+    // Kiểm tra dữ liệu
+    if (!data || data.length === 0)
+      return res.status(400).json({ message: "File trống hoặc không hợp lệ" });
+
+    // Lưu vào DB (ví dụ Mongoose)
+    const inserted = await Vocabulary.insertMany(
+      data.map((row) => ({
+        word: row.word,
+        definition: row.definition,
+        partOfSpeech: row.partOfSpeech,
+        pronunciation: row.pronunciation,
+        exampleSentence: row.exampleSentence,
+      }))
+    );
+
+    res.json({ message: `Import thành công ${inserted.length} từ vựng!` });
+  } catch (err) {
+    console.error("❌ Import failed:", err);
+    res.status(500).json({ message: "Import thất bại", error: err.message });
   }
 };

@@ -24,7 +24,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
 import { QuillEditor } from "../../QuillEditor";
-import { updateLesson } from "../../../services/api";
+import { updateLesson } from "../../../services/lessonApi";
 
 interface Question {
   questionText: string;
