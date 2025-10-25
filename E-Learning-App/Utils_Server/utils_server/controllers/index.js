@@ -143,6 +143,372 @@ Bot:
     }
   };
 
+  // translate = async (req, res) => {
+  //   try {
+  //     const { text, sourceLang, targetLang } = req.body;
+  //     if (!text || !sourceLang || !targetLang)
+  //       return res
+  //         .status(400)
+  //         .json({ error: "Thiếu text hoặc sourceLang hoặc targetLang" });
+
+  //     // Helper function for API lookup and cleanup (Không đổi)
+  //     const getPhoneticFromAPI = async (term) => {
+  //       try {
+  //         const u = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+  //           term
+  //         )}`;
+  //         const r = await fetch(u);
+  //         if (!r.ok) return null;
+  //         const j = await r.json();
+
+  //         // Ưu tiên lấy IPA có ký hiệu /.../ hoặc [...]
+  //         let phon = j[0]?.phonetics?.find(
+  //           (p) => p.text && (p.text.includes("/") || p.text.includes("["))
+  //         )?.text;
+
+  //         if (!phon) {
+  //           // Fallback: Thử lấy phonetic bất kỳ nếu không có ký hiệu bao quanh
+  //           phon = j[0]?.phonetic;
+  //         }
+
+  //         if (!phon) return null;
+
+  //         // Loại bỏ các ký hiệu bao quanh (/ [ ]) và ký tự phụ
+  //         phon = phon
+  //           .replace(/^[\[/]/, "")
+  //           .replace(/[\]/]$/, "")
+  //           .trim();
+  //         // Xóa dấu gạch ngang phân tách âm tiết (nếu có)
+  //         phon = phon.replace(/-/g, "").trim();
+  //         // Xóa khoảng trắng thừa
+  //         phon = phon.replace(/\s+/g, " ");
+
+  //         // Lấy phần đầu tiên nếu có nhiều tùy chọn (ví dụ: bɔːd, bɔːrd)
+  //         const firstOption = phon.split(",")[0].trim();
+
+  //         return firstOption || phon;
+  //       } catch (e) {
+  //         // console.error(`API lookup failed for ${term}:`, e);
+  //         return null;
+  //       }
+  //     };
+
+  //     // TỪ ĐIỂN TRA CỨU TAY CHO CÁC TỪ CHỨC NĂNG, SỐ VÀ TÊN RIÊNG PHỔ BIẾN (Không đổi)
+  //     const manualLookup = {
+  //       // TỪ CHỨC NĂNG VÀ DẠNG YẾU
+  //       a: "ə",
+  //       the: "ðə",
+  //       an: "ən",
+  //       to: "tə",
+  //       for: "fər",
+  //       and: "ən(d)",
+  //       i: "aɪ",
+  //       of: "əv",
+  //       is: "ɪz",
+  //       was: "wɒz",
+  //       are: "ɑː(r)",
+  //       but: "bət",
+  //       or: "ɔː(r)",
+  //       at: "ət",
+  //       from: "frəm",
+  //       with: "wɪð",
+  //       as: "əz",
+  //       than: "ðən",
+  //       can: "kæn",
+  //       must: "mʌst",
+  //       will: "wɪl",
+  //       would: "wʊd",
+  //       should: "ʃʊd",
+  //       may: "meɪ",
+  //       might: "maɪt",
+  //       could: "kʊd",
+  //       do: "duː",
+  //       does: "dʌz",
+  //       has: "hæz",
+  //       had: "hæd",
+  //       have: "hæv",
+  //       go: "ɡəʊ",
+  //       get: "ɡet",
+  //       take: "teɪk",
+  //       in: "ɪn",
+  //       on: "ɒn",
+  //       under: "ˈʌndər",
+  //       by: "baɪ",
+
+  //       // VIẾT TẮT
+  //       "i'm": "aɪm",
+  //       "you're": "jʊə(r)",
+  //       "he's": "hiːz",
+  //       "she's": "ʃiːz",
+  //       "it's": "ɪts",
+  //       "we're": "wɪə(r)",
+  //       "they're": "ðeə(r)",
+  //       "i'll": "aɪl",
+  //       "you'll": "juːl",
+  //       "he'll": "hiːl",
+  //       "she'll": "ʃiːl",
+  //       "it'll": "ɪtəl",
+  //       "we'll": "wiːl",
+  //       "they'll": "ðeɪl",
+  //       "i've": "aɪv",
+  //       "we've": "wiːv",
+  //       "they've": "ðeɪv",
+  //       "you've": "juːv",
+  //       "i'd": "d",
+  //       "you'd": "d",
+  //       "he'd": "d",
+  //       "she'd": "d",
+  //       "it'd": "d",
+  //       "we'd": "d",
+  //       "they'd": "d",
+  //       "don't": "dəʊnt",
+  //       "can't": "kɑːnt",
+  //       "won't": "wəʊnt",
+  //       "isn't": "ɪznt",
+  //       "aren't": "ɑːnt",
+  //       "wasn't": "wɒznt",
+  //       "weren't": "wəːnt",
+  //       "haven't": "hævnt",
+  //       "hasn't": "hæznt",
+  //       "didn't": "dɪdnt",
+  //       "couldn't": "kʊdnt",
+  //       "wouldn't": "wʊdnt",
+  //       "shouldn't": "ʃʊdnt",
+  //       "mustn't": "mʌsnt",
+  //       "mightn't": "maɪtnt",
+  //       "needn't": "niːdnt",
+  //       "what's": "wɒts",
+  //       "where's": "weəz",
+  //       "that's": "ðæts",
+  //       "who's": "huːz",
+  //       "how's": "haʊz",
+  //       "here's": "hɪəz",
+  //       "there's": "ðeəz",
+  //       "let's": "lets",
+
+  //       // TỪ THỨ TỰ (Ordinal Numbers), TÊN RIÊNG VÀ DANH TỪ CÓ TRỌNG ÂM ĐẶC BIỆT
+  //       "1st": "fɜːrst",
+  //       "2nd": "sɛkənd",
+  //       "3rd": "θɜːrd",
+  //       "4th": "fɔːrθ",
+  //       "5th": "fɪfθ",
+  //       "6th": "sɪksθ",
+  //       "7th": "sɛvənθ",
+  //       "8th": "eɪtθ",
+  //       "9th": "naɪnθ",
+  //       "10th": "tɛnθ",
+  //       vietjack: "viːet dʒæk",
+  //       kite: "kaɪt",
+  //       creative: "kriːˈeɪtɪv",
+  //       horizon: "həˈraɪzn",
+  //       literature: "ˈlɪtərətʃər",
+  //       essays: "ˈɛseɪz", // Đảm bảo trọng âm đúng
+  //       paragraphs: "ˈpærəɡræfs", // Đảm bảo trọng âm đúng
+  //     };
+
+  //     // Tái sử dụng logic tra cứu từ điển phức tạp cho tiếng Anh
+  //     const getIpaForEnglishText = async (inputText) => {
+  //       const tryDictLookup = async (term) => {
+  //         const lowerTerm = term.toLowerCase();
+
+  //         // 1. XỬ LÝ TRƯỜNG HỢP ĐẶC BIỆT (Contractions, Weak Forms, Numbers/Ordinal)
+  //         if (manualLookup[lowerTerm]) {
+  //           return manualLookup[lowerTerm];
+  //         }
+
+  //         // 2. Tra cứu bằng API từ điển cho các từ còn lại (Content Words)
+
+  //         // 2a. Thử tra cứu từ nguyên bản (dạng chia)
+  //         let ipaResult = await getPhoneticFromAPI(lowerTerm);
+
+  //         // 2b. Xử lý fallback cho các dạng từ có suffix nếu tra cứu dạng chia thất bại
+  //         if (!ipaResult) {
+  //           const potentialBaseTerms = [];
+
+  //           // 1. Loại bỏ '-s' (Phổ biến nhất cho số nhiều/chia động từ)
+  //           if (lowerTerm.length > 1 && lowerTerm.endsWith("s")) {
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 1)
+  //             ); // e.g., synthesizes -> synthesize
+  //           }
+
+  //           // 2. Loại bỏ '-es' (Dạng đặc biệt của số nhiều/chia động từ)
+  //           if (lowerTerm.length > 2 && lowerTerm.endsWith("es")) {
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 2)
+  //             ); // e.g., searches -> search, goes -> go
+  //           }
+
+  //           // 3. Loại bỏ '-ed' (Quá khứ/Quá khứ phân từ)
+  //           if (lowerTerm.length > 2 && lowerTerm.endsWith("ed")) {
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 2)
+  //             ); // e.g., worked -> work
+  //           }
+
+  //           // 4. Trường hợp 'ies' -> 'y' (studies -> study)
+  //           if (lowerTerm.length > 3 && lowerTerm.endsWith("ies")) {
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 3) + "y"
+  //             ); // e.g., studies -> study
+  //           }
+
+  //           // 5. Loại bỏ '-d' (Quá khứ/Quá khứ phân từ cho từ gốc đã có 'e')
+  //           if (lowerTerm.length > 2 && lowerTerm.endsWith("d")) {
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 1)
+  //             ); // e.g., saved -> save
+  //           }
+
+  //           // 6. Trường hợp 'ing' (V-ing) -> V (running -> run, making -> make)
+  //           if (lowerTerm.length > 3 && lowerTerm.endsWith("ing")) {
+  //             // Thử bỏ 'ing'
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 3)
+  //             );
+  //             // Thử bỏ 'ing' và thêm 'e' (cho trường hợp drop 'e' before 'ing')
+  //             potentialBaseTerms.push(
+  //               lowerTerm.substring(0, lowerTerm.length - 3) + "e"
+  //             );
+  //           }
+
+  //           // Loại bỏ các từ trùng lặp, từ rỗng, và từ giống từ gốc
+  //           const uniqueBaseTerms = [...new Set(potentialBaseTerms)].filter(
+  //             (term) => term !== lowerTerm && term.length > 0
+  //           );
+
+  //           for (const baseTerm of uniqueBaseTerms) {
+  //             const baseResult = await getPhoneticFromAPI(baseTerm);
+  //             if (baseResult) {
+  //               // Nếu tìm thấy base form, chấp nhận kết quả này.
+  //               ipaResult = baseResult;
+  //               break; // Found it, stop searching
+  //             }
+  //           }
+  //         }
+
+  //         // 3. Nếu vẫn không tìm thấy, TRẢ VỀ TỪ NGUYÊN BẢN.
+  //         return ipaResult || lowerTerm;
+  //       };
+
+  //       // BẮT ĐẦU XỬ LÝ CHUỖI DÀI
+  //       const words = inputText.split(/\s+/).filter((w) => w.length > 0);
+
+  //       // Loại bỏ dấu câu khỏi từ, nhưng giữ lại dấu nháy đơn
+  //       const cleanWords = words.map((w) =>
+  //         // Chỉ loại bỏ dấu câu ở đầu hoặc cuối từ, giữ lại dấu nháy đơn cho contraction
+  //         w.replace(/^[.,!?;:]+/, "").replace(/[.,!?;:]+$/, "")
+  //       );
+
+  //       // Tra cứu IPA cho từng từ
+  //       const ipaWords = await Promise.all(
+  //         cleanWords.map((w) => tryDictLookup(w.toLowerCase()))
+  //       );
+
+  //       // Ghép tất cả IPA đã tra cứu và bao lại bằng dấu / /
+  //       const ipaJoined = ipaWords.join(" ");
+  //       if (ipaJoined.trim()) return `/${ipaJoined.trim()}/`;
+  //       return null;
+  //     };
+
+  //     // 🌐 Gọi Google Translate (lấy bản dịch + romanized)
+  //     const translateRes = await fetch(
+  //       `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&dt=rm&q=${encodeURIComponent(
+  //         text
+  //       )}`
+  //     );
+  //     const translateData = await translateRes.json();
+
+  //     // 📝 Lấy bản dịch
+  //     const translated =
+  //       translateData[0]
+  //         ?.map((item) => item[0])
+  //         .join("")
+  //         ?.trim() || "";
+
+  //     // 🔤 Lấy phiên âm Google (romanized) cho ngôn ngữ không phải tiếng Anh
+  //     const targetPhonetic =
+  //       targetLang !== "en"
+  //         ? translateData[0]
+  //             ?.map((item) => item[3] || "")
+  //             .join(" ")
+  //             .replace(/\s+/g, " ")
+  //             .trim() || null
+  //         : null;
+
+  //     // ====================================================================
+  //     // PHẦN BỔ SUNG: Lấy IPA cho Ngôn ngữ GỐC nếu là tiếng Anh
+  //     // ====================================================================
+  //     let sourceIpa = null;
+  //     if (sourceLang === "en") {
+  //       sourceIpa = await getIpaForEnglishText(text);
+  //     }
+  //     // ====================================================================
+
+  //     // 🔎 Lấy IPA cho Ngôn ngữ ĐÍCH nếu là tiếng Anh (Phiên âm chính xác TỪNG TỪ)
+  //     let ipa = null;
+  //     if (targetLang === "en") {
+  //       ipa = await getIpaForEnglishText(translated);
+  //     }
+
+  //     // 🔊 Hàm lấy audio base64 (GIỮ NGUYÊN)
+  //     const getAudioBase64 = async (inputText, lang) => {
+  //       let safeText = inputText
+  //         .replace(/[^\p{L}\p{N}\s']/gu, "")
+  //         .replace(/\s+/g, " ")
+  //         .trim();
+
+  //       if (!safeText) safeText = "Hello";
+
+  //       if (lang === "en")
+  //         safeText =
+  //           safeText.charAt(0).toUpperCase() + safeText.slice(1).toLowerCase();
+
+  //       const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+  //         safeText
+  //       )}&tl=${lang}&client=tw-ob`;
+
+  //       try {
+  //         const audioResponse = await fetch(ttsUrl, {
+  //           headers: { "User-Agent": "Mozilla/5.0" },
+  //         });
+
+  //         if (!audioResponse.ok) throw new Error("TTS failed");
+
+  //         const buffer = await audioResponse.arrayBuffer();
+  //         // Chú ý: Cần thư viện Buffer của Node.js để chạy dòng này
+  //         return Buffer.from(buffer).toString("base64");
+  //       } catch {
+  //         // fallback
+  //         const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=Hello&tl=${lang}&client=tw-ob`;
+  //         const fallbackRes = await fetch(fallbackUrl, {
+  //           headers: { "User-Agent": "Mozilla/5.0" },
+  //         });
+  //         const buffer = await fallbackRes.arrayBuffer();
+  //         // Chú ý: Cần thư viện Buffer của Node.js để chạy dòng này
+  //         return Buffer.from(buffer).toString("base64");
+  //       }
+  //     };
+
+  //     // 🗣️ Lấy audio
+  //     const originalAudio = await getAudioBase64(text, sourceLang);
+  //     const translatedAudio = await getAudioBase64(translated, targetLang);
+
+  //     // ✅ Trả kết quả
+  //     res.json({
+  //       translated,
+  //       sourceIpa, // THÊM TRƯỜNG MỚI CHO IPA CỦA NGÔN NGỮ GỐC
+  //       ipa,
+  //       targetPhonetic,
+  //       originalAudio,
+  //       translatedAudio,
+  //     });
+  //   } catch (error) {
+  //     console.error("Translate error:", error);
+  //     res.status(500).json({ error: "Server error" });
+  //   }
+  // };
+
   translate = async (req, res) => {
     try {
       const { text, sourceLang, targetLang } = req.body;
@@ -151,32 +517,30 @@ Bot:
           .status(400)
           .json({ error: "Thiếu text hoặc sourceLang hoặc targetLang" });
 
-      // 🌐 Gọi Google Translate (lấy bản dịch + romanized)
-      const translateRes = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&dt=rm&q=${encodeURIComponent(
-          text
-        )}`
-      );
-      const translateData = await translateRes.json();
+      // ==========================================================
+      // Helper: Tách văn bản dài thành các phần nhỏ để tránh lỗi URL quá dài
+      // ==========================================================
+      const chunkText = (input, maxLength = 1000) => {
+        const parts = [];
+        let current = "";
+        const sentences = input.split(/([.!?]\s+)/); // tách theo dấu chấm, chấm hỏi, chấm than
 
-      // 📝 Lấy bản dịch
-      const translated =
-        translateData[0]
-          ?.map((item) => item[0])
-          .join("")
-          ?.trim() || "";
+        for (const s of sentences) {
+          if ((current + s).length > maxLength) {
+            parts.push(current.trim());
+            current = s;
+          } else {
+            current += s;
+          }
+        }
 
-      // 🔤 Lấy phiên âm Google (romanized) cho ngôn ngữ không phải tiếng Anh
-      const targetPhonetic =
-        targetLang !== "en"
-          ? translateData[0]
-              ?.map((item) => item[3] || "")
-              .join(" ")
-              .replace(/\s+/g, " ")
-              .trim() || null
-          : null;
+        if (current.trim()) parts.push(current.trim());
+        return parts;
+      };
 
-      // Helper function for API lookup and cleanup
+      // ==========================================================
+      // Helper API tra IPA cho từ tiếng Anh
+      // ==========================================================
       const getPhoneticFromAPI = async (term) => {
         try {
           const u = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
@@ -186,308 +550,249 @@ Bot:
           if (!r.ok) return null;
           const j = await r.json();
 
-          // Ưu tiên lấy IPA có ký hiệu /.../ hoặc [...]
           let phon = j[0]?.phonetics?.find(
             (p) => p.text && (p.text.includes("/") || p.text.includes("["))
           )?.text;
 
-          if (!phon) {
-            // Fallback: Thử lấy phonetic bất kỳ nếu không có ký hiệu bao quanh
-            phon = j[0]?.phonetic;
-          }
-
+          if (!phon) phon = j[0]?.phonetic;
           if (!phon) return null;
 
-          // Loại bỏ các ký hiệu bao quanh (/ [ ]) và ký tự phụ
           phon = phon
             .replace(/^[\[/]/, "")
             .replace(/[\]/]$/, "")
+            .replace(/-/g, "")
+            .replace(/\s+/g, " ")
             .trim();
-          // Xóa dấu gạch ngang phân tách âm tiết (nếu có)
-          phon = phon.replace(/-/g, "").trim();
-          // Xóa khoảng trắng thừa
-          phon = phon.replace(/\s+/g, " ");
-
-          // Lấy phần đầu tiên nếu có nhiều tùy chọn (ví dụ: bɔːd, bɔːrd)
           const firstOption = phon.split(",")[0].trim();
 
           return firstOption || phon;
         } catch (e) {
-          // console.error(`API lookup failed for ${term}:`, e);
           return null;
         }
       };
 
-      // 🔎 Lấy IPA cho tiếng Anh (Phiên âm chính xác TỪNG TỪ)
-      let ipa = null;
-      if (targetLang === "en") {
+      // ==========================================================
+      // Manual dictionary tra cứu nhanh
+      // ==========================================================
+      const manualLookup = {
+        a: "ə",
+        the: "ðə",
+        an: "ən",
+        to: "tə",
+        for: "fər",
+        and: "ən(d)",
+        i: "aɪ",
+        of: "əv",
+        is: "ɪz",
+        was: "wɒz",
+        are: "ɑː(r)",
+        but: "bət",
+        or: "ɔː(r)",
+        at: "ət",
+        from: "frəm",
+        with: "wɪð",
+        as: "əz",
+        than: "ðən",
+        can: "kæn",
+        must: "mʌst",
+        will: "wɪl",
+        would: "wʊd",
+        should: "ʃʊd",
+        may: "meɪ",
+        might: "maɪt",
+        could: "kʊd",
+        do: "duː",
+        does: "dʌz",
+        has: "hæz",
+        had: "hæd",
+        have: "hæv",
+        go: "ɡəʊ",
+        get: "ɡet",
+        take: "teɪk",
+        in: "ɪn",
+        on: "ɒn",
+        under: "ˈʌndər",
+        by: "baɪ",
+        "i'm": "aɪm",
+        "you're": "jʊə(r)",
+        "he's": "hiːz",
+        "she's": "ʃiːz",
+        "it's": "ɪts",
+        "we're": "wɪə(r)",
+        "they're": "ðeə(r)",
+        "i'll": "aɪl",
+        "you'll": "juːl",
+        "he'll": "hiːl",
+        "she'll": "ʃiːl",
+        "it'll": "ɪtəl",
+        "we'll": "wiːl",
+        "they'll": "ðeɪl",
+        "i've": "aɪv",
+        "we've": "wiːv",
+        "they've": "ðeɪv",
+        "you've": "juːv",
+        "don't": "dəʊnt",
+        "can't": "kɑːnt",
+        "won't": "wəʊnt",
+        "isn't": "ɪznt",
+        "aren't": "ɑːnt",
+        "wasn't": "wɒznt",
+        "weren't": "wəːnt",
+        "haven't": "hævnt",
+        "hasn't": "hæznt",
+        "didn't": "dɪdnt",
+        "couldn't": "kʊdnt",
+        "wouldn't": "wʊdnt",
+        "shouldn't": "ʃʊdnt",
+        "mustn't": "mʌsnt",
+        "mightn't": "maɪtnt",
+        "needn't": "niːdnt",
+        "what's": "wɒts",
+        "where's": "weəz",
+        "that's": "ðæts",
+        "who's": "huːz",
+        "how's": "haʊz",
+        "here's": "hɪəz",
+        "there's": "ðeəz",
+        "let's": "lets",
+        "1st": "fɜːrst",
+        "2nd": "sɛkənd",
+        "3rd": "θɜːrd",
+        "4th": "fɔːrθ",
+        "5th": "fɪfθ",
+        "6th": "sɪksθ",
+        "7th": "sɛvənθ",
+        "8th": "eɪtθ",
+        "9th": "naɪnθ",
+        "10th": "tɛnθ",
+        vietjack: "viːet dʒæk",
+        kite: "kaɪt",
+        creative: "kriːˈeɪtɪv",
+        horizon: "həˈraɪzn",
+        literature: "ˈlɪtərətʃər",
+        essays: "ˈɛseɪz",
+        paragraphs: "ˈpærəɡræfs",
+      };
+
+      // ==========================================================
+      // Helper: Lấy IPA cho tiếng Anh
+      // ==========================================================
+      const getIpaForEnglishText = async (inputText) => {
         const tryDictLookup = async (term) => {
           const lowerTerm = term.toLowerCase();
-
-          // 1. XỬ LÝ TRƯỜNG HỢP ĐẶC BIỆT (Contractions, Weak Forms, Numbers/Ordinal)
-
-          // TỪ ĐIỂN TRA CỨU TAY CHO CÁC TỪ CHỨC NĂNG, SỐ VÀ TÊN RIÊNG PHỔ BIẾN
-          const manualLookup = {
-            // TỪ CHỨC NĂNG VÀ DẠNG YẾU
-            a: "ə",
-            the: "ðə",
-            an: "ən",
-            to: "tə",
-            for: "fər",
-            and: "ən(d)",
-            i: "aɪ",
-            of: "əv",
-            is: "ɪz",
-            was: "wɒz",
-            are: "ɑː(r)",
-            but: "bət",
-            or: "ɔː(r)",
-            at: "ət",
-            from: "frəm",
-            with: "wɪð",
-            as: "əz",
-            than: "ðən",
-            can: "kæn",
-            must: "mʌst",
-            will: "wɪl",
-            would: "wʊd",
-            should: "ʃʊd",
-            may: "meɪ",
-            might: "maɪt",
-            could: "kʊd",
-            do: "duː",
-            does: "dʌz",
-            has: "hæz",
-            had: "hæd",
-            have: "hæv",
-            go: "ɡəʊ",
-            get: "ɡet",
-            take: "teɪk",
-            in: "ɪn",
-            on: "ɒn",
-            under: "ˈʌndər",
-            by: "baɪ",
-
-            // VIẾT TẮT
-            "i'm": "aɪm",
-            "you're": "jʊə(r)",
-            "he's": "hiːz",
-            "she's": "ʃiːz",
-            "it's": "ɪts",
-            "we're": "wɪə(r)",
-            "they're": "ðeə(r)",
-            "i'll": "aɪl",
-            "you'll": "juːl",
-            "he'll": "hiːl",
-            "she'll": "ʃiːl",
-            "it'll": "ɪtəl",
-            "we'll": "wiːl",
-            "they'll": "ðeɪl",
-            "i've": "aɪv",
-            "we've": "wiːv",
-            "they've": "ðeɪv",
-            "you've": "juːv",
-            "i'd": "d",
-            "you'd": "d",
-            "he'd": "d",
-            "she'd": "d",
-            "it'd": "d",
-            "we'd": "d",
-            "they'd": "d",
-            "don't": "dəʊnt",
-            "can't": "kɑːnt",
-            "won't": "wəʊnt",
-            "isn't": "ɪznt",
-            "aren't": "ɑːnt",
-            "wasn't": "wɒznt",
-            "weren't": "wəːnt",
-            "haven't": "hævnt",
-            "hasn't": "hæznt",
-            "didn't": "dɪdnt",
-            "couldn't": "kʊdnt",
-            "wouldn't": "wʊdnt",
-            "shouldn't": "ʃʊdnt",
-            "mustn't": "mʌsnt",
-            "mightn't": "maɪtnt",
-            "needn't": "niːdnt",
-            "what's": "wɒts",
-            "where's": "weəz",
-            "that's": "ðæts",
-            "who's": "huːz",
-            "how's": "haʊz",
-            "here's": "hɪəz",
-            "there's": "ðeəz",
-            "let's": "lets",
-
-            // TỪ THỨ TỰ (Ordinal Numbers), TÊN RIÊNG VÀ DANH TỪ CÓ TRỌNG ÂM ĐẶC BIỆT
-            "1st": "fɜːrst",
-            "2nd": "sɛkənd",
-            "3rd": "θɜːrd",
-            "4th": "fɔːrθ",
-            "5th": "fɪfθ",
-            "6th": "sɪksθ",
-            "7th": "sɛvənθ",
-            "8th": "eɪtθ",
-            "9th": "naɪnθ",
-            "10th": "tɛnθ",
-            vietjack: "viːet dʒæk",
-            kite: "kaɪt",
-            creative: "kriːˈeɪtɪv",
-            horizon: "həˈraɪzn",
-            literature: "ˈlɪtərətʃər",
-            essays: "ˈɛseɪz", // Đảm bảo trọng âm đúng
-            paragraphs: "ˈpærəɡræfs", // Đảm bảo trọng âm đúng
-          };
-
-          if (manualLookup[lowerTerm]) {
-            return manualLookup[lowerTerm];
-          }
-
-          // 2. Tra cứu bằng API từ điển cho các từ còn lại (Content Words)
-
-          // 2a. Thử tra cứu từ nguyên bản (dạng chia)
+          if (manualLookup[lowerTerm]) return manualLookup[lowerTerm];
           let ipaResult = await getPhoneticFromAPI(lowerTerm);
 
-          // 2b. Xử lý fallback cho các dạng từ có suffix nếu tra cứu dạng chia thất bại
           if (!ipaResult) {
             const potentialBaseTerms = [];
-
-            // 1. Loại bỏ '-s' (Phổ biến nhất cho số nhiều/chia động từ)
-            if (lowerTerm.length > 1 && lowerTerm.endsWith("s")) {
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 1)
-              ); // e.g., synthesizes -> synthesize
+            if (lowerTerm.endsWith("s"))
+              potentialBaseTerms.push(lowerTerm.slice(0, -1));
+            if (lowerTerm.endsWith("es"))
+              potentialBaseTerms.push(lowerTerm.slice(0, -2));
+            if (lowerTerm.endsWith("ed"))
+              potentialBaseTerms.push(lowerTerm.slice(0, -2));
+            if (lowerTerm.endsWith("ies"))
+              potentialBaseTerms.push(lowerTerm.slice(0, -3) + "y");
+            if (lowerTerm.endsWith("d"))
+              potentialBaseTerms.push(lowerTerm.slice(0, -1));
+            if (lowerTerm.endsWith("ing")) {
+              potentialBaseTerms.push(lowerTerm.slice(0, -3));
+              potentialBaseTerms.push(lowerTerm.slice(0, -3) + "e");
             }
 
-            // 2. Loại bỏ '-es' (Dạng đặc biệt của số nhiều/chia động từ)
-            if (lowerTerm.length > 2 && lowerTerm.endsWith("es")) {
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 2)
-              ); // e.g., searches -> search, goes -> go
-            }
-
-            // 3. Loại bỏ '-ed' (Quá khứ/Quá khứ phân từ)
-            if (lowerTerm.length > 2 && lowerTerm.endsWith("ed")) {
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 2)
-              ); // e.g., worked -> work
-            }
-
-            // 4. Trường hợp 'ies' -> 'y' (studies -> study)
-            if (lowerTerm.length > 3 && lowerTerm.endsWith("ies")) {
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 3) + "y"
-              ); // e.g., studies -> study
-            }
-
-            // 5. Loại bỏ '-d' (Quá khứ/Quá khứ phân từ cho từ gốc đã có 'e')
-            if (lowerTerm.length > 2 && lowerTerm.endsWith("d")) {
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 1)
-              ); // e.g., saved -> save
-            }
-
-            // 6. Trường hợp 'ing' (V-ing) -> V (running -> run, making -> make)
-            if (lowerTerm.length > 3 && lowerTerm.endsWith("ing")) {
-              // Thử bỏ 'ing'
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 3)
-              );
-              // Thử bỏ 'ing' và thêm 'e' (cho trường hợp drop 'e' before 'ing')
-              potentialBaseTerms.push(
-                lowerTerm.substring(0, lowerTerm.length - 3) + "e"
-              );
-            }
-
-            // Loại bỏ các từ trùng lặp, từ rỗng, và từ giống từ gốc
-            const uniqueBaseTerms = [...new Set(potentialBaseTerms)].filter(
-              (term) => term !== lowerTerm && term.length > 0
-            );
-
-            for (const baseTerm of uniqueBaseTerms) {
+            for (const baseTerm of potentialBaseTerms) {
               const baseResult = await getPhoneticFromAPI(baseTerm);
               if (baseResult) {
-                // Nếu tìm thấy base form, chấp nhận kết quả này.
                 ipaResult = baseResult;
-                break; // Found it, stop searching
+                break;
               }
             }
           }
-
-          // 3. Nếu vẫn không tìm thấy, TRẢ VỀ TỪ NGUYÊN BẢN.
           return ipaResult || lowerTerm;
         };
 
-        // BẮT ĐẦU XỬ LÝ CHUỖI DÀI
-        const words = translated.split(/\s+/).filter((w) => w.length > 0);
-
-        // Loại bỏ dấu câu khỏi từ, nhưng giữ lại dấu nháy đơn
+        const words = inputText.split(/\s+/).filter((w) => w.length > 0);
         const cleanWords = words.map((w) =>
-          // Chỉ loại bỏ dấu câu ở đầu hoặc cuối từ, giữ lại dấu nháy đơn cho contraction
           w.replace(/^[.,!?;:]+/, "").replace(/[.,!?;:]+$/, "")
         );
-
-        // Tra cứu IPA cho từng từ
         const ipaWords = await Promise.all(
           cleanWords.map((w) => tryDictLookup(w.toLowerCase()))
         );
 
-        // Ghép tất cả IPA đã tra cứu và bao lại bằng dấu / /
-        // Dùng join() để bao gồm cả những từ không tra cứu được (hiện là từ nguyên bản)
         const ipaJoined = ipaWords.join(" ");
-        if (ipaJoined.trim()) ipa = `/${ipaJoined.trim()}/`;
+        return ipaJoined.trim() ? `/${ipaJoined.trim()}/` : null;
+      };
 
-        // *Lưu ý: Phiên âm này là sự kết hợp của các từ đơn lẻ và không tính đến nối âm/ngữ điệu câu.
+      // ==========================================================
+      // Helper: Dịch một đoạn nhỏ
+      // ==========================================================
+      const translateChunk = async (chunk) => {
+        const translateRes = await fetch(
+          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&dt=rm&q=${encodeURIComponent(
+            chunk
+          )}`
+        );
+        const translateData = await translateRes.json();
+        return (
+          translateData[0]
+            ?.map((item) => item[0])
+            .join("")
+            .trim() || ""
+        );
+      };
+
+      // ==========================================================
+      // Dịch đoạn văn dài bằng cách chia nhỏ
+      // ==========================================================
+      const chunks = chunkText(text);
+      let translatedParts = [];
+      for (const c of chunks) {
+        const t = await translateChunk(c);
+        translatedParts.push(t);
       }
+      const translated = translatedParts.join(" ").trim();
 
-      // 🔊 Hàm lấy audio base64 (GIỮ NGUYÊN)
+      // ==========================================================
+      // Lấy IPA cho source và target nếu cần
+      // ==========================================================
+      let sourceIpa = null;
+      if (sourceLang === "en") sourceIpa = await getIpaForEnglishText(text);
+
+      let ipa = null;
+      if (targetLang === "en") ipa = await getIpaForEnglishText(translated);
+
+      // ==========================================================
+      // Lấy audio
+      // ==========================================================
       const getAudioBase64 = async (inputText, lang) => {
         let safeText = inputText
           .replace(/[^\p{L}\p{N}\s']/gu, "")
           .replace(/\s+/g, " ")
           .trim();
-
         if (!safeText) safeText = "Hello";
-
-        if (lang === "en")
-          safeText =
-            safeText.charAt(0).toUpperCase() + safeText.slice(1).toLowerCase();
+        safeText = safeText.slice(0, 200); // tránh lỗi text dài
 
         const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
           safeText
         )}&tl=${lang}&client=tw-ob`;
 
-        try {
-          const audioResponse = await fetch(ttsUrl, {
-            headers: { "User-Agent": "Mozilla/5.0" },
-          });
-
-          if (!audioResponse.ok) throw new Error("TTS failed");
-
-          const buffer = await audioResponse.arrayBuffer();
-          // Chú ý: Cần thư viện Buffer của Node.js để chạy dòng này
-          return Buffer.from(buffer).toString("base64");
-        } catch {
-          // fallback
-          const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=Hello&tl=${lang}&client=tw-ob`;
-          const fallbackRes = await fetch(fallbackUrl, {
-            headers: { "User-Agent": "Mozilla/5.0" },
-          });
-          const buffer = await fallbackRes.arrayBuffer();
-          // Chú ý: Cần thư viện Buffer của Node.js để chạy dòng này
-          return Buffer.from(buffer).toString("base64");
-        }
+        const audioResponse = await fetch(ttsUrl, {
+          headers: { "User-Agent": "Mozilla/5.0" },
+        });
+        const buffer = await audioResponse.arrayBuffer();
+        return Buffer.from(buffer).toString("base64");
       };
 
-      // 🗣️ Lấy audio
       const originalAudio = await getAudioBase64(text, sourceLang);
       const translatedAudio = await getAudioBase64(translated, targetLang);
 
-      // ✅ Trả kết quả
+      // ==========================================================
+      // Trả kết quả
+      // ==========================================================
       res.json({
         translated,
+        sourceIpa,
         ipa,
-        targetPhonetic,
         originalAudio,
         translatedAudio,
       });

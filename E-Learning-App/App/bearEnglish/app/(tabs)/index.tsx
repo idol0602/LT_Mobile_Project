@@ -1,10 +1,25 @@
-"use client"
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Dimensions, Image } from "react-native"
-import { Provider } from "react-native-paper"
-import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg"
-import { useState } from "react"
+"use client";
+import {
+  View,
+  StyleSheet,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+} from "react-native";
+import { Provider } from "react-native-paper";
+import Svg, {
+  Circle,
+  Path,
+  Defs,
+  LinearGradient,
+  Stop,
+} from "react-native-svg";
+import { useState } from "react";
+import { useRouter } from "expo-router";
 
-const { width } = Dimensions.get("window")
+const { width } = Dimensions.get("window");
 
 const VocabularyIcon = ({ size = 50 }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -18,9 +33,14 @@ const VocabularyIcon = ({ size = 50 }) => (
       d="M20 15C20 12.2386 22.2386 10 25 10H75C77.7614 10 80 12.2386 80 15V85C80 87.7614 77.7614 90 75 90H25C22.2386 90 20 87.7614 20 85V15Z"
       fill="url(#vocabGrad)"
     />
-    <Path d="M30 25H70M30 40H70M30 55H70M30 70H70" stroke="white" strokeWidth="3" strokeLinecap="round" />
+    <Path
+      d="M30 25H70M30 40H70M30 55H70M30 70H70"
+      stroke="white"
+      strokeWidth="3"
+      strokeLinecap="round"
+    />
   </Svg>
-)
+);
 
 const ListeningIcon = ({ size = 50 }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -48,7 +68,7 @@ const ListeningIcon = ({ size = 50 }) => (
       opacity="0.6"
     />
   </Svg>
-)
+);
 
 const ReadingIcon = ({ size = 50 }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -71,7 +91,7 @@ const ReadingIcon = ({ size = 50 }) => (
       strokeLinejoin="round"
     />
   </Svg>
-)
+);
 
 const GrammarIcon = ({ size = 50 }) => (
   <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -82,13 +102,19 @@ const GrammarIcon = ({ size = 50 }) => (
       </LinearGradient>
     </Defs>
     <Path d="M20 20H80V80H20Z" fill="url(#grammarGrad)" />
-    <Path d="M30 35H70M30 50H70M30 65H70" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+    <Path
+      d="M30 35H70M30 50H70M30 65H70"
+      stroke="white"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
     <Circle cx="75" cy="30" r="8" fill="white" />
   </Svg>
-)
+);
 
 export default function HomeScreen() {
-  const [tipsViewAll, setTipsViewAll] = useState(false)
+  const router = useRouter();
+  const [tipsViewAll, setTipsViewAll] = useState(false);
 
   const tipsData = [
     {
@@ -115,7 +141,7 @@ export default function HomeScreen() {
       description: "Master English grammar basics",
       image: require("../../assets/images/learning-tip4.jpg"),
     },
-  ]
+  ];
 
   return (
     <Provider>
@@ -164,7 +190,9 @@ export default function HomeScreen() {
               <View style={styles.courseInfo}>
                 <Text style={styles.courseChapter}>Chapter 2</Text>
                 <Text style={styles.courseTitle}>Discovering English</Text>
-                <Text style={styles.courseSubtitle}>Continue your journey!</Text>
+                <Text style={styles.courseSubtitle}>
+                  Continue your journey!
+                </Text>
               </View>
             </View>
 
@@ -177,30 +205,69 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Tips to Learning English</Text>
               <TouchableOpacity onPress={() => setTipsViewAll(!tipsViewAll)}>
-                <Text style={styles.seeAll}>{tipsViewAll ? "View Less" : "View All"}</Text>
+                <Text style={styles.seeAll}>
+                  {tipsViewAll ? "View Less" : "View All"}
+                </Text>
               </TouchableOpacity>
             </View>
 
             {tipsViewAll ? (
               <View style={styles.tipsVerticalList}>
                 {tipsData.map((tip) => (
-                  <TouchableOpacity key={tip.id} style={styles.tipCardVertical}>
+                  <TouchableOpacity
+                    key={tip.id}
+                    style={styles.tipCardVertical}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/TipDetailScreen",
+                        params: {
+                          id: tip.id,
+                          title: tip.title,
+                          description: tip.description,
+                        },
+                      })
+                    }
+                  >
                     <Image source={tip.image} style={styles.tipImageVertical} />
                     <View style={styles.tipContentVertical}>
                       <Text style={styles.tipTitleVertical}>{tip.title}</Text>
-                      <Text style={styles.tipDescriptionVertical}>{tip.description}</Text>
+                      <Text style={styles.tipDescriptionVertical}>
+                        {tip.description}
+                      </Text>
                     </View>
                   </TouchableOpacity>
                 ))}
               </View>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tipsHorizontalScroll}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.tipsHorizontalScroll}
+              >
                 {tipsData.map((tip) => (
-                  <TouchableOpacity key={tip.id} style={styles.tipCardHorizontal}>
-                    <Image source={tip.image} style={styles.tipImageHorizontal} />
+                  <TouchableOpacity
+                    key={tip.id}
+                    style={styles.tipCardHorizontal}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/TipDetailScreen",
+                        params: {
+                          id: tip.id,
+                          title: tip.title,
+                          description: tip.description,
+                        },
+                      })
+                    }
+                  >
+                    <Image
+                      source={tip.image}
+                      style={styles.tipImageHorizontal}
+                    />
                     <View style={styles.tipContentHorizontal}>
                       <Text style={styles.tipTitleHorizontal}>{tip.title}</Text>
-                      <Text style={styles.tipDescriptionHorizontal}>{tip.description}</Text>
+                      <Text style={styles.tipDescriptionHorizontal}>
+                        {tip.description}
+                      </Text>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -250,7 +317,7 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
     </Provider>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -307,6 +374,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
+    paddingVertical: 20,
     color: "#e0e0e0",
     fontSize: 18,
     fontWeight: "700",
@@ -547,4 +615,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 16,
   },
-})
+});
