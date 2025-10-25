@@ -22,6 +22,9 @@ const LessonSchema = new mongoose.Schema(
         questionText: String,
         options: [String],
         correctAnswerIndex: Number,
+
+        audioFileId: { type: mongoose.Schema.Types.ObjectId }, // lưu ObjectId GridFS
+        answerText: { type: String },
       },
     ],
   },
