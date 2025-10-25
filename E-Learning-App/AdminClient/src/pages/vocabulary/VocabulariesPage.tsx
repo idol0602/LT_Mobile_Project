@@ -124,7 +124,11 @@ export default function VocabulariesPage() {
   const handleSave = async (vocabData: any, imageFile: File | null) => {
     const formData = new FormData();
     const { _id, createdAt, updatedAt, __v, ...rest } = vocabData;
-    Object.keys(rest).forEach((key) => formData.append(key, rest[key]));
+    Object.keys(rest).forEach((key) => {
+      if (rest[key] !== undefined && rest[key] !== null) {
+        formData.append(key, rest[key].toString());
+      }
+    });
     if (imageFile) formData.append("image", imageFile);
 
     try {

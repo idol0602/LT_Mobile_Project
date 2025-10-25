@@ -74,7 +74,7 @@ export function ImportModal({
         partOfSpeech: row.partOfSpeech || "",
         pronunciation: row.pronunciation || "",
         exampleSentence: row.exampleSentence || "",
-        image: row.image || "",
+        // image: row.image || "",
       }));
       setPreviewData(mappedData);
       setIsProcessingFile(false);

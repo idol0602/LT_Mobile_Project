@@ -66,7 +66,7 @@ export function VocabForm({
         setFormData(selectedVocab);
         if (selectedVocab.imageFileId) {
           setPreview(
-            `http://localhost:3000/api/images/${selectedVocab.imageFileId}`
+            `http://localhost:5050/api/images/${selectedVocab.imageFileId}`
           );
         }
       } else {
