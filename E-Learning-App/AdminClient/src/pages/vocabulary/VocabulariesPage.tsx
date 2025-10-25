@@ -15,9 +15,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Stack,
 } from "@mui/material";
 import { BookOpen, Zap, FileText, MessageSquare, Package } from "lucide-react";
 import BookIcon from "@mui/icons-material/Book";
+import UploadIcon from "@mui/icons-material/Upload";
+import AddIcon from "@mui/icons-material/Add";
 
 import {
   getVocabularies,
@@ -26,7 +29,7 @@ import {
   updateVocabulary,
   deleteVocabulary,
   getVocabularyStats,
-} from "../../services/api";
+} from "../../services/vocabularyApi";
 
 import { VocabForm } from "../../components/vocabulary/VocabForm";
 import { VocabTable } from "../../components/vocabulary/VocabTable";
@@ -34,6 +37,7 @@ import { StatCards } from "../../components/StatCards";
 import { PageHeader } from "../../components/PageHeader";
 import { VocabFilter } from "../../components/vocabulary/VocabFilter";
 import type { SelectChangeEvent } from "@mui/material";
+import { ImportModal } from "../../components/ImportModal";
 
 export default function VocabulariesPage() {
   const [vocabularies, setVocabularies] = useState<any[]>([]);
@@ -48,6 +52,7 @@ export default function VocabulariesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [stats, setStats] = useState({ totalWords: 0, countByPos: [] });
   const [totalVocabs, setTotalVocabs] = useState(0);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -119,7 +124,11 @@ export default function VocabulariesPage() {
   const handleSave = async (vocabData: any, imageFile: File | null) => {
     const formData = new FormData();
     const { _id, createdAt, updatedAt, __v, ...rest } = vocabData;
-    Object.keys(rest).forEach((key) => formData.append(key, rest[key]));
+    Object.keys(rest).forEach((key) => {
+      if (rest[key] !== undefined && rest[key] !== null) {
+        formData.append(key, rest[key].toString());
+      }
+    });
     if (imageFile) formData.append("image", imageFile);
 
     try {
@@ -215,26 +224,72 @@ export default function VocabulariesPage() {
   }, [vocabularies, searchTerm, posFilter]);
 
   if (error) return <div>Lỗi: {error}</div>;
+  const handleImportSuccess = (message: string) => {
+    setSnackbar({ open: true, message, severity: "success" });
+    // Tải lại cả từ vựng và thống kê
+    Promise.all([fetchVocabularies(), fetchStats()]);
+  };
 
+  const handleImportError = (message: string) => {
+    setSnackbar({ open: true, message, severity: "error" });
+  };
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <PageHeader
-        title="Vocabulary Management"
-        buttonText="Add Word"
-        onButtonClick={() => {
-          setEditingVocab(null);
-          setIsModalOpen(true);
+      {/* HEADER */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 4,
         }}
-        icon={<BookIcon />}
-      />
+      >
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <BookIcon color="primary" />
+            <Typography variant="h4" fontWeight="bold">
+              Vocabulary Management
+            </Typography>
+          </Stack>
+          <Typography color="text.secondary" mt={0.5}>
+            Organize and manage your content
+          </Typography>
+        </Box>
 
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            Import
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setEditingVocab(null);
+              setIsModalOpen(true);
+            }}
+          >
+            Add Word
+          </Button>
+        </Stack>
+      </Box>
+
+      {/* LOADING */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
           <CircularProgress />
         </Box>
       ) : (
         <>
+          {/* THỐNG KÊ */}
           <StatCards stats={stats} />
+
+          {/* FILTER */}
           <VocabFilter
             searchTerm={searchTerm}
             onSearchChange={(e) => setSearchTerm(e.target.value)}
@@ -244,6 +299,8 @@ export default function VocabulariesPage() {
             onSearchLangChange={handleSearchLangChange}
             onReset={handleResetFilters}
           />
+
+          {/* BẢNG TỪ VỰNG */}
           <VocabTable
             vocabularies={filteredData}
             onEdit={handleEdit}
@@ -257,7 +314,7 @@ export default function VocabulariesPage() {
         </>
       )}
 
-      {/* Form thêm/sửa từ vựng */}
+      {/* FORM THÊM/SỬA TỪ VỰNG */}
       <VocabForm
         open={isModalOpen}
         onClose={() => {
@@ -268,7 +325,15 @@ export default function VocabulariesPage() {
         selectedVocab={editingVocab}
       />
 
-      {/* Snackbar thông báo */}
+      {/* IMPORT MODAL */}
+      <ImportModal
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={handleImportSuccess}
+        onImportError={handleImportError}
+      />
+
+      {/* SNACKBAR */}
       <Snackbar
         open={snackbar?.open || false}
         autoHideDuration={6000}
@@ -284,7 +349,7 @@ export default function VocabulariesPage() {
         </Alert>
       </Snackbar>
 
-      {/* Dialog xác nhận xóa */}
+      {/* DIALOG XÁC NHẬN XÓA */}
       <Dialog
         open={deleteConfirm.open}
         onClose={() => setDeleteConfirm({ open: false, vocabId: null })}

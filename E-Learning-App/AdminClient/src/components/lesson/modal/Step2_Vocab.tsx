@@ -18,7 +18,10 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { getVocabularies, getVocabulariesByIds } from "../../../services/api";
+import {
+  getVocabularies,
+  getVocabulariesByIds,
+} from "../../../services/vocabularyApi";
 
 interface Vocabulary {
   _id: string;

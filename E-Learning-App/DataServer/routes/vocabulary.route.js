@@ -42,5 +42,12 @@ router.put(
 
 // Xoá một từ vựng
 router.delete("/:id", vocabularyController.deleteVocabulary);
+// --- THÊM ROUTE MỚI ĐỂ IMPORT ---
+// Dùng upload.single('file') để nhận 1 file có tên field là 'file'
+router.post(
+  "/import",
+  upload.single("file"),
+  vocabularyController.importVocabularies
+);
 
 module.exports = router;

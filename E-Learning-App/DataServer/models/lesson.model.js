@@ -19,9 +19,9 @@ const LessonSchema = new mongoose.Schema(
     readingContent: String,
     questions: [
       {
-        question: String,
+        questionText: String,
         options: [String],
-        correctAnswer: String,
+        correctAnswerIndex: Number,
       },
     ],
   },

@@ -16,7 +16,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 
 import { Step2_Vocab } from "./Step2_Vocab";
-import { addLesson, updateLesson } from "../../../services/api";
+import { addLesson, updateLesson } from "../../../services/lessonApi";
 
 interface VocabLessonModalProps {
   open: boolean;

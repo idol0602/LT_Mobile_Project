@@ -19,7 +19,7 @@ import { Step1_BasicInfo } from "./lesson/modal/Step1_BasicInfo";
 import { Step2_Vocab } from "./lesson/modal/Step2_Vocab";
 import { Step2_Reading } from "./lesson/modal/Step2_Reading";
 
-import { addLesson, updateLesson } from "../services/api";
+import { addLesson, updateLesson } from "../services/lessonApi";
 
 // ==================== INTERFACES ====================
 
