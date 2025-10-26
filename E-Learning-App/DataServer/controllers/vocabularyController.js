@@ -1,5 +1,7 @@
 // controllers/vocabularyController.js
 const Vocabulary = require("../models/vocabulary.model");
+const mongoose = require("mongoose");
+const axios = require("axios");
 const { Readable } = require("stream");
 const XLSX = require("xlsx");
 
