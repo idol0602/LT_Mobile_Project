@@ -1,4 +1,4 @@
-const API_URL = "http://192.168.1.100:3000";
+const API_URL = "http://192.168.1.210:3000";
 
 interface ChatResponse {
   reply: string;
@@ -30,6 +30,10 @@ class API {
 
       const data = await res.json();
       return data;
+    }
+
+    async pronoun () {
+      
     }
 }
 

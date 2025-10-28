@@ -13,11 +13,6 @@ const upload = multer({ storage });
 // ======================
 router.get("/stats", vocabularyController.getVocabularyStats);
 
-// ======================
-// 📚 ROUTE CRUD CHÍNH
-// ======================
-
-// Lấy danh sách tất cả từ vựng (có hỗ trợ tìm kiếm, lọc, phân trang)
 router.get("/", vocabularyController.getAllVocabularies);
 
 // Lấy chi tiết 1 từ theo ID
