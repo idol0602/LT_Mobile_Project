@@ -18,6 +18,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { Step1_BasicInfo } from "./Step1_BasicInfo";
 import { Step2_Vocab } from "./Step2_Vocab";
 import { Step2_Reading } from "./Step2_Reading";
+import { Step2_Grammar } from "./Step2_Grammar";
 
 import { addLesson, updateLesson } from "../../../services/lessonApi";
 
@@ -185,7 +186,16 @@ export function LessonWizardModal({
                 onDataChange={handleDataChange}
               />
             );
-
+          case "grammar":
+            // Implement Step2_Grammar similarly to Step2_Reading
+            return (
+              <Step2_Grammar
+                questions={lessonData.questions || []}
+                onChange={(questions) =>
+                  handleDataChange("questions", questions)
+                }
+              />
+            );
           default:
             return (
               <Alert severity="warning">
