@@ -77,3 +77,24 @@ exports.deleteLesson = async (req, res) => {
       .json({ message: "Failed to delete lesson", error: error.message });
   }
 };
+
+exports.getVocabulariesByLessonId = async (req, res) => {
+  try {
+    // 1. Tìm bài học theo ID được cung cấp
+    const lesson = await Lesson.findById(req.params.id).populate(
+      "vocabularies"
+    ); // 2. Kiểm tra nếu không tìm thấy bài học
+
+    if (!lesson) {
+      return res.status(404).json({ message: "Lesson not found" });
+    } // 3. Trả về chỉ mảng 'vocabularies' đã được populate
+
+    res.json({ data: lesson.vocabularies });
+  } catch (error) {
+    console.error("❌ Error fetching vocabularies for lesson:", error);
+    res.status(500).json({
+      message: "Failed to fetch vocabularies for lesson",
+      error: error.message,
+    });
+  }
+};

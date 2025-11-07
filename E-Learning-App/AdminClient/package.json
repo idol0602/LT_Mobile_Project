@@ -14,17 +14,19 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
+    "@tailwindcss/vite": "^4.1.16",
     "@tiptap/extension-text-align": "^3.8.0",
     "@tiptap/react": "^3.8.0",
     "@tiptap/starter-kit": "^3.8.0",
     "axios": "^1.12.2",
     "lucide-react": "^0.545.0",
     "quill": "^2.0.3",
-    "re act": "^19.1.1",
+    "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-quilljs": "^2.0.5",
     "react-router-dom": "^7.9.4",
     "recharts": "^3.2.1",
+    "tailwindcss": "^4.1.16",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -41,7 +43,6 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.14",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "npm:rolldown-vite@7.1.14"

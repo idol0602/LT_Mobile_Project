@@ -1,4 +1,4 @@
-import { palette } from "../../styles/palette";
+import { palette } from "../../../styles/palette";
 
 export const vocabFormStyles = {
   dialogPaper: {

@@ -28,7 +28,7 @@ interface ImportModalProps {
   onImportError: (message: string) => void;
 }
 
-import { importVocabularies } from "../services/vocabularyApi";
+import { importVocabularies } from "../../services/vocabularyApi";
 
 interface VocabPreview {
   word: string;

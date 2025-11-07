@@ -23,8 +23,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
-import { QuillEditor } from "../../QuillEditor";
-import { updateLesson } from "../../../services/lessonApi";
+import { QuillEditor } from "../ui/QuillEditor";
+import { updateLesson } from "../../services/lessonApi";
 
 interface Question {
   questionText: string;

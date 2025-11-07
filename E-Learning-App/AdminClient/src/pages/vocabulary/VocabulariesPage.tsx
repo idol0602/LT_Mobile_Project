@@ -31,13 +31,13 @@ import {
   getVocabularyStats,
 } from "../../services/vocabularyApi";
 
-import { VocabForm } from "../../components/vocabulary/VocabForm";
+import { VocabForm } from "../../components/vocabulary/vocabForm/VocabForm";
 import { VocabTable } from "../../components/vocabulary/VocabTable";
-import { StatCards } from "../../components/StatCards";
-import { PageHeader } from "../../components/PageHeader";
+import { StatCards } from "../../components/ui/StatCards";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { VocabFilter } from "../../components/vocabulary/VocabFilter";
 import type { SelectChangeEvent } from "@mui/material";
-import { ImportModal } from "../../components/ImportModal";
+import { ImportModal } from "../../components/ui/ImportModal";
 
 export default function VocabulariesPage() {
   const [vocabularies, setVocabularies] = useState<any[]>([]);

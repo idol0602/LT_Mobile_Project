@@ -26,6 +26,9 @@ router.get("/:id", vocabularyController.getVocabularyById);
 // Lấy nhiều từ theo danh sách ID
 router.post("/many", vocabularyController.getVocabulariesByIds);
 
+// //lấy từ vựng dựa theo lessonID
+// router.get("/:id/vocabularies", vocabularyController.getVocabulariesByLessonId);
+
 // ======================
 // ✳️ ROUTE THÊM / CẬP NHẬT / XOÁ
 // ======================

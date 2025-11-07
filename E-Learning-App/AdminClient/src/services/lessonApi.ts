@@ -30,6 +30,10 @@ export const getLessons = (
   // return apiClient.get(`/lessons`, { params });
   return apiClient.get(`/lessons`); // Lấy tất cả trước
 };
+//lay tu vung dua theo lessonID
+export const getVocabulariesByLessonId = (lessonId: string): Promise<AxiosResponse<any>> => {
+  return apiClient.get(`/lessons/${lessonId}/vocabularies`);
+};
 
 export const addLesson = (lessonData: LessonData): Promise<AxiosResponse<any>> => {
   // Gửi dữ liệu dạng JSON vì không có file

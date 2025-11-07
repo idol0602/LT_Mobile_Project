@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -10,16 +10,33 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  Grid,
+  Card,
+  CardContent,
+  FormControl,
+  Select,
+  MenuItem,
+  InputAdornment,
+  TextField,
+  // ChipProps,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
-
-import { LessonWizardModal } from "../components/LessonWizardModal";
+import { LessonWizardModal } from "../components/lesson/lessonWizardModal/LessonWizardModal";
 import { getLessons, deleteLesson } from "../services/lessonApi"; // ✅ Import API
-import { VocabLessonModal } from "../components/lesson/modal/VocabLessonModal";
-import { EditReadingModal } from "../components/lesson/modal/EditReadingModal";
+import { VocabLessonModal } from "../components/lesson/EditVocabModal";
+import { EditReadingModal } from "../components/lesson/EditReadingModal";
+import {
+  BookIcon,
+  DeleteIcon,
+  EditIcon,
+  FilterIcon,
+  SearchIcon,
+} from "lucide-react";
+import { LessonCard } from "../components/lesson/LessonCard";
 interface Lesson {
   _id?: string;
   name: string;
@@ -39,6 +56,13 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [openVocabModal, setOpenVocabModal] = useState(false);
+
+  // Thêm states cho filters
+  const [filterLevel, setFilterLevel] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<string | null>(null);
+
   const [selectedVocabLesson, setSelectedVocabLesson] = useState<Lesson | null>(
     null
   );
@@ -83,7 +107,69 @@ export default function LessonPage() {
         break;
     }
   };
+  const handleDeleteConfirm = async () => {
+    if (lessonToDelete) {
+      try {
+        await deleteLesson(lessonToDelete);
+        await fetchLessons();
+      } catch (err) {
+        console.error("Failed to delete:", err);
+        alert("Không thể xóa bài học.");
+      }
+    }
+    setDeleteDialogOpen(false);
+    setLessonToDelete(null);
+  };
 
+  // Filtered lessons với filters mới
+  const filteredLessons = lessons.filter((l) => {
+    const nameMatch = l.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const levelMatch = !filterLevel || l.level === filterLevel;
+    const typeMatch = !filterType || l.type === filterType;
+    return nameMatch && levelMatch && typeMatch;
+  });
+
+  // Colors cho chips
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case "Beginner":
+        return "success";
+      case "Intermediate":
+        return "primary";
+      case "Advanced":
+        return "warning";
+      default:
+        return "default";
+    }
+  };
+
+  //
+  const getTypeColor = (type: string) => {
+    // ✅ SỬA Ở ĐÂY: Thêm 'warning' và 'default' vào kiểu
+    const colors: {
+      [key: string]:
+        | "primary"
+        | "secondary"
+        | "error"
+        | "success"
+        | "warning"
+        | "default";
+    } = {
+      vocab: "success",
+      reading: "primary",
+      grammar: "secondary",
+      listen: "warning", // Dòng này bây giờ đã hợp lệ
+    };
+
+    // Ép kiểu (cast) ở đây là an toàn nhất để đảm bảo hàm luôn trả về đúng kiểu
+    return (colors[type] || "default") as
+      | "primary"
+      | "secondary"
+      | "error"
+      | "success"
+      | "warning"
+      | "default";
+  };
   const handleCloseWizard = () => setOpenWizard(false);
 
   const handleOpenVocabModal = (lesson?: Lesson) => {
@@ -114,64 +200,85 @@ export default function LessonPage() {
       alert("Không thể xóa bài học.");
     }
   };
-
-  // 🔹 Lọc theo tên
-  const filteredLessons = lessons.filter((l) =>
-    l.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
-    <Box sx={{ p: 4, bgcolor: "#F8FAFC", minHeight: "100vh" }}>
-      <Typography
-        variant="h4"
-        fontWeight="bold"
-        sx={{ mb: 3, color: "#088395" }}
-      >
-        📘 Lesson Management
-      </Typography>
-
-      {/* Thanh tìm kiếm và nút thêm */}
-      <Paper
-        elevation={0}
+    <Box sx={{ p: 3, bgcolor: "#F8FAFC", minHeight: "100vh" }}>
+      <Box
         sx={{
-          p: 2,
-          mb: 4,
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          gap: 2,
-          borderRadius: 3,
-          border: "1px solid #E0E7EF",
-          background:
-            "linear-gradient(135deg, rgba(8,131,149,0.05), rgba(0,184,169,0.08))",
+          mb: 3,
         }}
       >
-        <Box sx={{ flex: 1, display: "flex", alignItems: "center" }}>
-          <SearchIcon sx={{ mr: 1, color: "#64748B" }} />
-          <input
-            type="text"
-            placeholder="Search lessons..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              flex: 1,
-              border: "none",
-              background: "transparent",
-              outline: "none",
-              fontSize: "1rem",
-            }}
-          />
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" } }}
-          onClick={() => handleOpenWizard()}
-        >
-          New Lesson
-        </Button>
-      </Paper>
+        <Typography variant="h4" fontWeight="bold" color="#088395">
+          <BookIcon size={28} /> Lesson Management
+        </Typography>
+      </Box>
 
-      {/* Hiển thị loading hoặc lỗi */}
+      {/* Filters & Search */}
+      <Card sx={{ p: 2, mb: 3, borderRadius: 2, boxShadow: 1 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid sx={{ xs: 12, md: 6 }}>
+            <TextField
+              fullWidth
+              placeholder="Search lessons by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              variant="outlined"
+              size="small"
+            />
+          </Grid>
+          <Grid sx={{ xs: 12, md: 6 }}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <FilterIcon size={16} />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="">All Levels</MenuItem>
+                <MenuItem value="Beginner">Beginner</MenuItem>
+                <MenuItem value="Intermediate">Intermediate</MenuItem>
+                <MenuItem value="Advanced">Advanced</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid sx={{ xs: 12, md: 6 }}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <MenuItem value="">All Types</MenuItem>
+                <MenuItem value="vocab">Vocab</MenuItem>
+                <MenuItem value="reading">Reading</MenuItem>
+                {/* Thêm các type khác */}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Card>
+
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
+        sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" }, mb: 3 }}
+        onClick={() => handleOpenWizard()}
+      >
+        New Lesson
+      </Button>
+
+      {/* Lessons Grid */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
           <CircularProgress />
@@ -179,74 +286,25 @@ export default function LessonPage() {
       ) : error ? (
         <Alert severity="error">{error}</Alert>
       ) : filteredLessons.length === 0 ? (
-        <Alert severity="info">Không có bài học nào.</Alert>
+        <Alert severity="info" icon={<BookIcon />}>
+          No lessons found. Create your first lesson!
+        </Alert>
       ) : (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: 3,
-          }}
-        >
+        <Grid container spacing={3}>
           {filteredLessons.map((lesson, index) => (
-            <Fade in key={lesson._id} timeout={200 + index * 100}>
-              <Box
-                sx={{
-                  bgcolor: "white",
-                  borderRadius: 3,
-                  p: 2,
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-                  transition: "0.2s",
-                  "&:hover": { transform: "translateY(-4px)" },
-                }}
-              >
-                <Typography variant="h6" fontWeight="bold">
-                  {lesson.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Level: {lesson.level}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Topic: {lesson.topic}
-                </Typography>
-                <Chip
-                  label={lesson.type.toUpperCase() || "N/A"}
-                  size="small"
-                  sx={{ mt: 1, bgcolor: "#E0F2F1", color: "#088395" }}
-                />
-
-                <Box
-                  sx={{
-                    mt: 2,
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 1,
-                  }}
-                >
-                  <Tooltip title="Edit">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleOpenEditModal(lesson)}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDeleteLesson(lesson._id!)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </Box>
-            </Fade>
+            <Grid key={lesson._id}>
+              <LessonCard
+                lesson={lesson as any}
+                index={index}
+                onEdit={handleOpenEditModal}
+                onDelete={handleDeleteLesson}
+              />
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       )}
 
-      {/* ✅ Modal thêm/sửa bài học */}
+      {/* Modals giữ nguyên */}
       <LessonWizardModal
         open={openWizard}
         onClose={handleCloseWizard}
@@ -257,14 +315,37 @@ export default function LessonPage() {
         open={openVocabModal}
         onClose={handleCloseVocabModal}
         selectedLesson={selectedVocabLesson as any}
-        onSaveSuccess={fetchLessons}
+        onSaveSuccess={handleSaveSuccess}
       />
       <EditReadingModal
         open={openReadingModal}
         onClose={handleCloseReadingModal}
         lesson={selectedReadingLesson as any}
-        onSaveSuccess={fetchLessons}
+        onSaveSuccess={handleSaveSuccess}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this lesson? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteConfirm}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

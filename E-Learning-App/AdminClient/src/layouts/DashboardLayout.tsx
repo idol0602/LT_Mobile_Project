@@ -3,7 +3,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import { Box, Toolbar } from "@mui/material"; // 1. Import Toolbar
 import Sidebar from "./Sidebar";
-import { Header } from "../components/Header"; // 2. Import Header
+import { Header } from "../components/ui/Header"; // 2. Import Header
 
 // Định nghĩa chiều rộng của Sidebar để tái sử dụng
 const SIDEBAR_WIDTH = 250;
