@@ -19,16 +19,19 @@ interface LessonData {
   questions?: any[];
 }
 
-
+export interface GetLessonsParams {
+  page: number;
+  limit: number;
+  searchTerm: string;
+  level: string;
+  type: string;
+}
 export const getLessons = (
-  // Thêm các tham số phân trang/lọc nếu cần
-  // page: number = 1,
-  // limit: number = 10,
-  // topic?: string
+  params: GetLessonsParams
 ): Promise<AxiosResponse<any>> => {
   // const params = { page, limit, topic };
   // return apiClient.get(`/lessons`, { params });
-  return apiClient.get(`/lessons`); // Lấy tất cả trước
+  return apiClient.get(`/lessons`, { params });
 };
 //lay tu vung dua theo lessonID
 export const getVocabulariesByLessonId = (lessonId: string): Promise<AxiosResponse<any>> => {
@@ -36,17 +39,17 @@ export const getVocabulariesByLessonId = (lessonId: string): Promise<AxiosRespon
 };
 
 export const addLesson = (lessonData: LessonData): Promise<AxiosResponse<any>> => {
-  // Gửi dữ liệu dạng JSON vì không có file
-  return apiClient.post("/lessons/add", lessonData);
+  // Sửa từ: /lessons/add  Thành: /lessons
+  return apiClient.post("/lessons", lessonData);
 };
 
 export const updateLesson = (id: string, lessonData: Partial<LessonData>): Promise<AxiosResponse<any>> => {
   // Partial<LessonData> cho phép chỉ gửi một phần dữ liệu cần cập nhật
-  return apiClient.put(`/lessons/update/${id}`, lessonData);
+  return apiClient.put(`/lessons/${id}`, lessonData);
 };
 
 export const deleteLesson = (id: string): Promise<AxiosResponse<any>> => {
-  return apiClient.delete(`/lessons/delete/${id}`);
+  return apiClient.delete(`/lessons/${id}`);
 };
 
 // --- Topic API (Ví dụ nếu bạn cần lấy danh sách topic đã có) ---

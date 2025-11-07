@@ -17,6 +17,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"; // giao diện mặc định
+import { QuestionItem } from "../../ui/QuestionItem";
 
 // =================== ĐỊNH NGHĨA KIỂU DỮ LIỆU ===================
 interface Question {
@@ -187,74 +188,16 @@ export function Step2_Reading({
         </Box>
 
         <Box sx={{ maxHeight: 500, overflowY: "auto" }}>
-          {questions.map((q, qIndex) => (
-            <Paper
+          {questions.map((question, qIndex) => (
+            <QuestionItem
               key={qIndex}
-              sx={{
-                p: 2,
-                mb: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography fontWeight="bold">Câu hỏi {qIndex + 1}</Typography>
-                <IconButton
-                  color="error"
-                  size="small"
-                  onClick={() => handleRemoveQuestion(qIndex)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-
-              <TextField
-                label="Nội dung câu hỏi"
-                fullWidth
-                value={q.questionText}
-                onChange={(e) =>
-                  handleQuestionTextChange(qIndex, e.target.value)
-                }
-                margin="normal"
-              />
-
-              <FormControl fullWidth>
-                <FormLabel>Lựa chọn đáp án (chọn 1 đáp án đúng)</FormLabel>
-                <RadioGroup
-                  value={q.correctAnswerIndex}
-                  onChange={(e) =>
-                    handleCorrectAnswerChange(qIndex, parseInt(e.target.value))
-                  }
-                >
-                  {q.options.map((opt, optIndex) => (
-                    <FormControlLabel
-                      key={optIndex}
-                      value={optIndex}
-                      control={<Radio />}
-                      label={
-                        <TextField
-                          value={opt}
-                          onChange={(e) =>
-                            handleOptionChange(qIndex, optIndex, e.target.value)
-                          }
-                          fullWidth
-                          variant="standard"
-                          placeholder={`Lựa chọn ${optIndex + 1}`}
-                        />
-                      }
-                      sx={{ mb: 1 }}
-                    />
-                  ))}
-                </RadioGroup>
-              </FormControl>
-            </Paper>
+              index={qIndex}
+              question={question}
+              onChange={handleQuestionTextChange}
+              onOptionChange={handleOptionChange}
+              onSelectCorrect={handleCorrectAnswerChange}
+              onDelete={handleRemoveQuestion}
+            />
           ))}
           {questions.length === 0 && (
             <Typography

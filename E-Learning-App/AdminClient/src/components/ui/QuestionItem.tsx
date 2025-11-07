@@ -74,11 +74,10 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
       />
 
       {/* Options */}
-      {/* Options */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, // 2 cột khi >= md
+          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
           gap: 2,
           mt: 1.5,
         }}

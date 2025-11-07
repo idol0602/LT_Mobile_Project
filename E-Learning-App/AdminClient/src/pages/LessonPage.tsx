@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -6,7 +8,6 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  Fade,
   Chip,
   CircularProgress,
   Alert,
@@ -14,69 +15,113 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  Grid,
-  Card,
-  CardContent,
   FormControl,
   Select,
   MenuItem,
   InputAdornment,
   TextField,
-  // ChipProps,
+  InputLabel,
+  // 1. Import các component cho Bảng
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Snackbar,
+  Alert as MuiAlert,
+  type SelectChangeEvent,
+  type ChipProps,
+  type AlertProps,
+  DialogTitle,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SchoolIcon from "@mui/icons-material/School"; // Icon cho tiêu đề
+import FilterListIcon from "@mui/icons-material/FilterList"; // Icon cho bộ lọc
+import SearchIcon from "@mui/icons-material/Search";
+
 import { LessonWizardModal } from "../components/lesson/lessonWizardModal/LessonWizardModal";
-import { getLessons, deleteLesson } from "../services/lessonApi"; // ✅ Import API
+import {
+  getLessons,
+  deleteLesson,
+  type GetLessonsParams,
+} from "../services/lessonApi";
 import { VocabLessonModal } from "../components/lesson/EditVocabModal";
 import { EditReadingModal } from "../components/lesson/EditReadingModal";
-import {
-  BookIcon,
-  DeleteIcon,
-  EditIcon,
-  FilterIcon,
-  SearchIcon,
-} from "lucide-react";
-import { LessonCard } from "../components/lesson/LessonCard";
-interface Lesson {
-  _id?: string;
-  name: string;
-  level: "Beginner" | "Intermediate" | "Advanced" | "";
-  topic: string;
-  type: "vocab" | "listen" | "grammar" | "reading" | "";
-  vocabularies?: string[];
-  readingContent?: string;
-  questions?: any[];
+import type { Lesson as LessonData } from "../types/Lesson";
+// 2. Định nghĩa kiểu dữ liệu Lesson đầy đủ
+interface Lesson extends LessonData {
+  _id: string;
+  level: "Beginner" | "Intermediate" | "Advanced";
+  type: "vocab" | "listen" | "grammar" | "reading";
 }
 
 export default function LessonPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // States cho Modal
   const [openWizard, setOpenWizard] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [openVocabModal, setOpenVocabModal] = useState(false);
-
-  // Thêm states cho filters
-  const [filterLevel, setFilterLevel] = useState("");
-  const [filterType, setFilterType] = useState("");
+  const [openReadingModal, setOpenReadingModal] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<string | null>(null);
 
-  const [selectedVocabLesson, setSelectedVocabLesson] = useState<Lesson | null>(
-    null
-  );
-  const [openReadingModal, setOpenReadingModal] = useState(false);
-  const [selectedReadingLesson, setSelectedReadingLesson] =
-    useState<Lesson | null>(null);
-  // 🔹 Fetch dữ liệu từ DB
+  // States cho Lọc và Tìm kiếm
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterLevel, setFilterLevel] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+
+  // 3. Thêm state cho Phân trang
+  const [page, setPage] = useState(0); // MUI TablePagination là 0-indexed
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0); // 👈 Mới: Lấy tổng số từ server
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+
+  // State cho Debounce (trì hoãn tìm kiếm)
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  // --- LOGIC DỮ LIỆU VÀ SỰ KIỆN ---
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: AlertProps["severity"];
+  } | null>(null);
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(0); // Reset về trang đầu khi tìm kiếm
+    }, 500);
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
+  useEffect(() => {
+    fetchLessons();
+  }, [
+    page,
+    rowsPerPage,
+    debouncedSearchTerm,
+    filterLevel,
+    filterType,
+    refetchTrigger,
+  ]);
   const fetchLessons = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await getLessons();
-      const data = res.data?.data || [];
-      setLessons(data);
+      const params: GetLessonsParams = {
+        page: page + 1, // 👈 API của chúng ta là 1-indexed
+        limit: rowsPerPage,
+        searchTerm: debouncedSearchTerm,
+        level: filterLevel,
+        type: filterType,
+      };
+      const res = await getLessons(params);
+      setLessons(res.data.data || []);
+      setTotalItems(res.data.pagination.totalItems || 0);
     } catch (err) {
       console.error("❌ Failed to fetch lessons:", err);
       setError("Không thể tải danh sách bài học.");
@@ -85,33 +130,51 @@ export default function LessonPage() {
     }
   };
 
-  useEffect(() => {
-    fetchLessons();
-  }, []);
-
-  // 🔹 Mở modal thêm/sửa
-  const handleOpenWizard = (lesson?: Lesson) => {
-    setSelectedLesson(lesson || null);
-    setOpenWizard(true);
+  const handleSaveSuccess = () => {
+    setOpenWizard(false);
+    setOpenVocabModal(false);
+    setOpenReadingModal(false);
+    setRefetchTrigger((prev) => prev + 1);
+    setSnackbar({
+      open: true,
+      message: "Đã lưu bài học thành công!",
+      severity: "success",
+    });
   };
+
+  // 4. Cập nhật các hàm mở modal Sửa
   const handleOpenEditModal = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
     switch (lesson.type) {
       case "vocab":
-        handleOpenVocabModal(lesson);
+        setOpenVocabModal(true);
         break;
       case "reading":
-        handleOpenReadingModal(lesson);
+        setOpenReadingModal(true);
         break;
       default:
-        handleOpenWizard(lesson);
+        // Mở wizard cho các loại bài học khác (nếu cần)
+        setOpenWizard(true);
         break;
     }
   };
+
+  // 5. Cập nhật các hàm Xóa
+  const handleDeleteClick = (id: string) => {
+    setLessonToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
   const handleDeleteConfirm = async () => {
     if (lessonToDelete) {
       try {
         await deleteLesson(lessonToDelete);
-        await fetchLessons();
+        setRefetchTrigger((prev) => prev + 1); // 👈 Trigger để useEffect chạy lại
+        setSnackbar({
+          open: true,
+          message: "Đã xóa bài học.",
+          severity: "success",
+        });
       } catch (err) {
         console.error("Failed to delete:", err);
         alert("Không thể xóa bài học.");
@@ -121,16 +184,30 @@ export default function LessonPage() {
     setLessonToDelete(null);
   };
 
-  // Filtered lessons với filters mới
-  const filteredLessons = lessons.filter((l) => {
-    const nameMatch = l.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const levelMatch = !filterLevel || l.level === filterLevel;
-    const typeMatch = !filterType || l.type === filterType;
-    return nameMatch && levelMatch && typeMatch;
-  });
+  // 6. Cập nhật logic Lọc và Phân trang
+  // const filteredLessons = lessons.filter((l) => {
+  //   return (
+  //     (l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       l.topic.toLowerCase().includes(searchTerm.toLowerCase())) &&
+  //     (filterLevel === "all" || l.level === filterLevel) &&
+  //     (filterType === "all" || l.type === filterType)
+  //   );
+  // });
 
-  // Colors cho chips
-  const getLevelColor = (level: string) => {
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // 7. Hàm trợ giúp cho màu sắc (Giữ nguyên từ code cũ của bạn)
+  //   // 7. Hàm trợ giúp cho màu sắc (Đã sửa)
+  const getLevelColor = (level: string): ChipProps["color"] => {
     switch (level) {
       case "Beginner":
         return "success";
@@ -142,66 +219,19 @@ export default function LessonPage() {
         return "default";
     }
   };
-
-  //
-  const getTypeColor = (type: string) => {
-    // ✅ SỬA Ở ĐÂY: Thêm 'warning' và 'default' vào kiểu
-    const colors: {
-      [key: string]:
-        | "primary"
-        | "secondary"
-        | "error"
-        | "success"
-        | "warning"
-        | "default";
-    } = {
+  const getTypeColor = (type: string): ChipProps["color"] => {
+    const colors: { [key: string]: ChipProps["color"] } = {
       vocab: "success",
       reading: "primary",
       grammar: "secondary",
-      listen: "warning", // Dòng này bây giờ đã hợp lệ
+      listen: "warning",
     };
-
-    // Ép kiểu (cast) ở đây là an toàn nhất để đảm bảo hàm luôn trả về đúng kiểu
-    return (colors[type] || "default") as
-      | "primary"
-      | "secondary"
-      | "error"
-      | "success"
-      | "warning"
-      | "default";
-  };
-  const handleCloseWizard = () => setOpenWizard(false);
-
-  const handleOpenVocabModal = (lesson?: Lesson) => {
-    setSelectedVocabLesson(lesson || null);
-    setOpenVocabModal(true);
-  };
-  const handleOpenReadingModal = (lesson?: Lesson) => {
-    setSelectedReadingLesson(lesson || null);
-    setOpenReadingModal(true);
+    return colors[type] || "default";
   };
 
-  const handleCloseVocabModal = () => setOpenVocabModal(false);
-  const handleCloseReadingModal = () => setOpenReadingModal(false);
-  // 🔹 Khi thêm/sửa thành công, reload danh sách
-  const handleSaveSuccess = async () => {
-    await fetchLessons();
-    console.log("Lesson saved successfully!");
-  };
-
-  // 🔹 Xóa bài học
-  const handleDeleteLesson = async (id: string) => {
-    if (!window.confirm("Bạn có chắc muốn xóa bài học này?")) return;
-    try {
-      await deleteLesson(id);
-      await fetchLessons();
-    } catch (err) {
-      console.error("❌ Failed to delete lesson:", err);
-      alert("Không thể xóa bài học.");
-    }
-  };
   return (
     <Box sx={{ p: 3, bgcolor: "#F8FAFC", minHeight: "100vh" }}>
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -210,117 +240,190 @@ export default function LessonPage() {
           mb: 3,
         }}
       >
-        <Typography variant="h4" fontWeight="bold" color="#088395">
-          <BookIcon size={28} /> Lesson Management
+        <Typography
+          variant="h4"
+          fontWeight="bold"
+          color="#088395"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <SchoolIcon fontSize="large" /> Quản lý Bài học
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" } }}
+          onClick={() => {
+            setSelectedLesson(null);
+            setOpenWizard(true);
+          }}
+        >
+          Bài học mới
+        </Button>
       </Box>
 
       {/* Filters & Search */}
-      <Card sx={{ p: 2, mb: 3, borderRadius: 2, boxShadow: 1 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid sx={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              placeholder="Search lessons by name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
+      <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            gap: 2,
+          }}
+        >
+          <TextField
+            fullWidth
+            placeholder="Tìm kiếm theo tên hoặc chủ đề..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+            variant="outlined"
+            size="small"
+          />
+          <FormControl fullWidth size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Cấp độ</InputLabel>
+            <Select
+              value={filterLevel}
+              label="Cấp độ"
+              onChange={(e) => {
+                setFilterLevel(e.target.value);
+                setPage(0);
               }}
-              variant="outlined"
-              size="small"
-            />
-          </Grid>
-          <Grid sx={{ xs: 12, md: 6 }}>
-            <FormControl fullWidth size="small">
-              <Select
-                value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <FilterIcon size={16} />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="">All Levels</MenuItem>
-                <MenuItem value="Beginner">Beginner</MenuItem>
-                <MenuItem value="Intermediate">Intermediate</MenuItem>
-                <MenuItem value="Advanced">Advanced</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid sx={{ xs: 12, md: 6 }}>
-            <FormControl fullWidth size="small">
-              <Select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                <MenuItem value="">All Types</MenuItem>
-                <MenuItem value="vocab">Vocab</MenuItem>
-                <MenuItem value="reading">Reading</MenuItem>
-                {/* Thêm các type khác */}
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-      </Card>
+              startAdornment={
+                <InputAdornment position="start">
+                  <FilterListIcon fontSize="small" />
+                </InputAdornment>
+              }
+            >
+              <MenuItem value="all">Tất cả cấp độ</MenuItem>
+              <MenuItem value="Beginner">Beginner</MenuItem>
+              <MenuItem value="Intermediate">Intermediate</MenuItem>
+              <MenuItem value="Advanced">Advanced</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Loại bài học</InputLabel>
+            <Select
+              value={filterType}
+              label="Loại bài học"
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                setPage(0);
+              }}
+            >
+              <MenuItem value="all">Tất cả loại</MenuItem>
+              <MenuItem value="vocab">Từ vựng</MenuItem>
+              <MenuItem value="reading">Bài đọc</MenuItem>
+              <MenuItem value="grammar">Ngữ pháp</MenuItem>
+              <MenuItem value="listen">Nghe</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Paper>
 
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" }, mb: 3 }}
-        onClick={() => handleOpenWizard()}
-      >
-        New Lesson
-      </Button>
-
-      {/* Lessons Grid */}
+      {/* 8. THAY THẾ GRID BẰNG TABLE */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
           <CircularProgress />
         </Box>
       ) : error ? (
         <Alert severity="error">{error}</Alert>
-      ) : filteredLessons.length === 0 ? (
-        <Alert severity="info" icon={<BookIcon />}>
-          No lessons found. Create your first lesson!
-        </Alert>
       ) : (
-        <Grid container spacing={3}>
-          {filteredLessons.map((lesson, index) => (
-            <Grid key={lesson._id}>
-              <LessonCard
-                lesson={lesson as any}
-                index={index}
-                onEdit={handleOpenEditModal}
-                onDelete={handleDeleteLesson}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "action.hover" }}>
+                  <TableCell sx={{ fontWeight: "bold" }}>Tên Bài học</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Chủ đề</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Cấp độ</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Loại</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                    Hành động
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {lessons.map((lesson) => (
+                  <TableRow key={lesson._id} hover>
+                    <TableCell>
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {lesson.name}
+                      </Typography>
+                      {/* <Typography variant="body2" color="text.secondary">{lesson.description}</Typography> */}
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={lesson.topic} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={lesson.level}
+                        color={getLevelColor(lesson.level)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={lesson.type}
+                        color={getTypeColor(lesson.type)}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Sửa">
+                        <IconButton onClick={() => handleOpenEditModal(lesson)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Xóa">
+                        <IconButton
+                          color="error"
+                          onClick={() => handleDeleteClick(lesson._id!)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={totalItems}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+          />
+        </Paper>
       )}
 
       {/* Modals giữ nguyên */}
       <LessonWizardModal
         open={openWizard}
-        onClose={handleCloseWizard}
-        selectedLesson={selectedLesson}
+        onClose={() => setOpenWizard(false)}
+        selectedLesson={selectedLesson as any} // Cast as any để khớp với form
         onSaveSuccess={handleSaveSuccess}
       />
       <VocabLessonModal
         open={openVocabModal}
-        onClose={handleCloseVocabModal}
-        selectedLesson={selectedVocabLesson as any}
+        onClose={() => setOpenVocabModal(false)}
+        selectedLesson={selectedLesson as any}
         onSaveSuccess={handleSaveSuccess}
       />
       <EditReadingModal
         open={openReadingModal}
-        onClose={handleCloseReadingModal}
-        lesson={selectedReadingLesson as any}
+        onClose={() => setOpenReadingModal(false)}
+        lesson={selectedLesson as any}
         onSaveSuccess={handleSaveSuccess}
       />
 
@@ -329,23 +432,39 @@ export default function LessonPage() {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
       >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this lesson? This action cannot be
-            undone.
+            Bạn có chắc muốn xóa bài học này không?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Hủy</Button>
           <Button
             variant="contained"
             color="error"
             onClick={handleDeleteConfirm}
           >
-            Delete
+            Xóa
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar thông báo */}
+      <Snackbar
+        open={snackbar?.open || false}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar(null)}
+          severity={snackbar?.severity || "info"}
+          sx={{ width: "100%" }}
+        >
+          {snackbar?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
