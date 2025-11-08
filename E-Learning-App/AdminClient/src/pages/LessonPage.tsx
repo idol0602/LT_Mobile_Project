@@ -51,6 +51,7 @@ import {
 } from "../services/lessonApi";
 import { VocabLessonModal } from "../components/lesson/EditVocabModal";
 import { EditReadingModal } from "../components/lesson/EditReadingModal";
+import { EditGrammarModal } from "../components/lesson/EditGrammarModal";
 import type { Lesson as LessonData } from "../types/Lesson";
 // 2. Định nghĩa kiểu dữ liệu Lesson đầy đủ
 interface Lesson extends LessonData {
@@ -71,7 +72,7 @@ export default function LessonPage() {
   const [openReadingModal, setOpenReadingModal] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<string | null>(null);
-
+  const [openGrammarModal, setOpenGrammarModal] = useState(false);
   // States cho Lọc và Tìm kiếm
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
@@ -151,6 +152,9 @@ export default function LessonPage() {
         break;
       case "reading":
         setOpenReadingModal(true);
+        break;
+      case "grammar":
+        setOpenGrammarModal(true);
         break;
       default:
         // Mở wizard cho các loại bài học khác (nếu cần)
@@ -424,6 +428,12 @@ export default function LessonPage() {
         open={openReadingModal}
         onClose={() => setOpenReadingModal(false)}
         lesson={selectedLesson as any}
+        onSaveSuccess={handleSaveSuccess}
+      />
+      <EditGrammarModal
+        open={openGrammarModal}
+        onClose={() => setOpenGrammarModal(false)}
+        selectedLesson={selectedLesson as any}
         onSaveSuccess={handleSaveSuccess}
       />
 

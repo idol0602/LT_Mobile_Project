@@ -21,6 +21,7 @@ import { Step2_Reading } from "./Step2_Reading";
 import { Step2_Grammar } from "./Step2_Grammar";
 
 import { addLesson, updateLesson } from "../../../services/lessonApi";
+import { Step2_Listening } from "./Step2_Listenning";
 
 // ==================== INTERFACES ====================
 
@@ -193,6 +194,15 @@ export function LessonWizardModal({
                 questions={lessonData.questions || []}
                 onChange={(questions) =>
                   handleDataChange("questions", questions)
+                }
+              />
+            );
+          case "listen":
+            return (
+              <Step2_Listening
+                questions={lessonData.questions as any}
+                onQuestionsChange={(newQuestions) =>
+                  handleDataChange("questions", newQuestions)
                 }
               />
             );

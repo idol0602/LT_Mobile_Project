@@ -1,27 +1,78 @@
 // controllers/lessonController.js
 const Lesson = require("../models/lesson.model");
+const multer = require("multer");
+const mongoose = require("mongoose");
+const { Readable } = require("stream");
 
-// ➕ Thêm bài học mới
+const storage = multer.memoryStorage();
+// // --- HÀM TIỆN ÍCH ĐỂ UPLOAD VÀO GRIDFS ---
+const uploadStreamToGridFS = (buffer, filename, bucket) => {
+  return new Promise((resolve, reject) => {
+    const readableStream = Readable.from(buffer);
+    const uploadStream = bucket.openUploadStream(filename);
+    const fileId = uploadStream.id;
+    readableStream.pipe(uploadStream);
+    uploadStream.on("finish", () => resolve(fileId));
+    uploadStream.on("error", (err) => reject(err));
+  });
+};
+
+// --- TẠO BÀI HỌC ---
 exports.createLesson = async (req, res) => {
   try {
-    console.log("📥 Nhận dữ liệu:", req.body);
+    const { name, level, topic, type, questions, readingContent } = req.body;
 
-    const lesson = new Lesson(req.body);
-    const savedLesson = await lesson.save();
+    // Parse questions nếu gửi dưới dạng JSON string
+    let parsedQuestions = [];
+    if (questions)
+      parsedQuestions =
+        typeof questions === "string" ? JSON.parse(questions) : questions;
 
-    console.log("✅ Lesson đã lưu vào DB:", savedLesson);
-    console.log("📁 Database:", lesson.db.name); // 👈 Kiểm tra tên DB thực tế
-    console.log("📂 Collection:", lesson.collection.collectionName);
+    // Tạo GridFS bucket
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: "audioFiles",
+    });
+
+    // ✅ Upload từng file audio và map vào question tương ứng
+    if (req.files && req.files.length > 0) {
+      parsedQuestions = await Promise.all(
+        parsedQuestions.map(async (q, index) => {
+          const file = req.files[index]; // gán theo thứ tự
+          if (file) {
+            const fileId = await uploadStreamToGridFS(
+              file.buffer,
+              file.originalname,
+              bucket
+            );
+            return { ...q, audioFileId: fileId };
+          }
+          return q;
+        })
+      );
+    }
+
+    // Tạo lesson mới
+    const newLesson = new Lesson({
+      name,
+      level,
+      topic,
+      type,
+      readingContent: readingContent || "",
+      questions: parsedQuestions,
+    });
+
+    await newLesson.save();
 
     res.status(201).json({
-      message: "Lesson created successfully",
-      data: savedLesson,
+      message: "✅ Đã tạo bài học mới",
+      lesson: newLesson,
     });
-  } catch (error) {
-    console.error("❌ Error creating lesson:", error);
-    res
-      .status(400)
-      .json({ message: "Failed to create lesson", error: error.message });
+  } catch (err) {
+    console.error("❌ Error creating lesson:", err);
+    res.status(500).json({
+      message: "Lỗi khi tạo bài học",
+      error: err.message,
+    });
   }
 };
 
