@@ -1,36 +1,44 @@
-import { View, Text, Image, StyleSheet, StatusBar, Dimensions } from "react-native"
-import {router} from "expo-router"
-import {useEffect} from "react"
-const DELAY_TIME = 2000
-const { width } = Dimensions.get("window")
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  StatusBar,
+  Dimensions,
+} from "react-native";
+import { router } from "expo-router";
+import { useEffect } from "react";
+const DELAY_TIME = 2000;
+const { width } = Dimensions.get("window");
 
 export default function Welcome() {
-
-  useEffect(()=>{
-    const timer = setTimeout(()=>{
-      router.replace('/(tabs)')
-    },DELAY_TIME)
-    return () => clearTimeout(timer)
-  },[])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace("/(auth)/signUp");
+    }, DELAY_TIME);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="rgb(38, 39, 48)" />
       <View style={styles.content}>
         <View style={styles.imagePlaceholder}>
-          <Image 
-            source={require("../../assets/images/bearWellCome.gif")} 
-            style={styles.image} 
-            resizeMode="contain" 
+          <Image
+            source={require("../../assets/images/bearWellCome.gif")}
+            style={styles.image}
+            resizeMode="contain"
           />
         </View>
 
         <Text style={styles.title}>Welcome to BearEnglish</Text>
 
-        <Text style={styles.subtitle}>Learn English with your friendly bear companion</Text>
+        <Text style={styles.subtitle}>
+          Learn English with your friendly bear companion
+        </Text>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -44,22 +52,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 30,
   },
-  
+
   imagePlaceholder: {
     width: width * 1,
     height: width * 1,
-    
-    overflow: 'hidden',
+
+    overflow: "hidden",
     elevation: 20,
-    justifyContent: 'center',
-    alignItems: 'center', 
+    justifyContent: "center",
+    alignItems: "center",
   },
-  
+
   image: {
-    width: '100%', 
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
-  
+
   title: {
     fontSize: 36,
     fontWeight: "800",
@@ -76,7 +84,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 28,
     letterSpacing: 0.6,
-    opacity: 0.9, 
-    maxWidth: '90%',
+    opacity: 0.9,
+    maxWidth: "90%",
   },
-})
+});

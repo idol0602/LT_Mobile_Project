@@ -1,7 +1,20 @@
-"use client"
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native"
-import { useState, useRef, useCallback, useEffect } from "react"
-import Svg, { Circle, Path } from "react-native-svg"
+"use client";
+import {
+  View,
+  StyleSheet,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+} from "react-native";
+import { useState, useRef, useCallback, useEffect } from "react";
+import Svg, { Circle, Path } from "react-native-svg";
+import API from "../../api/index";
 
 const WhiteBearIcon = ({ size = 60 }) => (
   <Svg width={size} height={size} viewBox="0 0 120 140" fill="none">
@@ -24,9 +37,23 @@ const WhiteBearIcon = ({ size = 60 }) => (
     />
 
     {/* Left Ear */}
-    <Circle cx="30" cy="25" r="16" fill="#FFFFFF" stroke="#E8E8E8" strokeWidth="1" />
+    <Circle
+      cx="30"
+      cy="25"
+      r="16"
+      fill="#FFFFFF"
+      stroke="#E8E8E8"
+      strokeWidth="1"
+    />
     {/* Right Ear */}
-    <Circle cx="90" cy="25" r="16" fill="#FFFFFF" stroke="#E8E8E8" strokeWidth="1" />
+    <Circle
+      cx="90"
+      cy="25"
+      r="16"
+      fill="#FFFFFF"
+      stroke="#E8E8E8"
+      strokeWidth="1"
+    />
 
     {/* Head - Rounded rectangle shape */}
     <Path
@@ -52,35 +79,33 @@ const WhiteBearIcon = ({ size = 60 }) => (
     {/* Mouth - Simple dot */}
     <Circle cx="60" cy="92" r="2.5" fill="#1a1a1a" />
   </Svg>
-)
+);
 
 interface Message {
-  id: number
-  text: string
-  isUser: boolean
+  id: number;
+  text: string;
+  isUser: boolean;
 }
-
-interface ChatResponse {
-  reply: string
-}
-
-const CHAT_API_URL = "http://localhost:3000/chat"
 
 const generateUserId = () => {
-  return "user-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
-}
+  return (
+    "user-" +
+    Math.random().toString(36).substring(2, 10) +
+    Date.now().toString(36)
+  );
+};
 
 const renderMessageContent = (text: string, isUser: boolean) => {
   if (isUser) {
-    return <Text style={styles.userMessageText}>{text}</Text>
+    return <Text style={styles.userMessageText}>{text}</Text>;
   }
 
-  const sections: string[] = text.split("\n\n***\n\n")
+  const sections: string[] = text.split("\n\n***\n\n");
 
   return sections.map((section, index) => (
     <View key={index} style={styles.messageSection}>
       {section.split("\n").map((line, lineIndex) => {
-        const parts = line.split(/(\*\*.*?\*\*)/g)
+        const parts = line.split(/(\*\*.*?\*\*)/g);
 
         return (
           <Text key={lineIndex} style={styles.aiMessageText}>
@@ -90,165 +115,185 @@ const renderMessageContent = (text: string, isUser: boolean) => {
                   <Text key={partIndex} style={styles.boldText}>
                     {part.substring(2, part.length - 2)}
                   </Text>
-                )
+                );
               } else {
-                return <Text key={partIndex}>{part}</Text>
+                return <Text key={partIndex}>{part}</Text>;
               }
             })}
           </Text>
-        )
+        );
       })}
     </View>
-  ))
-}
+  ));
+};
 
 export default function AIChatScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 0,
-      text: "Hello! I'm your English learning assistant. How can I help you today? 🐻‍❄️",
+      text: "Xin chào tôi là gấu BearEnglish đây, bạn cần hỏi đáp gì không? 🐻‍❄️",
       isUser: false,
     },
-  ])
-  const [isLoading, setIsLoading] = useState(false)
-  const [inputText, setInputText] = useState("")
-  const [messageIdCounter, setMessageIdCounter] = useState(1)
-  const [userId, setUserId] = useState("")
-  const scrollViewRef = useRef<ScrollView>(null)
+  ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const [messageIdCounter, setMessageIdCounter] = useState(1);
+  const [userId, setUserId] = useState("");
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (!userId) {
-      const newId = generateUserId()
-      setUserId(newId)
+      const newId = generateUserId();
+      setUserId(newId);
     }
-  }, [])
+  }, []);
 
   const sendMessageToAI = useCallback(
     async (text: string) => {
-      if (isLoading || !text.trim() || !userId) return
+      if (isLoading || !text.trim() || !userId) return;
 
       const newUserMessage: Message = {
         id: messageIdCounter,
         text: text.trim(),
         isUser: true,
-      }
-      setMessageIdCounter((prev) => prev + 1)
-      setMessages((prev) => [...prev, newUserMessage])
-      setInputText("")
-      setIsLoading(true)
+      };
+      setMessageIdCounter((prev) => prev + 1);
+      setMessages((prev) => [...prev, newUserMessage]);
+      setInputText("");
+      setIsLoading(true);
 
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true })
-      }, 100)
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
 
       try {
-        const response = await fetch(CHAT_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: text.trim(),
-            userId: userId,
-          }),
-        })
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-
-        const data: ChatResponse = await response.json()
-        const botReply = data.reply
+        const data = await API.sendMessageToAI(text, userId);
+        const botReply = data.reply;
 
         const newAIMessage: Message = {
           id: messageIdCounter + 1,
           text: botReply,
           isUser: false,
-        }
-        setMessageIdCounter((prev) => prev + 1)
-        setMessages((prev) => [...prev, newAIMessage])
+        };
+        setMessageIdCounter((prev) => prev + 1);
+        setMessages((prev) => [...prev, newAIMessage]);
       } catch (error) {
-        console.error("Error calling chat API:", error)
-        Alert.alert("Connection Error", "Unable to connect to AI server. Please check if localhost:3000 is running.")
-        setMessages((prev) => prev.filter((msg) => msg.id !== newUserMessage.id))
+        console.error("Error calling chat API:", error);
+        Alert.alert(
+          "Connection Error",
+          "Unable to connect to AI server. Please check if localhost:3000 is running."
+        );
+        setMessages((prev) =>
+          prev.filter((msg) => msg.id !== newUserMessage.id)
+        );
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
         setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true })
-        }, 100)
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }
     },
-    [isLoading, messageIdCounter, userId],
-  )
+    [isLoading, messageIdCounter, userId]
+  );
 
   const handleSendPress = () => {
-    sendMessageToAI(inputText)
-  }
+    sendMessageToAI(inputText);
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <WhiteBearIcon size={50} />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>English Learning Assistant</Text>
-            <Text style={styles.headerSubtitle}>Always here to help</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 10}
+    >
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <WhiteBearIcon size={50} />
+              <View style={styles.headerText}>
+                <Text style={styles.headerTitle}>
+                  English Learning Assistant
+                </Text>
+                <Text style={styles.headerSubtitle}>Always here to help</Text>
+              </View>
+            </View>
           </View>
-        </View>
-      </View>
 
-      {/* Chat Area */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.chatArea}
-        contentContainerStyle={styles.chatContentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {messages.map((msg) => (
-          <View key={msg.id} style={msg.isUser ? styles.userMessageContainer : styles.aiMessageContainer}>
-            {!msg.isUser && (
-              <View style={styles.aiAvatarSmall}>
-                <WhiteBearIcon size={32} />
+          {/* Chat Area */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.chatArea}
+            contentContainerStyle={styles.chatContentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {messages.map((msg) => (
+              <View
+                key={msg.id}
+                style={
+                  msg.isUser
+                    ? styles.userMessageContainer
+                    : styles.aiMessageContainer
+                }
+              >
+                {!msg.isUser && (
+                  <View style={styles.aiAvatarSmall}>
+                    <WhiteBearIcon size={32} />
+                  </View>
+                )}
+                <View
+                  style={
+                    msg.isUser
+                      ? styles.userMessageBubble
+                      : styles.aiMessageBubble
+                  }
+                >
+                  {renderMessageContent(msg.text, msg.isUser)}
+                </View>
+              </View>
+            ))}
+
+            {isLoading && (
+              <View style={styles.loadingContainer}>
+                <View style={styles.aiAvatarSmall}>
+                  <WhiteBearIcon size={32} />
+                </View>
+                <View style={styles.loadingBubble}>
+                  <ActivityIndicator size="small" color="#64B5F6" />
+                  <Text style={styles.loadingText}>Thinking...</Text>
+                </View>
               </View>
             )}
-            <View style={msg.isUser ? styles.userMessageBubble : styles.aiMessageBubble}>
-              {renderMessageContent(msg.text, msg.isUser)}
-            </View>
-          </View>
-        ))}
+          </ScrollView>
 
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <View style={styles.aiAvatarSmall}>
-              <WhiteBearIcon size={32} />
-            </View>
-            <View style={styles.loadingBubble}>
-              <ActivityIndicator size="small" color="#64B5F6" />
-              <Text style={styles.loadingText}>Thinking...</Text>
-            </View>
+          {/* Input Area */}
+          <View style={styles.inputArea}>
+            <TextInput
+              style={styles.input}
+              placeholder="Ask me anything about English..."
+              placeholderTextColor="#808080"
+              value={inputText}
+              onChangeText={setInputText}
+              editable={!isLoading}
+              onSubmitEditing={handleSendPress}
+              multiline
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (isLoading || !inputText.trim()) && styles.sendButtonDisabled,
+              ]}
+              onPress={handleSendPress}
+              disabled={isLoading || !inputText.trim()}
+            >
+              <Text style={styles.sendButtonText}>Send</Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
-
-      {/* Input Area */}
-      <View style={styles.inputArea}>
-        <TextInput
-          style={styles.input}
-          placeholder="Ask me anything about English..."
-          placeholderTextColor="#808080"
-          value={inputText}
-          onChangeText={setInputText}
-          editable={!isLoading}
-          onSubmitEditing={handleSendPress}
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, (isLoading || !inputText.trim()) && styles.sendButtonDisabled]}
-          onPress={handleSendPress}
-          disabled={isLoading || !inputText.trim()}
-        >
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  )
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -403,4 +448,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-})
+});

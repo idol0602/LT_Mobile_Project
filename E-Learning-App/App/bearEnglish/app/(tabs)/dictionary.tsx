@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import { Audio } from "expo-av";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,8 +11,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
-
-const API_URL = "http://localhost:3000/translate";
+import API from "../../api/index";
 
 interface BackendResult {
   translated: string;
@@ -22,11 +22,17 @@ interface BackendResult {
   translatedAudio: string;
 }
 
-const playAudio = (base64Data: string) => {
+const playAudio = async (base64Data: string) => {
   try {
     if (!base64Data) return;
-    const audio = new Audio(`data:audio/mp3;base64,${base64Data}`);
-    audio.play();
+    const uri = `data:audio/mp3;base64,${base64Data}`;
+    const { sound } = await Audio.Sound.createAsync({ uri });
+    await sound.playAsync();
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        sound.unloadAsync();
+      }
+    });
   } catch (err) {
     console.error("Error playing audio:", err);
   }
@@ -40,12 +46,21 @@ export default function Dictionary() {
   const [result, setResult] = useState<BackendResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    (async () => {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+    })();
+  }, []);
+
   const showAlert = (message: string) => {
     if (Platform.OS === "web") console.error(message);
     else Alert.alert("Thông báo", message);
   };
 
-  // ✅ Nút hoán đổi ngôn ngữ
   const swapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
@@ -64,13 +79,7 @@ export default function Dictionary() {
     setResult(null);
 
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed, sourceLang, targetLang }),
-      });
-
-      const data = await res.json();
+      const data = await API.translate(trimmed, sourceLang, targetLang);
       if (data.error) {
         setError(data.error);
         setLoading(false);

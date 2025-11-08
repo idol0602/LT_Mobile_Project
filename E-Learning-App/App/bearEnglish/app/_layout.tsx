@@ -1,9 +1,11 @@
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 import {
   ThemeProvider,
   DarkTheme as NavigationDarkTheme,
 } from "@react-navigation/native";
-import { StatusBar } from "react-native";
+import { StatusBar, AppState, AppStateStatus, Platform } from "react-native"; // THÊM AppState và AppStateStatus
+import * as NavigationBar from "expo-navigation-bar";
 
 const GLOBAL_DARK_BACKGROUND = "rgb(38, 39, 48)";
 const GLOBAL_TEXT_COLOR = "#FFFFFF";
@@ -18,7 +20,47 @@ const CustomFixedDarkTheme = {
   },
 };
 
+const showSystemBars = async () => {
+  if (Platform.OS === "android") {
+    // Đảm bảo hiển thị thanh điều hướng Android
+    await NavigationBar.setVisibilityAsync("visible");
+    // Thiết lập hành vi mặc định (tùy chọn)
+    await NavigationBar.setBehaviorAsync("inset-swipe");
+    await NavigationBar.setBackgroundColorAsync("#000000"); // Đặt màu mặc định
+  }
+  // Đảm bảo hiển thị thanh trạng thái
+  StatusBar.setHidden(false, "fade");
+};
+
+const hideSystemBars = async () => {
+  if (Platform.OS === "android") {
+    await NavigationBar.setVisibilityAsync("hidden");
+    await NavigationBar.setBehaviorAsync("overlay-swipe");
+  }
+  await StatusBar.setHidden(true, "fade");
+};
+
 export default function RootLayout() {
+  useEffect(() => {
+    hideSystemBars();
+
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextAppState: AppStateStatus) => {
+        if (nextAppState.match(/inactive|background/)) {
+          showSystemBars();
+        } else if (nextAppState === "active") {
+          hideSystemBars();
+        }
+      }
+    );
+
+    return () => {
+      subscription.remove();
+      showSystemBars();
+    };
+  }, []); // [] đảm bảo effect chỉ chạy 1 lần
+
   return (
     <ThemeProvider value={CustomFixedDarkTheme}>
       <StatusBar barStyle="light-content" />
@@ -27,6 +69,7 @@ export default function RootLayout() {
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(tips)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );
