@@ -44,7 +44,6 @@ export default function TabLayout() {
         name="aiTeacher"
         options={{
           title: "AI Teacher",
-          // SỬ DỤNG FONT AWESOME: robot (hoặc magic, star)
           tabBarIcon: ({ color }) => (
             <FontAwesome size={24} name="magic" color={color} />
           ),
@@ -56,7 +55,6 @@ export default function TabLayout() {
         name="developer"
         options={{
           title: "Developer",
-          // SỬ DỤNG FONT AWESOME: wrench
           tabBarIcon: ({ color }) => (
             <FontAwesome size={24} name="wrench" color={color} />
           ),
@@ -68,13 +66,13 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          // SỬ DỤNG FONT AWESOME: user
           tabBarIcon: ({ color }) => (
             <FontAwesome size={24} name="user" color={color} />
           ),
         }}
       />
 
+      {/* 5. Tab Dictionary */}
       <Tabs.Screen
         name="dictionary"
         options={{
@@ -82,6 +80,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <FontAwesome size={24} name="book" color={color} />
           ),
+        }}
+      />
+
+      {/* Hidden tabs - keep for routing but hide from navigation */}
+      <Tabs.Screen
+        name="VocabularyStudy"
+        options={{
+          href: null, // This hides the tab from bottom navigation
         }}
       />
     </Tabs>
