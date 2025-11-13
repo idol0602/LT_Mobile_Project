@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { FAB, Card } from "react-native-paper";
 import API from "../api/index";
+import type { Message, AIChatModalProps } from "../types";
 
 const generateUserId = () => {
   return (
@@ -20,17 +21,6 @@ const generateUserId = () => {
     Date.now().toString(36)
   );
 };
-
-interface Message {
-  id: number;
-  text: string;
-  isUser: boolean;
-}
-
-interface AIChatModalProps {
-  visible: boolean;
-  onClose: () => void;
-}
 
 const renderMessageContent = (text: string, isUser: boolean) => {
   if (isUser) {

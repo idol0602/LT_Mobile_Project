@@ -1,44 +1,16 @@
 import { API_BASE, UTILS_BASE } from "../constants/api";
-
-interface ChatResponse {
-  reply: string;
-}
-
-interface TranslateResponse {
-  translated: string;
-  sourceIpa?: string;
-  ipa?: string;
-  originalAudio?: string;
-  translatedAudio?: string;
-}
-
-interface PronounResponse {
-  success: boolean;
-  transcription: string;
-  duration_seconds: number;
-  aai_id: string;
-  accuracy_percentage: number;
-}
-
-interface Lesson {
-  _id: string;
-  name: string;
-  level: string;
-  topic: string;
-  type: string;
-  questions?: any[];
-  readingContent?: string;
-  vocabularies?: any[];
-}
-
-interface Vocabulary {
-  _id: string;
-  word: string;
-  definition: string;
-  pronunciation?: string;
-  partOfSpeech?: string;
-  exampleSentence?: string;
-}
+import type {
+  ChatResponse,
+  TranslateResponse,
+  PronounResponse,
+  Lesson,
+  Vocabulary,
+  Word,
+  ApiResponse,
+  ChatRequest,
+  TranslateRequest,
+  UploadAudioRequest
+} from "../types";
 
 class API {
     // ============ UTILS SERVER APIs ============
@@ -74,47 +46,48 @@ class API {
     }
 
     async checkPronunciation(audioUri: string, expectedWord: string): Promise<PronounResponse> {
-        const form = new FormData();
+        const formData = new FormData();
 
-        const fileName = audioUri.split("/").pop() || `${expectedWord}.m4a`;
-        const fileType = "audio/m4a";
-
-        const fileBlob = {
+        // Use consistent naming with VocabularyStudy component
+        formData.append("audio", {
           uri: audioUri,
-          name: fileName,
-          type: fileType,
-        } as any;
-
-        form.append("file", fileBlob);
-        form.append("primaryText", expectedWord);
+          name: `pron_${expectedWord.replace(/\s+/g, "_")}.m4a`,
+          type: "audio/m4a",
+        } as any);
+        formData.append("primaryText", expectedWord);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         try {
-          const res = await fetch(`${UTILS_BASE}/pronoun`, {
+          const response = await fetch(`${UTILS_BASE}/pronoun`, {
             method: "POST",
-            body: form,
-            headers: {
-              Accept: "application/json",
-            },
+            body: formData,
             signal: controller.signal,
           });
 
           clearTimeout(timeoutId);
 
-          if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
 
-          const json = await res.json();
-          return json as PronounResponse;
+          const result = await response.json();
+          return result as PronounResponse;
         } catch (error) {
           clearTimeout(timeoutId);
+          
           if (error instanceof Error && error.name === 'AbortError') {
             throw new Error("Upload timeout. Please check your connection and try again.");
           }
-          throw error;
+          
+          // Improve error handling with Vietnamese messages
+          let errorMessage = "Không thể kiểm tra phát âm. Vui lòng thử lại.";
+          if (error instanceof TypeError && error.message.includes("Network request failed")) {
+            errorMessage = "Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.";
+          }
+          
+          throw new Error(errorMessage);
         }
     }
 
@@ -155,6 +128,41 @@ class API {
         // This would typically return audio URL or base64 data
         const url = `${API_BASE}/api/audio/play?word=${encodeURIComponent(word)}`;
         return url;
+    }
+
+    // ============ VOCABULARY STUDY SPECIFIC APIs ============
+    
+    async fetchVocabulariesForStudy(lessonId: string): Promise<Vocabulary[]> {
+        try {
+          const response = await fetch(`${API_BASE}/api/lessons/${lessonId}/vocabularies`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const json = await response.json();
+          const data = json.data || json;
+
+          const words: Vocabulary[] = (data || []).map((v: any) => ({
+            _id: v._id,
+            word: v.word,
+            definition: v.definition || "",
+            pronunciation: v.pronunciation || "",
+            partOfSpeech: v.partOfSpeech || "",
+            exampleSentence: v.exampleSentence || "",
+            audioUrl: v.audioUrl || "",
+          }));
+
+          return words.slice(0, 5); // Limit to 5 words for study
+        } catch (error) {
+          console.error('Error fetching vocabularies:', error);
+          throw new Error("Không thể tải từ vựng. Vui lòng thử lại.");
+        }
+    }
+
+
+
+    async getWordAudioUrl(word: string): Promise<string> {
+        // Generate Text-to-Speech URL or return stored audio URL
+        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(word)}`;
+        return ttsUrl;
     }
 }
 

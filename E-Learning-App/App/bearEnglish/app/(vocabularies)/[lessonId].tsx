@@ -14,19 +14,9 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import API from "../../api/index";
 import VocabularyCard from "./VocabularyCard";
+import type { Vocabulary } from "../../types";
 
 const { width: screenWidth } = Dimensions.get("window");
-
-type Vocabulary = {
-  _id: string;
-  word: string;
-  definition: string;
-  pronunciation?: string;
-  partOfSpeech?: string;
-  exampleSentence?: string;
-  imageFileId?: string;
-  audioFileId?: string;
-};
 
 export default function VocabularyFlashcards() {
   const router = useRouter();

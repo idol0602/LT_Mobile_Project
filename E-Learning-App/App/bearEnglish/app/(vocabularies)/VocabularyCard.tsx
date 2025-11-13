@@ -10,19 +10,9 @@ import {
 } from "react-native";
 import { Audio } from "expo-av";
 import { API_BASE } from "../../constants/api";
+import type { Vocabulary } from "../../types";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
-type Vocabulary = {
-  _id: string;
-  word: string;
-  definition: string;
-  pronunciation?: string;
-  partOfSpeech?: string;
-  exampleSentence?: string;
-  imageFileId?: string;
-  audioFileId?: string;
-};
 
 interface VocabularyCardProps {
   item: Vocabulary;
