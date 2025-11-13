@@ -23,6 +23,12 @@ export default function VocabulariesLayout() {
           presentation: "card", // Hiệu ứng chuyển màn hình dạng card
         }}
       />
+      <Stack.Screen
+        name="VocabularyStudy"
+        options={{
+          title: "Vocabulary learning",
+        }}
+      />
     </Stack>
   );
 }
