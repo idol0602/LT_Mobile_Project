@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 const { Readable } = require("stream");
 
 const storage = multer.memoryStorage();
-// // --- HÀM TIỆN ÍCH ĐỂ UPLOAD VÀO GRIDFS ---
 const uploadStreamToGridFS = (buffer, filename, bucket) => {
   return new Promise((resolve, reject) => {
     const readableStream = Readable.from(buffer);
@@ -17,7 +16,6 @@ const uploadStreamToGridFS = (buffer, filename, bucket) => {
   });
 };
 
-// --- TẠO BÀI HỌC ---
 exports.createLesson = async (req, res) => {
   try {
     const { name, level, topic, type, questions, readingContent } = req.body;
@@ -175,6 +173,39 @@ exports.deleteLesson = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to delete lesson", error: error.message });
+  }
+};
+
+// 📋 Lấy tất cả bài học theo type (không phân trang)
+// Type có thể là: 'vocab', 'grammar', 'reading', 'listen', hoặc 'all'
+exports.getLessonsByType = async (req, res) => {
+  try {
+    const { type } = req.params; // Lấy type từ URL params
+
+    // Xây dựng query object
+    const queryObject = {};
+
+    // Nếu type được cung cấp và không phải "all", thêm vào query
+    if (type && type !== "all") {
+      queryObject.type = type;
+    }
+
+    const lessons = await Lesson.find(queryObject)
+      .populate("vocabularies")
+      .sort({ createdAt: -1 });
+
+    // Trả về kết quả
+    res.json({
+      data: lessons,
+      totalItems: lessons.length,
+      type: type || "all",
+    });
+  } catch (error) {
+    console.error("❌ Error fetching lessons by type:", error);
+    res.status(500).json({
+      message: "Failed to fetch lessons by type",
+      error: error.message,
+    });
   }
 };
 

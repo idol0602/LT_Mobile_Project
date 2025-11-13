@@ -82,14 +82,6 @@ export default function TabLayout() {
           ),
         }}
       />
-
-      {/* Hidden tabs - keep for routing but hide from navigation */}
-      <Tabs.Screen
-        name="VocabularyStudy"
-        options={{
-          href: null, // This hides the tab from bottom navigation
-        }}
-      />
     </Tabs>
   );
 }

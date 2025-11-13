@@ -9,7 +9,7 @@ import {
   FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { API_BASE } from "../../constants/api";
+import API from "../../api/index";
 
 type Lesson = {
   _id: string;
@@ -28,6 +28,7 @@ export default function VocabularyLessons() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLessons();
@@ -36,31 +37,20 @@ export default function VocabularyLessons() {
   async function fetchLessons() {
     try {
       setLoading(true);
-      console.log("Fetching lessons from:", `${API_BASE}/api/lessons`);
-      const res = await fetch(`${API_BASE}/api/lessons`);
-      console.log("Response status:", res.status);
+      setError(null);
+      console.log("Fetching vocabulary lessons");
+      const response = await API.getLessons("vocab");
+      console.log("API Response:", response);
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      // API getLessons returns { data: lessons, pagination }
+      const data = response.data || [];
+      console.log("Vocabulary lessons data:", data);
+      console.log("Number of vocabulary lessons:", data.length);
 
-      const json = await res.json();
-      console.log("API Response:", json);
-
-      // controller returns { data: lessons, ... }
-      const data = json.data || json;
-      console.log("Parsed lessons data:", data);
-
-      // Filter only vocabulary lessons (type: "vocab")
-      const vocabLessons = (data || []).filter(
-        (lesson: Lesson) => lesson.type === "vocab"
-      );
-      console.log("Filtered vocab lessons:", vocabLessons);
-      console.log("Number of vocab lessons:", vocabLessons.length);
-
-      setLessons(vocabLessons);
+      setLessons(data);
     } catch (err) {
-      console.error("Failed to fetch lessons", err);
+      console.error("Failed to fetch vocabulary lessons", err);
+      setError(err instanceof Error ? err.message : "Failed to load lessons");
     } finally {
       setLoading(false);
     }
@@ -93,7 +83,20 @@ export default function VocabularyLessons() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator />
+        <ActivityIndicator size="large" color="#4A90E2" />
+        <Text style={styles.loadingText}>Loading lessons...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorState}>
+        <Text style={styles.errorText}>Connection Error</Text>
+        <Text style={styles.errorSubtext}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchLessons}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -102,10 +105,12 @@ export default function VocabularyLessons() {
     <View style={styles.container}>
       <Text style={styles.header}>Vocabulary Lessons</Text>
 
-      {lessons.length === 0 && !loading ? (
+      {lessons.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>No lessons found</Text>
-          <Text style={styles.debugText}>API: {API_BASE}/api/lessons</Text>
+          <Text style={styles.emptySubtext}>
+            Try refreshing or check your connection
+          </Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchLessons}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
@@ -137,6 +142,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgb(38, 39, 48)",
+  },
+  loadingText: {
+    color: "#fff",
+    fontSize: 16,
+    marginTop: 10,
   },
   card: {
     backgroundColor: "#3c3d47",
@@ -175,6 +185,32 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
     marginBottom: 10,
+  },
+  emptySubtext: {
+    color: "#aaa",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  errorState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "rgb(38, 39, 48)",
+  },
+  errorText: {
+    color: "#ff6b6b",
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 10,
+    fontWeight: "600",
+  },
+  errorSubtext: {
+    color: "#aaa",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 20,
   },
   debugText: {
     color: "#aaa",

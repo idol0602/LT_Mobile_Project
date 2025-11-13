@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { API_BASE } from "../../constants/api";
+import API from "../../api/index";
 import VocabularyCard from "./VocabularyCard";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -45,18 +45,11 @@ export default function VocabularyFlashcards() {
     try {
       setLoading(true);
       console.log("Fetching vocabularies for lesson:", lessonId);
-      const res = await fetch(
-        `${API_BASE}/api/lessons/${lessonId}/vocabularies`
-      );
+      const response = await API.getVocabulariesByLessonId(lessonId);
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      console.log("Vocabularies response:", response);
 
-      const json = await res.json();
-      console.log("Vocabularies response:", json);
-
-      const data = json.data || json;
+      const data = response.data || response;
       setVocabularies(data || []);
     } catch (err) {
       console.error("Failed to fetch vocabularies", err);
@@ -178,7 +171,7 @@ export default function VocabularyFlashcards() {
           style={styles.studyButton}
           onPress={() =>
             router.push({
-              pathname: "/VocabularyStudy",
+              pathname: "./VocabularyStudy",
               params: { lessonId, lessonTitle },
             })
           }
