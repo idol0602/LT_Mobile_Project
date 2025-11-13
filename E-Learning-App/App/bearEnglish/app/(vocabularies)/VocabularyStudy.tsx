@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { Audio } from "expo-av";
 import { useLocalSearchParams, router } from "expo-router";
-import { API_BASE, UTILS_BASE } from "../../constants/api";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -22,29 +21,16 @@ import {
   withSpring,
   withSequence,
   withTiming,
-  runOnJS,
 } from "react-native-reanimated";
 import VocabularyCard from "./VocabularyCard";
-
-// --- Types
-
-type Word = {
-  _id: string;
-  word: string;
-  definition: string;
-  pronunciation?: string;
-  partOfSpeech?: string;
-  exampleSentence?: string;
-  audioUrl?: string;
-};
-
-type PronounResponse = {
-  success: boolean;
-  transcription?: string;
-  duration_seconds?: number;
-  aai_id?: string;
-  accuracy_percentage?: number;
-};
+import API from "../../api";
+import type {
+  Word,
+  PronounResponse,
+  StageStats,
+  MatchingItem,
+  FeedbackType,
+} from "../../types";
 
 export default function VocabularyStudy() {
   const params = useLocalSearchParams();
@@ -221,30 +207,16 @@ export default function VocabularyStudy() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(
-          `${API_BASE}/api/lessons/${lessonId}/vocabularies`
-        );
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const json = await response.json();
-        const data = json.data || json;
-
-        const words: Word[] = (data || []).map((v: any) => ({
-          _id: v._id,
-          word: v.word,
-          definition: v.definition || "",
-          pronunciation: v.pronunciation || "",
-          partOfSpeech: v.partOfSpeech || "",
-          exampleSentence: v.exampleSentence || "",
-          audioUrl: v.audioUrl || "",
-        }));
-
-        const limited = words.slice(0, 5);
-        setAllWords(limited);
-        setCurrentWords(limited);
+        const words = await API.fetchVocabulariesForStudy(lessonId);
+        setAllWords(words);
+        setCurrentWords(words);
       } catch (err) {
         console.error(err);
-        setError("Không thể tải từ vựng. Vui lòng thử lại.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Không thể tải từ vựng. Vui lòng thử lại."
+        );
       } finally {
         setLoading(false);
       }
@@ -527,24 +499,7 @@ export default function VocabularyStudy() {
     try {
       setUploading(true);
 
-      const formData = new FormData();
-      // On React Native (Expo) the file object should be { uri, name, type }
-      formData.append("audio", {
-        uri: audioUri,
-        name: `pron_${currentWord.word.replace(/\s+/g, "_")}.m4a`,
-        type: "audio/m4a",
-      } as any);
-      formData.append("primaryText", currentWord.word);
-
-      // IMPORTANT: do NOT set Content-Type header explicitly for multipart/form-data in React Native
-      const response = await fetch(`${UTILS_BASE}/pronoun`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const result: PronounResponse = await response.json();
+      const result = await API.checkPronunciation(audioUri, currentWord.word);
       console.log("Pronunciation response:", result);
 
       const acc = result.accuracy_percentage ?? 0;
@@ -977,15 +932,14 @@ export default function VocabularyStudy() {
           {/* Audio playback button */}
           <TouchableOpacity
             style={styles.playAudioButton}
-            onPress={() => {
-              if (word.audioUrl) {
-                playAudio(word.audioUrl);
-              } else {
-                // Generate Text-to-Speech or use a placeholder audio
-                const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(
-                  word.word
-                )}`;
-                playAudio(ttsUrl);
+            onPress={async () => {
+              try {
+                const audioUrl =
+                  word.audioUrl || (await API.getWordAudioUrl(word.word));
+                playAudio(audioUrl);
+              } catch (error) {
+                console.error("Error getting audio URL:", error);
+                Alert.alert("Lỗi", "Không thể phát âm thanh");
               }
             }}
           >

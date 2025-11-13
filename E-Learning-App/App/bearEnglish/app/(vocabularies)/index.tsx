@@ -10,19 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import API from "../../api/index";
-
-type Lesson = {
-  _id: string;
-  name: string;
-  level?: string;
-  topic?: string;
-  type?: string;
-  vocabularies?: any[];
-  readingContent?: string;
-  questions?: any[];
-  createdAt?: string;
-  updatedAt?: string;
-};
+import type { Lesson } from "../../types";
 
 export default function VocabularyLessons() {
   const router = useRouter();
