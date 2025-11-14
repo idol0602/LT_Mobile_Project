@@ -279,7 +279,12 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Learning Modules</Text>
             <View style={styles.modulesGrid}>
-              <TouchableOpacity style={styles.moduleCard}>
+              <TouchableOpacity
+                style={styles.moduleCard}
+                onPress={() =>
+                  router.push({ pathname: "/(vocabularies)" } as any)
+                }
+              >
                 <View style={styles.iconContainer}>
                   <VocabularyIcon size={50} />
                 </View>

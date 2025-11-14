@@ -36,7 +36,7 @@ const SignIn: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, translateY]);
 
   const handleLogin = () => {
     if (!email || !password) {
@@ -47,10 +47,22 @@ const SignIn: React.FC = () => {
     // Giả lập thông tin đăng nhập
     if (email === "admin" && password === "123") {
       Alert.alert("Success", "Login successful!");
-      router.replace("(tabs)");
+      router.replace("/(tabs)");
     } else {
       Alert.alert("Login Failed", "Invalid username or password.");
     }
+  };
+
+  // Demo account quick-login
+  const handleUseDemo = () => {
+    const demoEmail = "admin";
+    const demoPassword = "123";
+    // fill fields for visibility
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    // perform the same login behaviour
+    Alert.alert("Success", "Login successful!");
+    router.replace("/(tabs)");
   };
 
   return (
@@ -102,6 +114,11 @@ const SignIn: React.FC = () => {
         {/* Login button */}
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginText}>Login</Text>
+        </TouchableOpacity>
+
+        {/* Demo account quick login */}
+        <TouchableOpacity style={styles.demoButton} onPress={handleUseDemo}>
+          <Text style={styles.demoText}>Use demo account</Text>
         </TouchableOpacity>
 
         {/* Forgot password */}
@@ -196,6 +213,18 @@ const styles = StyleSheet.create({
   loginText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  demoButton: {
+    backgroundColor: "#28a745",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  demoText: {
+    color: "#fff",
+    fontSize: 15,
     fontWeight: "600",
   },
   forgotPasswordContainer: {
