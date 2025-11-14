@@ -15,10 +15,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { API_BASE } from "../../constants/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 const SignIn: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(30)).current;
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -94,14 +96,13 @@ const SignIn: React.FC = () => {
         console.warn("Token or user missing in response:", data);
       }
 
-      // Hiển thị success message
-      // const userName = user?.name || email.split("@")[0];
-      // Alert.alert("Success", `Welcome back, ${userName}!`, [
-      //   {
-      //     text: "OK",
-      //     onPress: () => router.replace("/(tabs)"),
-      //   },
-      // ]);
+      // Lưu thông tin user và token vào context
+      if (user && token) {
+        login(user, token);
+      }
+
+      // Chuyển về trang tabs ngay lập tức
+      router.replace("/(tabs)");
     } catch (error) {
       console.error("Login error:", error);
       Alert.alert(
