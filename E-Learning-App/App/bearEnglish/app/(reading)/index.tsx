@@ -7,24 +7,37 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { BookOpen } from "lucide-react-native";
 import API from "../../api";
 import type { Lesson } from "../../types";
 
 export default function ReadingScreen() {
+  const router = useRouter();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchReadingLessons = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log("Fetching reading lessons...");
       const response = await API.getLessons("reading");
+      console.log("Reading lessons response:", response);
       setLessons(response.data || []);
     } catch (error) {
       console.error("Error fetching reading lessons:", error);
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "Failed to load reading lessons";
+      setError(errorMsg);
+      Alert.alert("Error", errorMsg);
     } finally {
       setLoading(false);
     }
@@ -57,8 +70,8 @@ export default function ReadingScreen() {
     <TouchableOpacity
       style={styles.lessonCard}
       onPress={() => {
-        // TODO: Navigate to lesson detail screen
-        console.log("Open lesson:", item._id);
+        console.log("Opening lesson:", item._id);
+        router.push(`/(reading)/${item._id}` as any);
       }}
     >
       <View style={styles.cardHeader}>
@@ -102,6 +115,24 @@ export default function ReadingScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#EC4899" />
           <Text style={styles.loadingText}>Loading reading lessons...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <BookOpen size={64} color="#F44336" />
+          <Text style={styles.errorTitle}>Không thể tải bài học</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchReadingLessons}
+          >
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -246,5 +277,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#808080",
     marginTop: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#e0e0e0",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: "#a0a0a0",
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 24,
+    backgroundColor: "#EC4899",
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

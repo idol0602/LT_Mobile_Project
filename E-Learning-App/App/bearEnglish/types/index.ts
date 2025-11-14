@@ -35,6 +35,22 @@ export interface Question {
   type?: 'multiple-choice' | 'true-false' | 'fill-blank';
 }
 
+// --- Reading Question Type ---
+export interface ReadingQuestion {
+  _id?: string;
+  questionText: string;
+  options: string[];
+  correctAnswerIndex: number | null;
+  answerText?: string;
+  audioFileId?: string;
+}
+
+// --- Reading Lesson Type ---
+export interface ReadingLesson extends Omit<Lesson, 'questions'> {
+  questions?: ReadingQuestion[];
+  readingContent: string;
+}
+
 // --- Vocabulary Types ---
 export interface Vocabulary {
   _id: string;

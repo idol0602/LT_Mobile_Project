@@ -70,6 +70,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(tips)" options={{ headerShown: false }} />
         <Stack.Screen name="(vocabularies)" options={{ headerShown: false }} />
+        <Stack.Screen name="(reading)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>

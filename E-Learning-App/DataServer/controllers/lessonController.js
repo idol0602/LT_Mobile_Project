@@ -138,12 +138,22 @@ exports.getAllLessons = async (req, res) => {
 // 🔍 Lấy 1 bài học
 exports.getLessonById = async (req, res) => {
   try {
-    const lesson = await Lesson.findById(req.params.id).populate(
-      "vocabularies"
-    );
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid lesson ID format" });
+    }
+
+    const lesson = await Lesson.findById(req.params.id)
+      .populate({
+        path: "vocabularies",
+        options: { strictPopulate: false }, // Don't fail if some refs are invalid
+      })
+      .lean(); // Convert to plain JS object for better performance
+
     if (!lesson) return res.status(404).json({ message: "Lesson not found" });
     res.json({ data: lesson });
   } catch (error) {
+    console.error("❌ Error fetching lesson by ID:", error);
     res
       .status(500)
       .json({ message: "Error fetching lesson", error: error.message });

@@ -94,14 +94,36 @@ class API {
     // ============ DATA SERVER APIs ============
 
     async getLessons(type?: string): Promise<{ data: Lesson[]; pagination?: any }> {
-        const url = type ? `${API_BASE}/api/lessons?type=${type}` : `${API_BASE}/api/lessons`;
-        const response = await fetch(url);
+        try {
+          const url = type ? `${API_BASE}/api/lessons/type/${type}` : `${API_BASE}/api/lessons`;
+          console.log("Fetching lessons from:", url);
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          });
 
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
+          console.log("Response status:", response.status);
 
-        const data = await response.json();
-        return data;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("API error response:", errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log("Lessons data received:", data.data?.length || 0, "lessons");
+          return data;
+        } catch (error) {
+          console.error("getLessons error:", error);
+          if (error instanceof TypeError && error.message.includes("Network request failed")) {
+            throw new Error("Không thể kết nối tới server. Vui lòng kiểm tra:\n1. DataServer có đang chạy?\n2. Kết nối mạng WiFi");
+          }
+          throw error;
+        }
     }
 
     async getLessonById(id: string): Promise<{ data: Lesson }> {
