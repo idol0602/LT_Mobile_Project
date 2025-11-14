@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,24 @@ import {
   Animated,
   Easing,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { API_BASE } from "../../constants/api";
 
 const SignupScreen: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(30)).current;
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -31,6 +42,87 @@ const SignupScreen: React.FC = () => {
     }).start();
   }, []);
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSignUp = async () => {
+    // Validation
+    if (!fullName.trim()) {
+      Alert.alert("Error", "Please enter your full name");
+      return;
+    }
+
+    if (!email.trim()) {
+      Alert.alert("Error", "Please enter your email");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
+    if (!password) {
+      Alert.alert("Error", "Please enter a password");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_BASE}/api/users/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      Alert.alert(
+        "Success",
+        "Account created successfully! Please check your email to verify your account.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(auth)/signIn"),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Registration error:", error);
+      Alert.alert(
+        "Registration Failed",
+        error instanceof Error
+          ? error.message
+          : "An error occurred during registration"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -45,19 +137,7 @@ const SignupScreen: React.FC = () => {
         ]}
       >
         <Text style={styles.title}>Welcome To BearEnglish!</Text>
-
-        <TouchableOpacity
-          style={[styles.socialButton, { backgroundColor: "#DB4437" }]}
-        >
-          <Ionicons name="logo-google" size={20} color="#fff" />
-          <Text style={styles.socialText}>Sign up with Google</Text>
-        </TouchableOpacity>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.line} />
-          <Text style={styles.orText}>OR</Text>
-          <View style={styles.line} />
-        </View>
+        <Text style={styles.subtitle}>Create your account to get started</Text>
 
         {/* Form Inputs */}
         <View style={styles.inputContainer}>
@@ -66,6 +146,9 @@ const SignupScreen: React.FC = () => {
             placeholder="Full name"
             placeholderTextColor="#aaa"
             style={styles.input}
+            value={fullName}
+            onChangeText={setFullName}
+            editable={!loading}
           />
         </View>
 
@@ -75,22 +158,67 @@ const SignupScreen: React.FC = () => {
             placeholder="Email"
             placeholderTextColor="#aaa"
             style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!loading}
           />
         </View>
 
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={18} color="#aaa" />
           <TextInput
-            placeholder="Password"
+            placeholder="Password (min 6 characters)"
             placeholderTextColor="#aaa"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
           />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons
+              name={showPassword ? "eye-outline" : "eye-off-outline"}
+              size={18}
+              color="#aaa"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Ionicons name="lock-closed-outline" size={18} color="#aaa" />
+          <TextInput
+            placeholder="Confirm password"
+            placeholderTextColor="#aaa"
+            secureTextEntry={!showConfirmPassword}
+            style={styles.input}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            editable={!loading}
+          />
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Ionicons
+              name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+              size={18}
+              color="#aaa"
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Create Account Button */}
-        <TouchableOpacity style={styles.createButton}>
-          <Text style={styles.createButtonText}>Create an account</Text>
+        <TouchableOpacity
+          style={[styles.createButton, loading && styles.createButtonDisabled]}
+          onPress={handleSignUp}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.createButtonText}>Create an account</Text>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.termsText}>
@@ -132,6 +260,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 26,
     fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: "#aaa",
+    fontSize: 14,
     textAlign: "center",
     marginBottom: 24,
   },
@@ -184,6 +318,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 10,
+  },
+  createButtonDisabled: {
+    backgroundColor: "#555",
   },
   createButtonText: {
     color: "#fff",
