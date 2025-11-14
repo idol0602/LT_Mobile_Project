@@ -302,7 +302,7 @@ export default function HomeScreen() {
 
               <TouchableOpacity
                 style={styles.moduleCard}
-                onPress={() => router.push("/(tabs)/reading")}
+                onPress={() => router.push("/reading")}
               >
                 <View style={styles.iconContainer}>
                   <ReadingIcon size={50} />
