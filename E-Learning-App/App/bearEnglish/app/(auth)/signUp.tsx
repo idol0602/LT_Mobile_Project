@@ -82,34 +82,39 @@ const SignupScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_BASE}/api/users/register`, {
+      const requestBody = {
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        password: password,
+      };
+
+      console.log("Sending registration request:", requestBody);
+
+      const response = await fetch(`${API_BASE}/api/users/register-mobile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          password: password,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log("Response status:", response.status);
+
       const data = await response.json();
+      console.log("Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Registration failed");
       }
 
-      Alert.alert(
-        "Success",
-        "Account created successfully! Please check your email to verify your account.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/(auth)/signIn"),
-          },
-        ]
-      );
+      // Chuyển sang màn hình nhập OTP
+      router.push({
+        pathname: "/(auth)/verifyOTP",
+        params: {
+          email: email.trim().toLowerCase(),
+          fullName: fullName.trim(),
+        },
+      });
     } catch (error) {
       console.error("Registration error:", error);
       Alert.alert(

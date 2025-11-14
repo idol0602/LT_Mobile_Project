@@ -6,9 +6,12 @@ const { protect } = require("../middleware/auth");
 
 // Public routes
 router.post("/register", userController.register);
+router.post("/register-mobile", userController.registerMobile);
 router.post("/login", userController.login);
 router.get("/verify-email/:token", userController.verifyEmail);
+router.post("/verify-otp", userController.verifyOTP);
 router.post("/resend-verification", userController.resendVerification);
+router.post("/resend-otp", userController.resendOTP);
 
 // Protected routes
 router.get("/me", protect, userController.getMe);

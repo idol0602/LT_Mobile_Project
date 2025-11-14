@@ -47,6 +47,15 @@ const userSchema = new Schema(
     verificationToken: {
       type: String,
     },
+    verificationTokenExpire: {
+      type: Date,
+    },
+    otpCode: {
+      type: String,
+    },
+    otpExpire: {
+      type: Date,
+    },
     resetPasswordToken: {
       type: String,
     },

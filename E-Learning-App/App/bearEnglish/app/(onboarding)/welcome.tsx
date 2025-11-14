@@ -14,7 +14,7 @@ const { width } = Dimensions.get("window");
 export default function Welcome() {
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace("/(auth)/signUp");
+      router.replace("/(auth)/signIn");
     }, DELAY_TIME);
     return () => clearTimeout(timer);
   }, []);
