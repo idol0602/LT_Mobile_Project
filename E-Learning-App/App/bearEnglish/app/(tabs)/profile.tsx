@@ -9,6 +9,7 @@ import {
   ImageBackground,
   Dimensions,
   Alert,
+  Modal,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import { LinearGradient } from "expo-linear-gradient";
@@ -33,9 +34,12 @@ const IconClock = () => <Text style={styles.iconText}>⏱️</Text>;
 const IconFire = () => <Text style={styles.iconText}>🔥</Text>;
 const IconTrophy = () => <Text style={styles.iconText}>🏆</Text>;
 const IconLogout = () => <Text style={styles.iconText}>🚪</Text>;
+const IconUser = () => <Text style={styles.iconText}>👤</Text>;
+const IconLock = () => <Text style={styles.iconText}>🔒</Text>;
 
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState("progress");
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
 
   // Default avatar nếu chưa đăng nhập
@@ -43,6 +47,7 @@ export default function ProfileScreen() {
     "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/474190UWU/anh-avatar-one-piece-sieu-dep_082621920.jpg";
 
   const handleLogout = () => {
+    setShowSettingsModal(false);
     Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
       { text: "Hủy", style: "cancel" },
       {
@@ -54,6 +59,18 @@ export default function ProfileScreen() {
         },
       },
     ]);
+  };
+
+  const handleEditProfile = () => {
+    setShowSettingsModal(false);
+    // TODO: Navigate to edit profile screen
+    Alert.alert("Thông báo", "Chức năng đang phát triển");
+  };
+
+  const handleChangePassword = () => {
+    setShowSettingsModal(false);
+    // TODO: Navigate to change password screen
+    Alert.alert("Thông báo", "Chức năng đang phát triển");
   };
 
   const userData = {
@@ -99,8 +116,11 @@ export default function ProfileScreen() {
               </View>
             )}
             {isAuthenticated ? (
-              <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                <IconLogout />
+              <TouchableOpacity
+                style={styles.settingsBtn}
+                onPress={() => setShowSettingsModal(true)}
+              >
+                <IconSettings />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -299,6 +319,59 @@ export default function ProfileScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Settings Modal */}
+      <Modal
+        visible={showSettingsModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSettingsModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cài đặt</Text>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleEditProfile}
+            >
+              <IconUser />
+              <Text style={styles.menuText}>Thay đổi thông tin</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleChangePassword}
+            >
+              <IconLock />
+              <Text style={styles.menuText}>Đổi mật khẩu</Text>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity
+              style={[styles.menuItem, styles.menuItemDanger]}
+              onPress={handleLogout}
+            >
+              <IconLogout />
+              <Text style={[styles.menuText, styles.menuTextDanger]}>
+                Đăng xuất
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => setShowSettingsModal(false)}
+            >
+              <Text style={styles.cancelBtnText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ImageBackground>
   );
 }
@@ -492,4 +565,66 @@ const styles = StyleSheet.create({
   },
 
   bottomPadding: { height: 50 },
+
+  /** ⭐ SETTINGS MODAL ⭐ **/
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "rgba(38, 43, 61, 1)",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 12,
+  },
+  menuItemDanger: {
+    backgroundColor: "rgba(255, 68, 68, 0.1)",
+  },
+  menuText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  menuTextDanger: {
+    color: "#FF6B6B",
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    marginVertical: 8,
+  },
+  cancelBtn: {
+    marginTop: 12,
+    paddingVertical: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  cancelBtnText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#A0A0A0",
+  },
 });
