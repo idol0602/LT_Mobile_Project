@@ -26,12 +26,7 @@ import "quill/dist/quill.snow.css";
 import { QuillEditor } from "../ui/QuillEditor";
 import { updateLesson } from "../../services/lessonApi";
 import { QuestionItem } from "../ui/QuestionItem";
-
-interface Question {
-  questionText: string;
-  options: [string, string, string, string];
-  correctAnswerIndex: number;
-}
+import type { Question } from "../../types/Question";
 
 interface ReadingData {
   name: string;
@@ -114,6 +109,7 @@ export function EditReadingModal({
           options: q.options || ["", "", "", ""],
           correctAnswerIndex:
             typeof q.correctAnswerIndex === "number" ? q.correctAnswerIndex : 0,
+          answerText: q.answerText || "",
         })) || [],
     };
     setEditingData(loadedData);
@@ -159,6 +155,7 @@ export function EditReadingModal({
       questionText: "",
       options: ["", "", "", ""],
       correctAnswerIndex: 0,
+      answerText: "",
     };
     handleDataChange("questions", [...editingData.questions, newQuestion]);
   };
@@ -169,9 +166,13 @@ export function EditReadingModal({
     handleDataChange("questions", newQuestions);
   };
 
-  const handleQuestionTextChange = (index: number, value: string) => {
+  const handleQuestionChange = (
+    index: number,
+    field: keyof Question,
+    value: any
+  ) => {
     const newQuestions = [...editingData.questions];
-    newQuestions[index].questionText = value;
+    newQuestions[index] = { ...newQuestions[index], [field]: value };
     handleDataChange("questions", newQuestions);
   };
 
@@ -181,12 +182,7 @@ export function EditReadingModal({
     value: string
   ) => {
     const newQuestions = [...editingData.questions];
-    const newOptions = [...newQuestions[qIndex].options] as [
-      string,
-      string,
-      string,
-      string
-    ];
+    const newOptions = [...newQuestions[qIndex].options];
     newOptions[optIndex] = value;
     newQuestions[qIndex].options = newOptions;
     handleDataChange("questions", newQuestions);
@@ -319,7 +315,7 @@ export function EditReadingModal({
                   key={qIndex}
                   index={qIndex}
                   question={question}
-                  onChange={handleQuestionTextChange}
+                  onChange={handleQuestionChange}
                   onOptionChange={handleOptionChange}
                   onSelectCorrect={handleCorrectAnswerChange}
                   onDelete={handleRemoveQuestion}

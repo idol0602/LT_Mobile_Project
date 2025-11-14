@@ -61,7 +61,16 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 4. Tab Profile */}
+      {/* 4. Tab Reading - Hidden from tab bar but accessible via navigation */}
+      <Tabs.Screen
+        name="reading"
+        options={{
+          href: null, // Hide from tab bar
+          title: "Reading",
+        }}
+      />
+
+      {/* 5. Tab Profile */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -72,7 +81,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 5. Tab Dictionary */}
+      {/* 6. Tab Dictionary */}
       <Tabs.Screen
         name="dictionary"
         options={{

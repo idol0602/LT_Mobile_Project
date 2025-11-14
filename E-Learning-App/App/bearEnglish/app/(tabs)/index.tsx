@@ -300,7 +300,10 @@ export default function HomeScreen() {
                 <Text style={styles.moduleSubtitle}>Improve hearing</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.moduleCard}>
+              <TouchableOpacity
+                style={styles.moduleCard}
+                onPress={() => router.push("/(tabs)/reading")}
+              >
                 <View style={styles.iconContainer}>
                   <ReadingIcon size={50} />
                 </View>
