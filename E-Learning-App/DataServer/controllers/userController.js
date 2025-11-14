@@ -27,11 +27,11 @@ const sendVerificationEmail = async (email, token, fullName) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "Xác nhận đăng ký tài khoản - E-Learning App",
+    subject: "Xác nhận đăng ký tài khoản - BearEnglish",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #4CAF50;">Chào mừng ${fullName}!</h2>
-        <p>Cảm ơn bạn đã đăng ký tài khoản tại E-Learning App.</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản tại BearEnglish.</p>
         <p>Vui lòng nhấn vào nút bên dưới để xác nhận email của bạn:</p>
         <a href="${verificationUrl}" 
            style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
@@ -220,14 +220,14 @@ exports.verifyEmail = async (req, res) => {
     user.isVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpire = undefined;
+
     await user.save();
 
-    res.status(200).json({
+    return res.json({
       success: true,
       message: "Email đã được xác nhận thành công",
     });
   } catch (error) {
-    console.error("Lỗi xác nhận email:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server khi xác nhận email",

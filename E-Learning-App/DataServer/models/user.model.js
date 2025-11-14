@@ -47,9 +47,6 @@ const userSchema = new Schema(
     verificationToken: {
       type: String,
     },
-    verificationTokenExpire: {
-      type: Date,
-    },
     resetPasswordToken: {
       type: String,
     },
@@ -87,19 +84,18 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 // Method để generate verification token
 userSchema.methods.generateVerificationToken = function () {
   const crypto = require("crypto");
-  const token = crypto.randomBytes(32).toString("hex");
+  const rawToken = crypto.randomBytes(32).toString("hex");
 
-  // Hash token và lưu vào DB
+  // Lưu hashed token vào DB
   this.verificationToken = crypto
     .createHash("sha256")
-    .update(token)
+    .update(rawToken)
     .digest("hex");
 
-  // Set expire time (10 phút)
-  this.verificationTokenExpire = Date.now() + 10 * 60 * 1000;
+  // Set thời gian hết hạn
+  this.verificationTokenExpire = Date.now() + 3600000; // 1 giờ
 
-  // Trả về token gốc để gửi qua email
-  return token;
+  return rawToken;
 };
 
 // Method để generate reset password token
