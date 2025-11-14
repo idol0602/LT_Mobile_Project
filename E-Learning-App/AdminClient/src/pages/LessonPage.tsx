@@ -130,7 +130,6 @@ export default function LessonPage() {
       setLoading(false);
     }
   };
-
   const handleSaveSuccess = () => {
     setOpenWizard(false);
     setOpenVocabModal(false);

@@ -1,5 +1,4 @@
 // src/App.tsx
-import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 // 1. Import các component cần thiết từ MUI
@@ -12,6 +11,15 @@ import DashboardPage from "./pages/DashboardPage";
 import VocabulariesPage from "./pages/vocabulary/VocabulariesPage";
 import TopicsPage from "./pages/TopicsPage";
 import LessonPage from "./pages/LessonPage";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import ProfilePage from "./pages/ProfilePage";
+import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
+import UnverifiedPage from "./pages/auth/UnverifiedPage";
+
+// 3. Import Auth context và Protected Route
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 // 3. Tạo một theme tùy chỉnh 🎨
 // Bạn có thể tùy chỉnh màu sắc, font chữ, và nhiều thứ khác ở đây.
 const theme = createTheme({
@@ -43,28 +51,51 @@ const theme = createTheme({
   },
 });
 
-// Cấu hình router (không đổi)
+// Cấu hình router
 const router = createBrowserRouter([
   {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+  {
+    path: "/verify-email",
+    element: <VerifyEmailPage />,
+  },
+  {
+    path: "/unverified",
+    element: <UnverifiedPage />,
+  },
+  {
     path: "/",
-    element: <DashboardLayout />,
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "vocabularies", element: <VocabulariesPage /> },
       { path: "topics", element: <TopicsPage /> },
       { path: "lessons", element: <LessonPage /> },
+      { path: "profile", element: <ProfilePage /> },
     ],
   },
 ]);
 
 function App() {
   return (
-    // 4. Bọc toàn bộ ứng dụng trong ThemeProvider
-    <ThemeProvider theme={theme}>
-      {/* CssBaseline giúp reset CSS và áp dụng font, background từ theme */}
-      <CssBaseline />
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    // 4. Bọc toàn bộ ứng dụng trong AuthProvider và ThemeProvider
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        {/* CssBaseline giúp reset CSS và áp dụng font, background từ theme */}
+        <CssBaseline />
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

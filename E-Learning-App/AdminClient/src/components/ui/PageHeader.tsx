@@ -6,6 +6,7 @@ import AddIcon from "@mui/icons-material/Add";
 // Thêm interface để định nghĩa kiểu cho props
 interface PageHeaderProps {
   title: string;
+  subtitle?: string;
   buttonText: string;
   onButtonClick: () => void;
   icon: React.ReactNode;
@@ -13,6 +14,7 @@ interface PageHeaderProps {
 
 export function PageHeader({
   title,
+  subtitle,
   buttonText,
   onButtonClick,
   icon,

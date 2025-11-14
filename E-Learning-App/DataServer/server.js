@@ -6,11 +6,13 @@ const Grid = require("gridfs-stream");
 require("./models/topic.model");
 require("./models/vocabulary.model");
 require("./models/lesson.model");
+require("./models/user.model");
 
 const audioRouter = require("./routes/audio");
 const vocabularyRouter = require("./routes/vocabulary.route");
 const lessonRouter = require("./routes/lesson.route");
 const imageRouter = require("./routes/image");
+const userRouter = require("./routes/user.route");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -59,6 +61,7 @@ conn.once("open", () => {
   app.use("/api/vocabularies", vocabularyRouter);
   app.use("/api/lessons", lessonRouter);
   app.use("/api/images", imageRouter);
+  app.use("/api/users", userRouter);
   // router(app);
 
   app.listen(PORT, () =>

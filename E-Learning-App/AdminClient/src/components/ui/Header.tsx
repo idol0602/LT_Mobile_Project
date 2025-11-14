@@ -1,5 +1,6 @@
 // src/layouts/Header.tsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AppBar,
   Toolbar,
@@ -16,6 +17,7 @@ import { styled, alpha } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircle from "@mui/icons-material/AccountCircle"; // Icon cho Profile
 import Logout from "@mui/icons-material/Logout"; // Icon cho Logout
+import { useAuth } from "../../contexts/AuthContext";
 
 // --- Các styled components cho Search bar (Giữ nguyên) ---
 const Search = styled("div")(({ theme }) => ({
@@ -64,6 +66,9 @@ interface HeaderProps {
 }
 
 export function Header({ sidebarWidth }: HeaderProps) {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
   // --- State quản lý trạng thái mở/đóng và vị trí của Menu ---
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -76,13 +81,14 @@ export function Header({ sidebarWidth }: HeaderProps) {
     setAnchorEl(null); // Đóng menu
   };
 
-  // --- Các hàm xử lý hành động khi chọn item trong Menu (Tạm thời) ---
+  // --- Các hàm xử lý hành động khi chọn item trong Menu ---
   const handleProfile = () => {
-    console.log("Chuyển đến trang Profile");
+    navigate("/profile");
     handleClose();
   };
   const handleLogout = () => {
-    console.log("Thực hiện đăng xuất");
+    logout();
+    navigate("/login");
     handleClose();
   };
 
@@ -133,12 +139,13 @@ export function Header({ sidebarWidth }: HeaderProps) {
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
           >
-            {/* Thay src bằng avatar người dùng thật */}
             <Avatar
-              sx={{ width: 32, height: 32 }}
-              alt="User Name"
-              src="/static/images/avatar/2.jpg"
-            />
+              sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
+              alt={user?.fullName || "User"}
+              src={user?.avatar}
+            >
+              {user?.fullName?.charAt(0).toUpperCase()}
+            </Avatar>
           </IconButton>
         </Box>
       </Toolbar>
@@ -176,6 +183,17 @@ export function Header({ sidebarWidth }: HeaderProps) {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
+        <MenuItem onClick={handleProfile}>
+          <Avatar sx={{ width: 32, height: 32, mr: 1 }} />
+          <Box>
+            <Typography variant="body2" fontWeight="bold">
+              {user?.fullName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {user?.email}
+            </Typography>
+          </Box>
+        </MenuItem>
         <MenuItem onClick={handleProfile}>
           <ListItemIcon>
             <AccountCircle fontSize="small" />
