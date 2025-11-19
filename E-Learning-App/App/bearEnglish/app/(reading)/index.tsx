@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { BookOpen } from "lucide-react-native";
+import { BookOpen, ArrowLeft } from "lucide-react-native";
 import API from "../../api";
 import type { Lesson } from "../../types";
 
@@ -141,10 +141,18 @@ export default function ReadingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Reading Lessons</Text>
-        <Text style={styles.headerSubtitle}>
-          {lessons.length} lesson{lessons.length !== 1 ? "s" : ""} available
-        </Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push("/(tabs)")}
+        >
+          <ArrowLeft size={24} color="#EC4899" />
+        </TouchableOpacity>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerTitle}>Reading Lessons</Text>
+          <Text style={styles.headerSubtitle}>
+            {lessons.length} lesson{lessons.length !== 1 ? "s" : ""} available
+          </Text>
+        </View>
       </View>
 
       <FlatList
@@ -177,12 +185,21 @@ export default function ReadingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "rgb(38, 39, 48)",
+    backgroundColor: "#1a1a1a",
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 16,
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 28,

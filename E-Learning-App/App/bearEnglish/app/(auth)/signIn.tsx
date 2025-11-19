@@ -10,22 +10,17 @@ import {
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { API_BASE } from "../../constants/api";
-import { useAuth } from "../../contexts/AuthContext";
 
 const SignIn: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(30)).current;
-  const { login } = useAuth();
 
+  // Thêm state cho email & password
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -43,85 +38,31 @@ const SignIn: React.FC = () => {
     ]).start();
   }, [fadeAnim, translateY]);
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleLogin = async () => {
-    // Validation
-    if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email");
+  const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both username and password.");
       return;
     }
 
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
-      return;
-    }
-
-    if (!password) {
-      Alert.alert("Error", "Please enter your password");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const response = await fetch(`${API_BASE}/api/users/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password: password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      // Log toàn bộ response để debug
-      console.log("Login response:", JSON.stringify(data, null, 2));
-
-      // Kiểm tra structure của response
-      const token = data.token || data.data?.token;
-      const user = data.user || data.data?.user;
-
-      if (!token || !user) {
-        console.warn("Token or user missing in response:", data);
-      }
-
-      // Lưu thông tin user và token vào context
-      if (user && token) {
-        login(user, token);
-      }
-
-      // Chuyển về trang tabs ngay lập tức
+    // Giả lập thông tin đăng nhập
+    if (email === "admin" && password === "123") {
+      Alert.alert("Success", "Login successful!");
       router.replace("/(tabs)");
-    } catch (error) {
-      console.error("Login error:", error);
-      Alert.alert(
-        "Login Failed",
-        error instanceof Error ? error.message : "Invalid email or password"
-      );
-    } finally {
-      setLoading(false);
+    } else {
+      Alert.alert("Login Failed", "Invalid username or password.");
     }
   };
 
   // Demo account quick-login
-  const handleUseDemo = async () => {
-    setEmail("demo@bearenglish.com");
-    setPassword("demo123");
-    // Auto login with demo credentials
-    setTimeout(() => {
-      handleLogin();
-    }, 300);
+  const handleUseDemo = () => {
+    const demoEmail = "admin";
+    const demoPassword = "123";
+    // fill fields for visibility
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    // perform the same login behaviour
+    Alert.alert("Success", "Login successful!");
+    router.replace("/(tabs)");
   };
 
   return (
@@ -150,14 +91,11 @@ const SignIn: React.FC = () => {
         <View style={styles.inputContainer}>
           <Ionicons name="mail-outline" size={18} color="#aaa" />
           <TextInput
-            placeholder="Email"
+            placeholder="Username"
             placeholderTextColor="#aaa"
             style={styles.input}
             value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!loading}
           />
         </View>
 
@@ -166,32 +104,16 @@ const SignIn: React.FC = () => {
           <TextInput
             placeholder="Password"
             placeholderTextColor="#aaa"
-            secureTextEntry={!showPassword}
+            secureTextEntry
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            editable={!loading}
           />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Ionicons
-              name={showPassword ? "eye-outline" : "eye-off-outline"}
-              size={18}
-              color="#aaa"
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Login button */}
-        <TouchableOpacity
-          style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.loginText}>Login</Text>
-          )}
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Text style={styles.loginText}>Login</Text>
         </TouchableOpacity>
 
         {/* Demo account quick login */}
@@ -287,9 +209,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
-  },
-  loginButtonDisabled: {
-    backgroundColor: "#555",
   },
   loginText: {
     color: "#fff",

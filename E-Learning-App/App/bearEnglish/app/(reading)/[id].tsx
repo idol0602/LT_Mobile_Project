@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,14 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react-native";
+import { ArrowLeft, Languages, X } from "lucide-react-native";
 import API from "../../api";
 import type { ReadingLesson } from "../../types";
 import RenderHTML from "react-native-render-html";
-import { useWindowDimensions } from "react-native";
 
 export default function ReadingLessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,11 +29,12 @@ export default function ReadingLessonDetail() {
   }>({});
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    fetchLesson();
-  }, [id]);
+  // Translation states
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState<string>("");
+  const [isTranslating, setIsTranslating] = useState(false);
 
-  const fetchLesson = async () => {
+  const fetchLesson = useCallback(async () => {
     try {
       setLoading(true);
       console.log("Fetching lesson with ID:", id);
@@ -49,6 +51,33 @@ export default function ReadingLessonDetail() {
       );
     } finally {
       setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchLesson();
+  }, [fetchLesson]);
+
+  const handleTranslateContent = async () => {
+    if (!lesson?.readingContent) return;
+
+    setIsTranslating(true);
+    try {
+      // Chuyển HTML thành plain text để dịch
+      const plainText = lesson.readingContent
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const response = await API.translate(plainText, "en", "vi");
+      setTranslatedContent(response.translated);
+      setShowTranslation(true);
+    } catch (error) {
+      console.error("Translation error:", error);
+      Alert.alert("Error", "Failed to translate content. Please try again.");
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -160,7 +189,24 @@ export default function ReadingLessonDetail() {
       >
         {/* Reading Content */}
         <View style={styles.readingSection}>
-          <Text style={styles.sectionTitle}>Reading Passage</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Reading Passage</Text>
+            <TouchableOpacity
+              style={styles.translateButton}
+              onPress={handleTranslateContent}
+              disabled={isTranslating}
+            >
+              {isTranslating ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Languages size={20} color="#fff" />
+              )}
+              <Text style={styles.translateButtonText}>
+                {isTranslating ? "Translating..." : "Translate"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.readingContent}>
             <RenderHTML
               contentWidth={width - 64}
@@ -283,6 +329,35 @@ export default function ReadingLessonDetail() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Translation Modal */}
+      <Modal
+        visible={showTranslation}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTranslation(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Vietnamese Translation</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowTranslation(false)}
+            >
+              <X size={24} color="#e0e0e0" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalScrollContent}
+          >
+            <View style={styles.translationContent}>
+              <Text style={styles.translationText}>{translatedContent}</Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -504,5 +579,64 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  // Translation styles
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  translateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2196F3",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  translateButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgb(38, 39, 48)",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgb(60, 62, 75)",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#e0e0e0",
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: 16,
+  },
+  translationContent: {
+    backgroundColor: "rgb(50, 52, 65)",
+    borderRadius: 12,
+    padding: 16,
+  },
+  translationText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#e0e0e0",
   },
 });
