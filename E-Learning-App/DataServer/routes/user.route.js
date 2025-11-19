@@ -18,4 +18,15 @@ router.get("/me", protect, userController.getMe);
 router.put("/me", protect, userController.updateProfile);
 router.put("/change-password", protect, userController.changePassword);
 
+// Admin routes
+router.get("/", protect, userController.getAllUsers);
+router.post("/create-admin", protect, userController.createAdminAccount);
+router.put("/:id", protect, userController.updateUser);
+router.delete("/:id", protect, userController.deleteUser);
+router.patch(
+  "/:id/toggle-verification",
+  protect,
+  userController.toggleVerification
+);
+
 module.exports = router;

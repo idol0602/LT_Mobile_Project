@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import VocabulariesPage from "./pages/vocabulary/VocabulariesPage";
 import TopicsPage from "./pages/TopicsPage";
 import LessonPage from "./pages/LessonPage";
+import UsersPage from "./pages/UsersPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
       { path: "vocabularies", element: <VocabulariesPage /> },
       { path: "topics", element: <TopicsPage /> },
       { path: "lessons", element: <LessonPage /> },
+      { path: "users", element: <UsersPage /> },
       { path: "profile", element: <ProfilePage /> },
     ],
   },

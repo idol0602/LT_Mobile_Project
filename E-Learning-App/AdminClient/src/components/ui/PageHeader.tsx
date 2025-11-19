@@ -7,9 +7,9 @@ import AddIcon from "@mui/icons-material/Add";
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
-  buttonText: string;
-  onButtonClick: () => void;
-  icon: React.ReactNode;
+  buttonText?: string;
+  onButtonClick?: () => void;
+  icon?: React.ReactNode;
 }
 
 export function PageHeader({
@@ -28,24 +28,33 @@ export function PageHeader({
         mb: 3,
       }}
     >
-      <Typography
-        variant="h4"
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          fontWeight: "bold",
-        }}
-      >
-        {icon} {title}
-      </Typography>
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={onButtonClick}
-      >
-        {buttonText}
-      </Button>
+      <Box>
+        <Typography
+          variant="h4"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            fontWeight: "bold",
+          }}
+        >
+          {icon} {title}
+        </Typography>
+        {subtitle && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
+      {buttonText && onButtonClick && (
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={onButtonClick}
+        >
+          {buttonText}
+        </Button>
+      )}
     </Box>
   );
 }

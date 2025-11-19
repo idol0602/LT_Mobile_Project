@@ -595,3 +595,308 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
+
+// ============ ADMIN ROUTES ============
+
+// @desc    Lấy danh sách tất cả người dùng (Admin)
+// @route   GET /api/users
+// @access  Private/Admin
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: users,
+      total: users.length,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy danh sách users:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách người dùng",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Cập nhật thông tin user (Admin)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+exports.updateUser = async (req, res) => {
+  try {
+    const { fullName, phoneNumber, role } = req.body;
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người dùng",
+      });
+    }
+
+    if (fullName) user.fullName = fullName;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (role) user.role = role;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Cập nhật người dùng thành công",
+      data: {
+        _id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi cập nhật user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi cập nhật người dùng",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Xóa user (Admin)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người dùng",
+      });
+    }
+
+    // Không cho phép xóa chính mình
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: "Không thể xóa tài khoản của chính bạn",
+      });
+    }
+
+    await user.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Xóa người dùng thành công",
+    });
+  } catch (error) {
+    console.error("Lỗi xóa user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi xóa người dùng",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Toggle verification status (Admin)
+// @route   PATCH /api/users/:id/toggle-verification
+// @access  Private/Admin
+exports.toggleVerification = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người dùng",
+      });
+    }
+
+    user.isVerified = !user.isVerified;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Đã ${user.isVerified ? "xác thực" : "hủy xác thực"} người dùng`,
+      data: {
+        _id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi toggle verification:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi thay đổi trạng thái xác thực",
+      error: error.message,
+    });
+  }
+};
+
+// Gửi email thông tin tài khoản admin mới
+const sendAdminAccountEmail = async (email, password, fullName) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Tài khoản Admin - BearEnglish",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4CAF50;">Chào mừng Admin ${fullName}!</h2>
+        <p>Tài khoản admin của bạn đã được tạo thành công.</p>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+          <p style="margin: 10px 0;"><strong>Mật khẩu tạm thời:</strong> <span style="color: #4CAF50; font-size: 18px; font-weight: bold;">${password}</span></p>
+        </div>
+        <p style="color: #f44336;"><strong>⚠️ Lưu ý bảo mật:</strong></p>
+        <ul style="color: #666;">
+          <li>Vui lòng đổi mật khẩu ngay sau khi đăng nhập lần đầu</li>
+          <li>Không chia sẻ thông tin này với bất kỳ ai</li>
+          <li>Email này sẽ tự động bị xóa sau 24 giờ</li>
+        </ul>
+        <p style="color: #999; font-size: 12px; margin-top: 30px;">
+          Email này chứa thông tin nhạy cảm. Vui lòng xóa sau khi lưu thông tin đăng nhập.
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Email tài khoản admin đã được gửi đến:", email);
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Lỗi gửi email tài khoản admin:", error);
+    return { success: false, error };
+  }
+};
+
+// @desc    Tạo tài khoản admin mới (Admin)
+// @route   POST /api/users/create-admin
+// @access  Private/Admin
+exports.createAdminAccount = async (req, res) => {
+  try {
+    const { email, fullName, phoneNumber } = req.body;
+
+    // Validation
+    if (!email || !fullName) {
+      return res.status(400).json({
+        success: false,
+        message: "Email và họ tên là bắt buộc",
+      });
+    }
+
+    // Kiểm tra email đã tồn tại
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email đã được sử dụng",
+      });
+    }
+
+    // Generate mật khẩu ngẫu nhiên (8 ký tự: chữ hoa, chữ thường, số, ký tự đặc biệt)
+    const generatePassword = () => {
+      const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const lowercase = "abcdefghijklmnopqrstuvwxyz";
+      const numbers = "0123456789";
+      const special = "!@#$%^&*";
+      const allChars = uppercase + lowercase + numbers + special;
+
+      let password = "";
+      // Đảm bảo có ít nhất 1 ký tự mỗi loại
+      password += uppercase[Math.floor(Math.random() * uppercase.length)];
+      password += lowercase[Math.floor(Math.random() * lowercase.length)];
+      password += numbers[Math.floor(Math.random() * numbers.length)];
+      password += special[Math.floor(Math.random() * special.length)];
+
+      // Thêm 4 ký tự ngẫu nhiên nữa
+      for (let i = 0; i < 4; i++) {
+        password += allChars[Math.floor(Math.random() * allChars.length)];
+      }
+
+      // Shuffle password
+      return password
+        .split("")
+        .sort(() => Math.random() - 0.5)
+        .join("");
+    };
+
+    const generatedPassword = generatePassword();
+
+    // Tạo user mới với role admin và isVerified = true
+    const user = new User({
+      email: email.toLowerCase(),
+      password: generatedPassword,
+      fullName,
+      phoneNumber,
+      role: "admin",
+      isVerified: true, // Admin account được verify sẵn
+    });
+
+    await user.save();
+
+    // Gửi email thông tin tài khoản
+    const emailResult = await sendAdminAccountEmail(
+      email,
+      generatedPassword,
+      fullName
+    );
+
+    if (!emailResult.success) {
+      // Nếu gửi email thất bại, vẫn tạo tài khoản nhưng trả về cả mật khẩu
+      return res.status(201).json({
+        success: true,
+        message:
+          "Tạo tài khoản admin thành công, nhưng không thể gửi email. Vui lòng lưu mật khẩu này:",
+        data: {
+          user: {
+            _id: user._id,
+            email: user.email,
+            fullName: user.fullName,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            isVerified: user.isVerified,
+          },
+          temporaryPassword: generatedPassword,
+        },
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Tạo tài khoản admin thành công! Thông tin đã được gửi qua email.",
+      data: {
+        user: {
+          _id: user._id,
+          email: user.email,
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          isVerified: user.isVerified,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi tạo tài khoản admin:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi tạo tài khoản admin",
+      error: error.message,
+    });
+  }
+};
