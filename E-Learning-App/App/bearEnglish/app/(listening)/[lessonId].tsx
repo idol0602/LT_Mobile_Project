@@ -153,6 +153,108 @@ export default function ListeningPractice() {
     return userAnswer === correctAnswer;
   }
 
+  // Levenshtein distance algorithm
+  function levenshteinDistance(str1: string, str2: string): number {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    return matrix[len1][len2];
+  }
+
+  // Compare words and determine color
+  function compareWords(
+    userWord: string,
+    correctWord: string
+  ): "correct" | "close" | "wrong" {
+    const userLower = userWord.toLowerCase();
+    const correctLower = correctWord.toLowerCase();
+
+    if (userLower === correctLower) return "correct";
+
+    const distance = levenshteinDistance(userLower, correctLower);
+    const maxLen = Math.max(userLower.length, correctLower.length);
+    const similarity = 1 - distance / maxLen;
+
+    // If similarity > 70%, consider it "close"
+    if (similarity >= 0.7) return "close";
+
+    return "wrong";
+  }
+
+  // Render user answer with colored words
+  function renderColoredAnswer(userAnswer: string, correctAnswer: string) {
+    const userWords = userAnswer.trim().split(/\s+/);
+    const correctWords = correctAnswer.trim().split(/\s+/);
+    const maxLength = Math.max(userWords.length, correctWords.length);
+
+    const renderedWords = [];
+
+    for (let i = 0; i < maxLength; i++) {
+      const userWord = userWords[i] || "";
+      const correctWord = correctWords[i] || "";
+
+      if (!userWord && correctWord) {
+        // Missing word
+        renderedWords.push(
+          <Text key={i} style={styles.wrongWord}>
+            {"*".repeat(correctWord.length)}{" "}
+          </Text>
+        );
+      } else if (userWord && !correctWord) {
+        // Extra word
+        renderedWords.push(
+          <Text key={i} style={styles.wrongWord}>
+            {"*".repeat(userWord.length)}{" "}
+          </Text>
+        );
+      } else {
+        const comparison = compareWords(userWord, correctWord);
+
+        if (comparison === "correct") {
+          renderedWords.push(
+            <Text key={i} style={styles.correctWord}>
+              {userWord}{" "}
+            </Text>
+          );
+        } else if (comparison === "close") {
+          renderedWords.push(
+            <Text key={i} style={styles.closeWord}>
+              {userWord}{" "}
+            </Text>
+          );
+        } else {
+          renderedWords.push(
+            <Text key={i} style={styles.wrongWord}>
+              {"*".repeat(userWord.length)}{" "}
+            </Text>
+          );
+        }
+      }
+    }
+
+    return <Text>{renderedWords}</Text>;
+  }
+
   function toggleShowCorrectAnswer() {
     const newShowCorrect = [...showCorrectAnswer];
     newShowCorrect[currentQuestionIndex] =
@@ -458,7 +560,14 @@ export default function ListeningPractice() {
                     <Text style={styles.feedbackText}>Correct! Well done!</Text>
                   ) : (
                     <>
-                      <Text style={styles.feedbackText}>Incorrect</Text>
+                      <Text style={styles.feedbackText}>Your answer:</Text>
+                      <View style={styles.coloredAnswerContainer}>
+                        {renderColoredAnswer(
+                          userAnswers[currentQuestionIndex],
+                          lesson?.questions[currentQuestionIndex].answerText ||
+                            ""
+                        )}
+                      </View>
 
                       {/* Show/Hide Answer Button */}
                       <TouchableOpacity
@@ -483,10 +592,14 @@ export default function ListeningPractice() {
 
                       {/* Correct Answer (only shown when toggled) */}
                       {showCorrectAnswer[currentQuestionIndex] && (
-                        <Text style={styles.correctAnswerText}>
-                          Correct answer:{" "}
-                          {lesson?.questions[currentQuestionIndex].answerText}
-                        </Text>
+                        <View style={styles.correctAnswerContainer}>
+                          <Text style={styles.correctAnswerLabel}>
+                            Correct answer:
+                          </Text>
+                          <Text style={styles.correctAnswerText}>
+                            {lesson?.questions[currentQuestionIndex].answerText}
+                          </Text>
+                        </View>
                       )}
                     </>
                   )}
@@ -901,5 +1014,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#EF4444",
     fontWeight: "500",
+  },
+  coloredAnswerContainer: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 8,
+  },
+  correctWord: {
+    color: "#10B981",
+    fontWeight: "600",
+  },
+  closeWord: {
+    color: "#F59E0B",
+    fontWeight: "600",
+  },
+  wrongWord: {
+    color: "#EF4444",
+    fontWeight: "600",
+  },
+  correctAnswerContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#10B981",
+  },
+  correctAnswerLabel: {
+    fontSize: 12,
+    color: "#999",
+    marginBottom: 4,
   },
 });
