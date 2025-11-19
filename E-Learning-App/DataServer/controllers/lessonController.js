@@ -28,7 +28,7 @@ exports.createLesson = async (req, res) => {
 
     // Tạo GridFS bucket
     const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-      bucketName: "audioFiles",
+      bucketName: "audios",
     });
 
     // ✅ Upload từng file audio và map vào question tương ứng
@@ -163,11 +163,64 @@ exports.getLessonById = async (req, res) => {
 // ✏️ Cập nhật
 exports.updateLesson = async (req, res) => {
   try {
-    const updated = await Lesson.findByIdAndUpdate(req.params.id, req.body, {
+    const { name, level, topic, type, questions, readingContent } = req.body;
+
+    // Parse questions nếu gửi dưới dạng JSON string
+    let parsedQuestions = [];
+    if (questions) {
+      parsedQuestions =
+        typeof questions === "string" ? JSON.parse(questions) : questions;
+    }
+
+    // Nếu có audio files mới, upload chúng
+    if (req.files && req.files.length > 0) {
+      const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+        bucketName: "audios",
+      });
+
+      parsedQuestions = await Promise.all(
+        parsedQuestions.map(async (q, index) => {
+          const file = req.files[index];
+          // Nếu có file mới, upload và thay thế audioFileId
+          if (file) {
+            const fileId = await uploadStreamToGridFS(
+              file.buffer,
+              file.originalname,
+              bucket
+            );
+            return { ...q, audioFileId: fileId };
+          }
+          // Nếu không có file mới, giữ nguyên audioFileId cũ
+          return q;
+        })
+      );
+    }
+
+    const updateData = {
+      name,
+      level,
+      topic,
+      type,
+      readingContent,
+      questions: parsedQuestions,
+    };
+
+    // Loại bỏ các field undefined
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key]
+    );
+
+    const updated = await Lesson.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
     });
+
+    if (!updated) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+
     res.json({ message: "Lesson updated successfully", data: updated });
   } catch (error) {
+    console.error("❌ Error updating lesson:", error);
     res
       .status(400)
       .json({ message: "Failed to update lesson", error: error.message });

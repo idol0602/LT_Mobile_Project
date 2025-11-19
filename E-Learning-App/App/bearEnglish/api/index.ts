@@ -13,6 +13,8 @@ import type {
 } from "../types";
 
 class API {
+    BASE_URL = API_BASE; // Expose base URL for external use
+
     // ============ UTILS SERVER APIs ============
 
     async sendMessageToAI(text: string, userId: string): Promise<ChatResponse> {

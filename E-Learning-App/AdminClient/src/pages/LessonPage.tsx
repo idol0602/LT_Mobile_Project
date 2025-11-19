@@ -52,6 +52,7 @@ import {
 import { VocabLessonModal } from "../components/lesson/EditVocabModal";
 import { EditReadingModal } from "../components/lesson/EditReadingModal";
 import { EditGrammarModal } from "../components/lesson/EditGrammarModal";
+import { EditListeningModal } from "../components/lesson/EditListeningModal";
 import type { Lesson as LessonData } from "../types/Lesson";
 // 2. Định nghĩa kiểu dữ liệu Lesson đầy đủ
 interface Lesson extends LessonData {
@@ -73,6 +74,7 @@ export default function LessonPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<string | null>(null);
   const [openGrammarModal, setOpenGrammarModal] = useState(false);
+  const [openListeningModal, setOpenListeningModal] = useState(false);
   // States cho Lọc và Tìm kiếm
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
@@ -134,6 +136,8 @@ export default function LessonPage() {
     setOpenWizard(false);
     setOpenVocabModal(false);
     setOpenReadingModal(false);
+    setOpenGrammarModal(false);
+    setOpenListeningModal(false);
     setRefetchTrigger((prev) => prev + 1);
     setSnackbar({
       open: true,
@@ -154,6 +158,9 @@ export default function LessonPage() {
         break;
       case "grammar":
         setOpenGrammarModal(true);
+        break;
+      case "listen":
+        setOpenListeningModal(true);
         break;
       default:
         // Mở wizard cho các loại bài học khác (nếu cần)
@@ -432,6 +439,12 @@ export default function LessonPage() {
       <EditGrammarModal
         open={openGrammarModal}
         onClose={() => setOpenGrammarModal(false)}
+        selectedLesson={selectedLesson as any}
+        onSaveSuccess={handleSaveSuccess}
+      />
+      <EditListeningModal
+        open={openListeningModal}
+        onClose={() => setOpenListeningModal(false)}
         selectedLesson={selectedLesson as any}
         onSaveSuccess={handleSaveSuccess}
       />

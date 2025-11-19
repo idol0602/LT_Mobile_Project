@@ -10,7 +10,7 @@ router.get("/", lessonController.getAllLessons); // Lấy tất cả (có phân 
 router.get("/type/:type", lessonController.getLessonsByType); // Lấy tất cả theo type (không phân trang)
 router.get("/:id", lessonController.getLessonById);
 router.get("/:id/vocabularies", lessonController.getVocabulariesByLessonId);
-router.put("/:id", lessonController.updateLesson);
+router.put("/:id", upload.array("audios", 10), lessonController.updateLesson);
 router.delete("/:id", lessonController.deleteLesson);
 
 module.exports = router;

@@ -292,7 +292,10 @@ export default function HomeScreen() {
                 <Text style={styles.moduleSubtitle}>Learn new words</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.moduleCard}>
+              <TouchableOpacity
+                style={styles.moduleCard}
+                onPress={() => router.push({ pathname: "/(listening)" } as any)}
+              >
                 <View style={styles.iconContainer}>
                   <ListeningIcon size={50} />
                 </View>

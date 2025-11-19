@@ -2,6 +2,7 @@
 const Vocabulary = require("../models/vocabulary.model");
 const axios = require("axios");
 const { Readable } = require("stream");
+const mongoose = require("mongoose");
 
 exports.getOrCreateAudio = async (req, res) => {
   const word = req.query.word?.toLowerCase().trim();
@@ -70,5 +71,33 @@ exports.getOrCreateAudio = async (req, res) => {
   } catch (error) {
     console.error("Lỗi server:", error.message);
     res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+// Lấy audio file từ GridFS bằng ID
+exports.getAudioById = async (req, res) => {
+  try {
+    const fileId = req.params.id;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+      return res.status(400).json({ error: "Invalid file ID" });
+    }
+
+    const gridfsBucketAudio = req.gridfsBucketAudio;
+    const downloadStream = gridfsBucketAudio.openDownloadStream(
+      new mongoose.Types.ObjectId(fileId)
+    );
+
+    res.set("Content-Type", "audio/mpeg");
+    downloadStream.pipe(res);
+
+    downloadStream.on("error", (err) => {
+      console.error("Error downloading audio file:", err);
+      res.status(404).json({ error: "Audio file not found" });
+    });
+  } catch (error) {
+    console.error("Error in getAudioById:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

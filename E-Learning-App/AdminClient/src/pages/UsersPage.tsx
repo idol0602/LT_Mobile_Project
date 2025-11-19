@@ -60,12 +60,21 @@ const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createAdminDialogOpen, setCreateAdminDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Form state for editing
   const [editForm, setEditForm] = useState({
     fullName: "",
     phoneNumber: "",
     role: "user" as "user" | "admin",
+  });
+
+  // Form state for creating admin
+  const [createAdminForm, setCreateAdminForm] = useState({
+    email: "",
+    fullName: "",
+    phoneNumber: "",
   });
 
   useEffect(() => {
@@ -181,6 +190,49 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  const handleCreateAdmin = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE}/api/users/create-admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(createAdminForm),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create admin");
+      }
+
+      const data = await response.json();
+
+      // Nếu không gửi được email, hiển thị mật khẩu tạm thời
+      if (data.data.temporaryPassword) {
+        setSuccessMessage(
+          `Tạo tài khoản thành công! Mật khẩu tạm thời: ${data.data.temporaryPassword}`
+        );
+      } else {
+        setSuccessMessage(data.message);
+      }
+
+      // Reset form và đóng dialog
+      setCreateAdminForm({ email: "", fullName: "", phoneNumber: "" });
+      setCreateAdminDialogOpen(false);
+
+      // Refresh danh sách users
+      fetchUsers();
+
+      // Xóa success message sau 10 giây
+      setTimeout(() => setSuccessMessage(""), 10000);
+    } catch (err: any) {
+      setError(err.message || "Không thể tạo tài khoản admin");
+      console.error("Error creating admin:", err);
+    }
+  };
+
   const openEditDialog = (user: User) => {
     setSelectedUser(user);
     setEditForm({
@@ -245,6 +297,16 @@ const UsersPage: React.FC = () => {
         </Alert>
       )}
 
+      {successMessage && (
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setSuccessMessage("")}
+        >
+          {successMessage}
+        </Alert>
+      )}
+
       <Box sx={{ mb: 3, display: "flex", gap: 2, alignItems: "center" }}>
         <TextField
           placeholder="Tìm kiếm theo tên hoặc email..."
@@ -262,8 +324,15 @@ const UsersPage: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<PersonAddIcon />}
-          onClick={fetchUsers}
+          onClick={() => setCreateAdminDialogOpen(true)}
+          sx={{
+            bgcolor: "success.main",
+            "&:hover": { bgcolor: "success.dark" },
+          }}
         >
+          Tạo Admin
+        </Button>
+        <Button variant="outlined" onClick={fetchUsers}>
           Làm mới
         </Button>
       </Box>
@@ -458,6 +527,86 @@ const UsersPage: React.FC = () => {
           <Button onClick={() => setDeleteDialogOpen(false)}>Hủy</Button>
           <Button variant="contained" color="error" onClick={handleDeleteUser}>
             Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Admin Dialog */}
+      <Dialog
+        open={createAdminDialogOpen}
+        onClose={() => setCreateAdminDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Tạo tài khoản Admin mới</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Mật khẩu sẽ được tự động tạo và gửi qua email.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            required
+            value={createAdminForm.email}
+            onChange={(e) =>
+              setCreateAdminForm({ ...createAdminForm, email: e.target.value })
+            }
+            sx={{ mb: 2, mt: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <EmailIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            fullWidth
+            label="Họ tên"
+            required
+            value={createAdminForm.fullName}
+            onChange={(e) =>
+              setCreateAdminForm({
+                ...createAdminForm,
+                fullName: e.target.value,
+              })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Số điện thoại"
+            value={createAdminForm.phoneNumber}
+            onChange={(e) =>
+              setCreateAdminForm({
+                ...createAdminForm,
+                phoneNumber: e.target.value,
+              })
+            }
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PhoneIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              <strong>Lưu ý:</strong> Mật khẩu ngẫu nhiên sẽ được tạo và gửi qua
+              email. Admin mới nên đổi mật khẩu ngay sau khi đăng nhập lần đầu.
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateAdminDialogOpen(false)}>Hủy</Button>
+          <Button
+            variant="contained"
+            onClick={handleCreateAdmin}
+            disabled={!createAdminForm.email || !createAdminForm.fullName}
+          >
+            Tạo tài khoản
           </Button>
         </DialogActions>
       </Dialog>
