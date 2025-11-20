@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   FlatList,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { ArrowLeft, BookOpen, Star } from "lucide-react-native";
 import API from "../../api/index";
 import type { Lesson } from "../../types";
 
@@ -51,19 +53,37 @@ export default function VocabularyLessons() {
         onPress={() =>
           router.push({
             pathname: "/(vocabularies)/[lessonId]",
-            params: { lessonId: item._id, lessonTitle: item.name },
+            params: {
+              lessonId: item._id,
+              lessonTitle: item.name,
+            },
           })
         }
       >
-        <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.subtitle}>
-          {item.level && item.topic
-            ? `${item.level} • ${item.topic}`
-            : item.level || item.topic || ""}
-        </Text>
-        <Text style={styles.meta}>
-          {(item.vocabularies || []).length} words • {item.type || "lesson"}
-        </Text>
+        <LinearGradient
+          colors={["#2d2d2d", "#3a3a3a"]}
+          style={styles.cardGradient}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.iconContainer}>
+              <BookOpen size={24} color="#EC4899" />
+            </View>
+            <View style={styles.levelBadge}>
+              <Star size={14} color="#ffd700" />
+              <Text style={styles.levelText}>{item.level}</Text>
+            </View>
+          </View>
+          <Text style={styles.title}>{item.name}</Text>
+          <Text style={styles.subtitle}>
+            {item.topic || "Vocabulary lesson"}
+          </Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.wordCount}>
+              📝 {item.vocabularies?.length || 0} words
+            </Text>
+            <Text style={styles.studyLabel}>Tap to study →</Text>
+          </View>
+        </LinearGradient>
       </TouchableOpacity>
     );
   }
@@ -91,7 +111,27 @@ export default function VocabularyLessons() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Vocabulary Lessons</Text>
+      <LinearGradient
+        colors={["#EC4899", "#8B5CF6"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerContainer}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/(tabs)")}
+          >
+            <ArrowLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.header}>📚 Vocabulary Lessons</Text>
+            <Text style={styles.headerSubtitle}>
+              {lessons.length} lessons available
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
 
       {lessons.length === 0 ? (
         <View style={styles.emptyState}>
@@ -117,19 +157,46 @@ export default function VocabularyLessons() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "rgb(38, 39, 48)" },
+  container: {
+    flex: 1,
+    backgroundColor: "#1a1a1a",
+  },
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  backButton: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    padding: 12,
+    borderRadius: 12,
+    marginRight: 16,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
   header: {
-    fontSize: 24,
-    fontWeight: "700",
-    padding: 20,
-    color: "#fff",
-    textAlign: "center",
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
   },
   loading: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgb(38, 39, 48)",
+    backgroundColor: "#1a1a1a",
   },
   loadingText: {
     color: "#fff",
@@ -137,30 +204,70 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   card: {
-    backgroundColor: "#3c3d47",
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 20,
+    shadowColor: "#EC4899",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  cardGradient: {
+    borderRadius: 20,
+    padding: 20,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  iconContainer: {
+    backgroundColor: "rgba(236,72,153,0.2)",
+    padding: 12,
     borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#4a4b55",
+  },
+  levelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,215,0,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  levelText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#b8860b",
+    marginLeft: 4,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 4,
-  },
-  subtitle: {
-    color: "#aaa",
-    fontSize: 14,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#ffffff",
     marginBottom: 8,
   },
-  meta: {
-    color: "#4A90E2",
+  subtitle: {
+    color: "#a0a0a0",
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  wordCount: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#EC4899",
+  },
+  studyLabel: {
     fontSize: 12,
-    fontWeight: "500",
+    color: "#808080",
+    fontStyle: "italic",
   },
   emptyState: {
     flex: 1,
@@ -185,7 +292,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "rgb(38, 39, 48)",
+    backgroundColor: "#1a1a1a",
   },
   errorText: {
     color: "#ff6b6b",

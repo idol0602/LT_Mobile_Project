@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform,
   Animated,
+  Dimensions,
 } from "react-native";
 import { Audio } from "expo-av";
 import { useLocalSearchParams, router } from "expo-router";
@@ -31,6 +32,98 @@ import type {
   MatchingItem,
   FeedbackType,
 } from "../../types";
+
+// Animated Confetti Piece Component
+const ConfettiPiece = ({
+  index,
+  screenWidth,
+  screenHeight,
+}: {
+  index: number;
+  screenWidth: number;
+  screenHeight: number;
+}) => {
+  const animatedY = useRef(new Animated.Value(-100)).current;
+  const animatedRotation = useRef(new Animated.Value(0)).current;
+
+  const colors = [
+    "#FFD700",
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+  ];
+
+  React.useEffect(() => {
+    const startAnimation = () => {
+      animatedY.setValue(-100);
+      animatedRotation.setValue(0);
+
+      Animated.parallel([
+        Animated.timing(animatedY, {
+          toValue: screenHeight + 100,
+          duration: 3000 + Math.random() * 2000,
+          useNativeDriver: true,
+        }),
+        Animated.loop(
+          Animated.timing(animatedRotation, {
+            toValue: 1,
+            duration: 1000 + Math.random() * 1000,
+            useNativeDriver: true,
+          })
+        ),
+      ]).start(() => {
+        setTimeout(startAnimation, Math.random() * 2000);
+      });
+    };
+
+    setTimeout(startAnimation, index * 50);
+  }, [animatedY, animatedRotation, index, screenHeight]);
+
+  const rotate = animatedRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: "absolute",
+          left: Math.random() * screenWidth,
+          width: 8 + Math.random() * 4,
+          height: 12 + Math.random() * 6,
+          backgroundColor: colors[Math.floor(Math.random() * colors.length)],
+          borderRadius: Math.random() > 0.5 ? 4 : 0,
+          zIndex: 1000,
+          transform: [{ translateY: animatedY }, { rotate }],
+        },
+      ]}
+    />
+  );
+};
+
+// Animated Confetti Component
+const AnimatedConfetti = () => {
+  const screenWidth = Dimensions.get("window").width;
+  const screenHeight = Dimensions.get("window").height;
+
+  return (
+    <View style={styles.confettiContainer}>
+      {Array.from({ length: 60 }, (_, index) => (
+        <ConfettiPiece
+          key={index}
+          index={index}
+          screenWidth={screenWidth}
+          screenHeight={screenHeight}
+        />
+      ))}
+    </View>
+  );
+};
 
 export default function VocabularyStudy() {
   const params = useLocalSearchParams();
@@ -120,14 +213,6 @@ export default function VocabularyStudy() {
 
     setTimeout(() => setShowFeedback(false), 1200);
   };
-
-  const correctAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: correctScale.value }],
-  }));
-
-  const incorrectAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: incorrectShake.value }],
-  }));
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: cardScale.value }],
@@ -662,6 +747,8 @@ export default function VocabularyStudy() {
 
     return (
       <View style={styles.summaryContainer}>
+        {/* Beautiful animated confetti effect */}
+        <AnimatedConfetti />
         <LinearGradient
           colors={["#4CAF50", "#45a049"]}
           style={styles.summaryHeader}
@@ -672,7 +759,6 @@ export default function VocabularyStudy() {
             Bạn đã hoàn thành tất cả giai đoạn
           </Text>
         </LinearGradient>
-
         <View style={styles.summaryContent}>
           <View style={styles.overallStats}>
             <Text style={styles.overallTitle}>Kết quả tổng quan</Text>
@@ -1600,5 +1686,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginLeft: 10,
+  },
+  // Confetti animation styles
+  confettiContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    pointerEvents: "none",
+  },
+  confettiEmoji: {
+    position: "absolute",
+    top: -50,
+    opacity: 0.9,
+  },
+  emojiText: {
+    fontSize: 24,
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  confettiPaper: {
+    position: "absolute",
+    top: -20,
+    opacity: 0.8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  confettiPiece: {
+    position: "absolute",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
   },
 });

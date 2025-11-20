@@ -100,7 +100,7 @@ export default function Dictionary() {
       style={styles.container}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ paddingBottom: 50 }}
-      showsVerticalScrollIndicator={false} // ❌ Ẩn thanh scroll dọc
+      showsVerticalScrollIndicator={true} // ✅ Hiển thị thanh scroll dọc
     >
       <Text style={styles.title}>🌍 BearTranslate</Text>
 
@@ -113,6 +113,7 @@ export default function Dictionary() {
         value={text}
         onChangeText={setText}
         multiline
+        scrollEnabled={true}
       />
 
       {/* LANGUAGE SWAP */}
@@ -148,50 +149,57 @@ export default function Dictionary() {
 
       {result && (
         <View style={styles.resultBox}>
-          <ScrollView
-            style={{ maxHeight: 400 }}
-            showsVerticalScrollIndicator={false} // ❌ Ẩn thanh cuộn dọc bên trong kết quả
-          >
-            {/* Source */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                📝 Văn bản gốc ({sourceLang.toUpperCase()}):
-              </Text>
+          {/* Source */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              📝 Văn bản gốc ({sourceLang.toUpperCase()}):
+            </Text>
+            <ScrollView
+              style={styles.textScrollContainer}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
               <Text style={styles.textBlock}>{text}</Text>
+            </ScrollView>
 
-              {result.sourceIpa && (
-                <Text style={styles.ipa}>{result.sourceIpa}</Text>
-              )}
+            {result.sourceIpa && (
+              <Text style={styles.ipa}>{result.sourceIpa}</Text>
+            )}
 
-              <TouchableOpacity
-                onPress={() => playAudio(result.originalAudio)}
-                style={styles.audioButton}
-              >
-                <Text style={{ color: "#fff" }}>🎧 Nghe gốc</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              onPress={() => playAudio(result.originalAudio)}
+              style={styles.audioButton}
+            >
+              <Text style={{ color: "#fff" }}>🎧 Nghe gốc</Text>
+            </TouchableOpacity>
+          </View>
 
-            {/* Translation */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                🌐 Bản dịch ({targetLang.toUpperCase()}):
-              </Text>
+          {/* Translation */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              🌐 Bản dịch ({targetLang.toUpperCase()}):
+            </Text>
+            <ScrollView
+              style={styles.textScrollContainer}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
               <Text style={styles.textBlock}>{result.translated}</Text>
+            </ScrollView>
 
-              {result.ipa ? (
-                <Text style={styles.ipa}>{result.ipa}</Text>
-              ) : result.targetPhonetic ? (
-                <Text style={styles.phonetic}>[{result.targetPhonetic}]</Text>
-              ) : null}
+            {result.ipa ? (
+              <Text style={styles.ipa}>{result.ipa}</Text>
+            ) : result.targetPhonetic ? (
+              <Text style={styles.phonetic}>[{result.targetPhonetic}]</Text>
+            ) : null}
 
-              <TouchableOpacity
-                onPress={() => playAudio(result.translatedAudio)}
-                style={styles.audioButton}
-              >
-                <Text style={{ color: "#fff" }}>🎧 Nghe dịch</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+            <TouchableOpacity
+              onPress={() => playAudio(result.translatedAudio)}
+              style={styles.audioButton}
+            >
+              <Text style={{ color: "#fff" }}>🎧 Nghe dịch</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </ScrollView>
@@ -227,6 +235,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     minHeight: 80,
+    maxHeight: 150,
     textAlignVertical: "top",
   },
   langContainer: {
@@ -287,10 +296,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
   },
+  textScrollContainer: {
+    maxHeight: 200,
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingBottom: 20,
+    marginVertical: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
   textBlock: {
     color: "#e5e5e5",
     fontSize: 16,
     lineHeight: 22,
+    flexWrap: "wrap",
+    textAlign: "left",
   },
   ipa: {
     color: "#cbd5e1",

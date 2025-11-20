@@ -154,22 +154,63 @@ Bot:
       // ==========================================================
       // Helper: Tách văn bản dài thành các phần nhỏ để tránh lỗi URL quá dài
       // ==========================================================
-      const chunkText = (input, maxLength = 1000) => {
+      const chunkText = (input, maxLength = 800) => {
         const parts = [];
-        let current = "";
-        const sentences = input.split(/([.!?]\s+)/); // tách theo dấu chấm, chấm hỏi, chấm than
 
-        for (const s of sentences) {
-          if ((current + s).length > maxLength) {
-            parts.push(current.trim());
-            current = s;
+        // Nếu văn bản ngắn hơn maxLength, trả về nguyên văn
+        if (input.length <= maxLength) {
+          return [input];
+        }
+
+        let current = "";
+        // Tách theo câu với các dấu kết thúc câu
+        const sentences = input.split(/(?<=[.!?])\s+/);
+
+        for (const sentence of sentences) {
+          // Nếu câu hiện tại quá dài, tách theo từ
+          if (sentence.length > maxLength) {
+            if (current.trim()) {
+              parts.push(current.trim());
+              current = "";
+            }
+
+            // Tách câu dài theo từ
+            const words = sentence.split(/\s+/);
+            let wordChunk = "";
+
+            for (const word of words) {
+              if ((wordChunk + " " + word).length > maxLength) {
+                if (wordChunk.trim()) {
+                  parts.push(wordChunk.trim());
+                }
+                wordChunk = word;
+              } else {
+                wordChunk += (wordChunk ? " " : "") + word;
+              }
+            }
+
+            if (wordChunk.trim()) {
+              current = wordChunk;
+            }
+          } else if ((current + " " + sentence).length > maxLength) {
+            // Nếu thêm câu này sẽ vượt quá maxLength
+            if (current.trim()) {
+              parts.push(current.trim());
+            }
+            current = sentence;
           } else {
-            current += s;
+            // Thêm câu vào chunk hiện tại
+            current += (current ? " " : "") + sentence;
           }
         }
 
-        if (current.trim()) parts.push(current.trim());
-        return parts;
+        // Thêm phần cuối cùng
+        if (current.trim()) {
+          parts.push(current.trim());
+        }
+
+        // Đảm bảo không có chunk rỗng
+        return parts.filter((part) => part.trim().length > 0);
       };
 
       // ==========================================================
@@ -358,33 +399,102 @@ Bot:
       };
 
       // ==========================================================
-      // Helper: Dịch một đoạn nhỏ
+      // Helper: Dịch một đoạn nhỏ với retry logic
       // ==========================================================
-      const translateChunk = async (chunk) => {
-        const translateRes = await fetch(
-          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&dt=rm&q=${encodeURIComponent(
-            chunk
-          )}`
-        );
-        const translateData = await translateRes.json();
-        return (
-          translateData[0]
+      const translateChunk = async (chunk, retryCount = 0) => {
+        const maxRetries = 3;
+
+        try {
+          const encodedText = encodeURIComponent(chunk);
+          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&dt=rm&q=${encodedText}`;
+
+          // Kiểm tra độ dài URL
+          if (url.length > 8000) {
+            throw new Error(`URL quá dài: ${url.length} ký tự`);
+          }
+
+          const translateRes = await fetch(url, {
+            method: "GET",
+            headers: {
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              Accept: "application/json, text/plain, */*",
+              "Accept-Language": "en-US,en;q=0.9",
+            },
+          });
+
+          if (!translateRes.ok) {
+            throw new Error(
+              `HTTP ${translateRes.status}: ${translateRes.statusText}`
+            );
+          }
+
+          const translateData = await translateRes.json();
+
+          if (!translateData || !translateData[0]) {
+            throw new Error("Phản hồi API không hợp lệ");
+          }
+
+          const result = translateData[0]
             ?.map((item) => item[0])
+            .filter((item) => item) // Lọc bỏ null/undefined
             .join("")
-            .trim() || ""
-        );
+            .trim();
+
+          return result || chunk; // Trả về text gốc nếu không dịch được
+        } catch (error) {
+          console.error(
+            `[TRANSLATE ERROR] Chunk: "${chunk.substring(0, 50)}...":`,
+            error.message
+          );
+
+          if (retryCount < maxRetries) {
+            console.log(`[RETRY] Thử lại lần ${retryCount + 1}/${maxRetries}`);
+            await sleep(1000 * (retryCount + 1)); // Tăng delay theo số lần retry
+            return translateChunk(chunk, retryCount + 1);
+          }
+
+          // Nếu retry hết, trả về text gốc
+          console.error(`[FALLBACK] Không thể dịch chunk, giữ nguyên text gốc`);
+          return chunk;
+        }
       };
 
       // ==========================================================
       // Dịch đoạn văn dài bằng cách chia nhỏ
       // ==========================================================
       const chunks = chunkText(text);
+      console.log(`[TRANSLATE] Chia văn bản thành ${chunks.length} phần:`);
+      chunks.forEach((chunk, index) => {
+        console.log(`[CHUNK ${index + 1}] ${chunk.substring(0, 50)}...`);
+      });
+
       let translatedParts = [];
-      for (const c of chunks) {
-        const t = await translateChunk(c);
-        translatedParts.push(t);
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        console.log(`[TRANSLATING] Đang dịch chunk ${i + 1}/${chunks.length}`);
+
+        try {
+          const translatedChunk = await translateChunk(chunk);
+          if (translatedChunk && translatedChunk.trim()) {
+            translatedParts.push(translatedChunk.trim());
+          }
+
+          // Thêm delay nhỏ để tránh rate limit
+          if (i < chunks.length - 1) {
+            await sleep(200);
+          }
+        } catch (error) {
+          console.error(`[ERROR] Lỗi dịch chunk ${i + 1}:`, error.message);
+          // Nếu lỗi, vẫn thêm text gốc để không mất nội dung
+          translatedParts.push(chunk);
+        }
       }
+
       const translated = translatedParts.join(" ").trim();
+      console.log(
+        `[RESULT] Dịch hoàn tất. Độ dài gốc: ${text.length}, Độ dài dịch: ${translated.length}`
+      );
 
       // ==========================================================
       // Lấy IPA cho source và target nếu cần
@@ -396,25 +506,92 @@ Bot:
       if (targetLang === "en") ipa = await getIpaForEnglishText(translated);
 
       // ==========================================================
-      // Lấy audio
+      // Lấy audio cho văn bản dài bằng cách chia nhỏ và ghép lại
       // ==========================================================
       const getAudioBase64 = async (inputText, lang) => {
-        let safeText = inputText
-          .replace(/[^\p{L}\p{N}\s']/gu, "")
+        const cleanText = inputText
+          .replace(/[^\p{L}\p{N}\s'.,!?]/gu, "")
           .replace(/\s+/g, " ")
           .trim();
-        if (!safeText) safeText = "Hello";
-        safeText = safeText.slice(0, 200); // tránh lỗi text dài
 
-        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
-          safeText
-        )}&tl=${lang}&client=tw-ob`;
+        if (!cleanText) return Buffer.from("").toString("base64");
 
-        const audioResponse = await fetch(ttsUrl, {
-          headers: { "User-Agent": "Mozilla/5.0" },
-        });
-        const buffer = await audioResponse.arrayBuffer();
-        return Buffer.from(buffer).toString("base64");
+        // Nếu text ngắn, xử lý trực tiếp
+        if (cleanText.length <= 200) {
+          try {
+            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+              cleanText
+            )}&tl=${lang}&client=tw-ob`;
+
+            const audioResponse = await fetch(ttsUrl, {
+              headers: { "User-Agent": "Mozilla/5.0" },
+            });
+            const buffer = await audioResponse.arrayBuffer();
+            return Buffer.from(buffer).toString("base64");
+          } catch (error) {
+            console.error("[AUDIO ERROR] Lỗi tạo audio:", error.message);
+            return Buffer.from("").toString("base64");
+          }
+        }
+
+        // Với text dài, chia nhỏ và tạo audio từng phần
+        console.log(
+          `[AUDIO] Xử lý audio cho text dài: ${cleanText.length} ký tự`
+        );
+
+        const audioChunks = [];
+        const textChunks = chunkText(cleanText, 150); // Chunk nhỏ hơn cho audio
+
+        console.log(`[AUDIO] Chia thành ${textChunks.length} phần audio`);
+
+        for (let i = 0; i < textChunks.length && i < 10; i++) {
+          // Giới hạn tối đa 10 chunks để tránh quá dài
+          const chunk = textChunks[i];
+          console.log(
+            `[AUDIO] Tạo audio chunk ${i + 1}/${Math.min(
+              textChunks.length,
+              10
+            )}: "${chunk.substring(0, 30)}..."`
+          );
+
+          try {
+            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+              chunk
+            )}&tl=${lang}&client=tw-ob`;
+
+            const audioResponse = await fetch(ttsUrl, {
+              headers: { "User-Agent": "Mozilla/5.0" },
+            });
+
+            if (audioResponse.ok) {
+              const buffer = await audioResponse.arrayBuffer();
+              audioChunks.push(Buffer.from(buffer));
+            }
+
+            // Delay để tránh rate limit
+            if (i < Math.min(textChunks.length, 10) - 1) {
+              await sleep(300);
+            }
+          } catch (error) {
+            console.error(
+              `[AUDIO ERROR] Lỗi tạo audio chunk ${i + 1}:`,
+              error.message
+            );
+          }
+        }
+
+        if (audioChunks.length === 0) {
+          console.log("[AUDIO] Không tạo được audio, trả về rỗng");
+          return Buffer.from("").toString("base64");
+        }
+
+        // Ghép các audio chunks lại (đơn giản bằng cách nối buffer)
+        const combinedBuffer = Buffer.concat(audioChunks);
+        console.log(
+          `[AUDIO] Hoàn tất ghép ${audioChunks.length} phần audio, kích thước: ${combinedBuffer.length} bytes`
+        );
+
+        return combinedBuffer.toString("base64");
       };
 
       const originalAudio = await getAudioBase64(text, sourceLang);

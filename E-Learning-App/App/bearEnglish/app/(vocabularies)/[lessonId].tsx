@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
 import API from "../../api/index";
 import VocabularyCard from "./VocabularyCard";
 import type { Vocabulary } from "../../types";
@@ -154,8 +155,13 @@ export default function VocabularyFlashcards() {
 
   return (
     <View style={styles.container}>
-      {/* Header is hidden - using only title without back button */}
-      <View style={styles.headerMinimal}>
+      <View style={styles.headerWithBack}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push("/(vocabularies)")}
+        >
+          <ArrowLeft size={24} color="#ffffff" />
+        </TouchableOpacity>
         <Text style={styles.title}>{lessonTitle || "Vocabulary"}</Text>
         <TouchableOpacity
           style={styles.studyButton}
@@ -218,19 +224,6 @@ export default function VocabularyFlashcards() {
               <Text style={styles.navButtonText}>‹</Text>
             </TouchableOpacity>
 
-            <View style={styles.dotContainer}>
-              {vocabularies.map((_, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.dot,
-                    index === currentIndex && styles.activeDot,
-                  ]}
-                  onPress={() => navigateToCard(index)}
-                />
-              ))}
-            </View>
-
             <TouchableOpacity
               style={styles.navButton}
               onPress={() => navigateToCard(currentIndex + 1)}
@@ -270,8 +263,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  headerWithBack: {
+    justifyContent: "space-between",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 17,
+    paddingTop: 50,
+    backgroundColor: "#1a1b24",
+    borderBottomWidth: 2,
+    borderBottomColor: "#2a2b35",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 4,
+  },
   backButton: {
-    marginRight: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    padding: 8,
+    borderRadius: 8,
   },
   backText: {
     color: "#4A90E2",
