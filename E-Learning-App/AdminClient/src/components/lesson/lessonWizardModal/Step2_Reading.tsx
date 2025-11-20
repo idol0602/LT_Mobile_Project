@@ -17,6 +17,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"; // giao diện mặc định
+import "../../../styles/quill-custom.css"; // custom styles
 import { QuestionItem } from "../../ui/QuestionItem";
 
 // =================== ĐỊNH NGHĨA KIỂU DỮ LIỆU ===================
@@ -55,11 +56,21 @@ export function Step2_Reading({
         placeholder: "Nhập nội dung bài đọc...",
         modules: {
           toolbar: [
-            [{ header: [1, 2, 3, false] }],
+            [{ header: [1, 2, 3, 4, 5, 6, false] }],
+            [{ font: [] }],
+            [{ size: ["small", false, "large", "huge"] }],
             ["bold", "italic", "underline", "strike"],
+            [{ color: [] }, { background: [] }],
+            [{ script: "sub" }, { script: "super" }],
             [{ align: [] }],
-            [{ list: "ordered" }, { list: "bullet" }],
-            ["link", "image"],
+            [
+              { list: "ordered" },
+              { list: "bullet" },
+              { indent: "-1" },
+              { indent: "+1" },
+            ],
+            ["blockquote", "code-block"],
+            ["link", "image", "video"],
             ["clean"],
           ],
         },

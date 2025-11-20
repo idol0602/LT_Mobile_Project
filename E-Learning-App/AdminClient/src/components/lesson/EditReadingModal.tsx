@@ -23,6 +23,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
+import "../../styles/quill-custom.css";
 import { QuillEditor } from "../ui/QuillEditor";
 import { updateLesson } from "../../services/lessonApi";
 import { QuestionItem } from "../ui/QuestionItem";
@@ -71,26 +72,45 @@ export function EditReadingModal({
   // Cấu hình toolbar QuillJS
   const modules = {
     toolbar: [
-      [{ header: [1, 2, 3, false] }],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      [{ font: [] }],
+      [{ size: ["small", false, "large", "huge"] }],
       ["bold", "italic", "underline", "strike"],
+      [{ color: [] }, { background: [] }],
+      [{ script: "sub" }, { script: "super" }],
       [{ align: [] }],
-      [{ list: "ordered" }, { list: "bullet" }],
-      ["link", "image"],
+      [
+        { list: "ordered" },
+        { list: "bullet" },
+        { indent: "-1" },
+        { indent: "+1" },
+      ],
+      ["blockquote", "code-block"],
+      ["link", "image", "video"],
       ["clean"],
     ],
   };
 
   const formats = [
     "header",
+    "font",
+    "size",
     "bold",
     "italic",
     "underline",
     "strike",
+    "color",
+    "background",
+    "script",
     "align",
     "list",
     "bullet",
+    "indent",
+    "blockquote",
+    "code-block",
     "link",
     "image",
+    "video",
   ];
 
   const { quill, quillRef } = useQuill({ theme: "snow", modules, formats });

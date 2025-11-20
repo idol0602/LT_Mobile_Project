@@ -33,7 +33,7 @@ interface GrammarLessonData {
   level: "Beginner" | "Intermediate" | "Advanced" | "";
   topic: string;
   type: "grammar";
-  readingContent: string; // Thêm field cho grammar content
+  readingContent: string;
   questions: Question[];
 }
 
@@ -83,10 +83,6 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
       if (!lessonData._id) {
         throw new Error("Lesson ID is missing. Cannot update.");
       }
-
-      console.log("📤 Sending grammar lesson data:", lessonData);
-      console.log("📝 Grammar content:", lessonData.readingContent);
-
       await updateLesson(lessonData._id, lessonData);
       onSaveSuccess();
       onClose();
@@ -99,12 +95,14 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
     } finally {
       setLoading(false);
     }
-  }; // 3. Handler cho các trường thông tin cơ bản
+  };
 
+  // 3. Handler cho các trường thông tin cơ bản
   const handleChange = (field: keyof GrammarLessonData, value: string) => {
     setLessonData((prev) => ({ ...prev, [field]: value }));
-  }; // 4. Handler để nhận dữ liệu từ Step2_Grammar
+  };
 
+  // 4. Handler để nhận dữ liệu từ Step2_Grammar
   const handleQuestionsChange = (updatedQuestions: Question[]) => {
     setLessonData((prev) => ({
       ...prev,
@@ -112,7 +110,6 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
     }));
   };
 
-  // 5. Handler cho grammar content
   const handleContentChange = (content: string) => {
     setLessonData((prev) => ({
       ...prev,
@@ -122,7 +119,6 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-           {" "}
       <DialogTitle
         sx={{
           display: "flex",
@@ -130,31 +126,29 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
           alignItems: "center",
         }}
       >
-                Edit Grammar Lesson        {" "}
+        Edit Grammar Lesson
         <IconButton onClick={onClose}>
-                    <CloseIcon />       {" "}
+          <CloseIcon />
         </IconButton>
-             {" "}
       </DialogTitle>
-           {" "}
+
       <DialogContent dividers>
-                {/* --- Phần 1: Thông tin cơ bản --- */}       {" "}
+        {/* --- Phần 1: Thông tin cơ bản --- */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
-                   {" "}
           <TextField
             label="Lesson Name"
             fullWidth
             value={lessonData.name}
             onChange={(e) => handleChange("name", e.target.value)}
           />
-                   {" "}
+
           <TextField
             label="Topic"
             fullWidth
             value={lessonData.topic}
             onChange={(e) => handleChange("topic", e.target.value)}
           />
-                   {" "}
+
           <TextField
             select
             label="Level"
@@ -162,12 +156,12 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
             value={lessonData.level}
             onChange={(e) => handleChange("level", e.target.value)}
           >
-                        <MenuItem value="Beginner">Beginner</MenuItem>         
-              <MenuItem value="Intermediate">Intermediate</MenuItem>           {" "}
-            <MenuItem value="Advanced">Advanced</MenuItem>         {" "}
+            <MenuItem value="Beginner">Beginner</MenuItem>
+            <MenuItem value="Intermediate">Intermediate</MenuItem>
+            <MenuItem value="Advanced">Advanced</MenuItem>
           </TextField>
-                 {" "}
         </Box>
+
         {/* --- Grammar Content & Questions --- */}
         <Step2_Grammar
           questions={lessonData.questions}
@@ -175,32 +169,27 @@ export const EditGrammarModal: React.FC<EditGrammarModalProps> = ({
           onChange={handleQuestionsChange}
           onContentChange={handleContentChange}
         />
+
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
-                        {error}         {" "}
+            {error}
           </Alert>
         )}
-             {" "}
       </DialogContent>
-           {" "}
+
       <DialogActions sx={{ p: 2 }}>
-               {" "}
         <Button onClick={onClose} disabled={loading}>
-                    Cancel        {" "}
+          Cancel
         </Button>
-               {" "}
         <Button
           variant="contained"
           onClick={handleSave}
           disabled={loading || !lessonData.name.trim()}
           sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" } }}
         >
-                    {loading ? <CircularProgress size={24} /> : "Save Changes"} 
-               {" "}
+          {loading ? <CircularProgress size={24} /> : "Save Changes"}
         </Button>
-             {" "}
       </DialogActions>
-         {" "}
     </Dialog>
   );
 };
