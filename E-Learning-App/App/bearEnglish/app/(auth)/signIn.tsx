@@ -15,9 +15,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { API_BASE } from "../../constants/api";
+import { useAuth } from "../../contexts/AuthContext";
+
 const SignIn: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(30)).current;
+  const { login } = useAuth();
 
   // Thêm state cho email & password
   const [email, setEmail] = useState("");
@@ -86,7 +89,12 @@ const SignIn: React.FC = () => {
 
       if (!token || !user) {
         console.warn("Token or user missing in response:", data);
+        Alert.alert("Login Failed", "Invalid response from server");
+        return;
       }
+
+      // Lưu thông tin user vào AuthContext
+      login(user, token);
 
       // Hiển thị success message và chuyển trang
       const userName = user?.fullName || user?.name || email.split("@")[0];
