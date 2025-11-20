@@ -10,10 +10,11 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-
+import { API_BASE } from "../../constants/api";
 const SignIn: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(30)).current;
@@ -21,7 +22,8 @@ const SignIn: React.FC = () => {
   // Thêm state cho email & password
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -37,19 +39,74 @@ const SignIn: React.FC = () => {
       }),
     ]).start();
   }, [fadeAnim, translateY]);
-
-  const handleLogin = () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter both username and password.");
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+  const handleLogin = async () => {
+    if (!email.trim()) {
+      Alert.alert("Error", "Please enter your email");
+      return;
+    }
+    if (!validateEmail(email)) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+    if (!password.trim()) {
+      Alert.alert("Error", "Please enter your password");
       return;
     }
 
-    // Giả lập thông tin đăng nhập
-    if (email === "admin" && password === "123") {
-      Alert.alert("Success", "Login successful!");
-      router.replace("/(tabs)");
-    } else {
-      Alert.alert("Login Failed", "Invalid username or password.");
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_BASE}/api/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Log toàn bộ response để debug
+      console.log("Login response:", JSON.stringify(data, null, 2));
+
+      // Kiểm tra structure của response
+      const token = data.token || data.data?.token;
+      const user = data.user || data.data?.user;
+
+      if (!token || !user) {
+        console.warn("Token or user missing in response:", data);
+      }
+
+      // Hiển thị success message và chuyển trang
+      const userName = user?.fullName || user?.name || email.split("@")[0];
+      Alert.alert("Success", `Welcome back, ${userName}!`, [
+        {
+          text: "OK",
+          onPress: () => {
+            console.log("Navigating to tabs...");
+            router.replace("/(tabs)");
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error("Login error:", error);
+      Alert.alert(
+        "Login Failed",
+        error instanceof Error ? error.message : "Invalid email or password"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,11 +148,14 @@ const SignIn: React.FC = () => {
         <View style={styles.inputContainer}>
           <Ionicons name="mail-outline" size={18} color="#aaa" />
           <TextInput
-            placeholder="Username"
+            placeholder="Email"
             placeholderTextColor="#aaa"
             style={styles.input}
             value={email}
             onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!loading}
           />
         </View>
 
@@ -104,16 +164,32 @@ const SignIn: React.FC = () => {
           <TextInput
             placeholder="Password"
             placeholderTextColor="#aaa"
-            secureTextEntry
             style={styles.input}
             value={password}
             onChangeText={setPassword}
+            editable={!loading}
+            secureTextEntry={!showPassword}
           />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons
+              name={showPassword ? "eye-outline" : "eye-off-outline"}
+              size={18}
+              color="#aaa"
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Login button */}
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginText}>Login</Text>
+        <TouchableOpacity
+          style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginText}>Login</Text>
+          )}
         </TouchableOpacity>
 
         {/* Demo account quick login */}
@@ -171,6 +247,9 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     justifyContent: "center",
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#555",
   },
   formContainer: {
     backgroundColor: "rgb(38, 39, 48)",
