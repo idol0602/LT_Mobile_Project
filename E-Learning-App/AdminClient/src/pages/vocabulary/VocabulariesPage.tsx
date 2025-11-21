@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -84,10 +84,21 @@ export default function VocabulariesPage() {
     }
   };
 
-  // 🔹 Lấy lại dữ liệu khi đổi trang hoặc bộ lọc
+  // 🔹 Lấy lại dữ liệu khi đổi trang hoặc bộ lọc (với debounce cho search)
+  useEffect(() => {
+    // Debounce cho searchTerm (chỉ search sau 500ms user ngừng gõ)
+    const timeoutId = setTimeout(() => {
+      fetchVocabularies();
+    }, 500);
+
+    // Cleanup function để clear timeout khi searchTerm thay đổi
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  // Trigger ngay lập tức khi thay đổi filter khác (không cần debounce)
   useEffect(() => {
     fetchVocabularies();
-  }, [page, rowsPerPage, searchTerm, searchLang, posFilter]);
+  }, [page, rowsPerPage, searchLang, posFilter]);
 
   const fetchVocabularies = async () => {
     setLoading(true);
