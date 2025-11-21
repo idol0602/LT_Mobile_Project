@@ -391,7 +391,9 @@ exports.checkAndUnlockAchievements = async (req, res) => {
     res.json({
       success: true,
       message: `Checked achievements, ${newlyUnlocked.length} newly unlocked`,
-      data: newlyUnlocked,
+      data: {
+        newlyUnlocked: newlyUnlocked,
+      },
       count: newlyUnlocked.length,
     });
   } catch (error) {

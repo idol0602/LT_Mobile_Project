@@ -126,12 +126,18 @@ export function useAchievements(userId: string | undefined) {
    * Returns newly unlocked achievements
    */
   const checkAndUnlock = useCallback(async (): Promise<Achievement[]> => {
-    if (!userId) return [];
+    if (!userId) {
+      console.log('❌ checkAndUnlock: No userId');
+      return [];
+    }
 
     try {
+      console.log('🔍 Calling API.checkAndUnlockAchievements for user:', userId);
       const response = await API.checkAndUnlockAchievements(userId);
+      console.log('📦 checkAndUnlockAchievements response:', response);
       
       if (response.success && response.data.newlyUnlocked?.length > 0) {
+        console.log('✅ Found newly unlocked achievements:', response.data.newlyUnlocked);
         setNewlyUnlocked(response.data.newlyUnlocked);
         
         // Refresh achievements list
@@ -139,11 +145,17 @@ export function useAchievements(userId: string | undefined) {
         await fetchStats();
         
         return response.data.newlyUnlocked;
+      } else {
+        console.log('ℹ️ No newly unlocked achievements. Response:', {
+          success: response.success,
+          hasData: !!response.data,
+          newlyUnlockedLength: response.data?.newlyUnlocked?.length
+        });
       }
       
       return [];
     } catch (err: any) {
-      console.error('Error checking achievements:', err);
+      console.error('❌ Error checking achievements:', err);
       return [];
     }
   }, [userId, fetchAchievements, fetchStats]);

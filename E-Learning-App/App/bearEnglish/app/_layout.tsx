@@ -83,6 +83,10 @@ export default function RootLayout() {
             <Stack.Screen name="(reading)" options={{ headerShown: false }} />
             <Stack.Screen name="(listening)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="(achievements)"
+              options={{ headerShown: false }}
+            />
           </Stack>
         </ThemeProvider>
       </AchievementProvider>

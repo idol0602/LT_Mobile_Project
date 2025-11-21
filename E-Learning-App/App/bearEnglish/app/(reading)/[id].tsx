@@ -17,7 +17,6 @@ import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ReadingLesson } from "../../types";
 import RenderHTML from "react-native-render-html";
-import { AchievementModalWrapper } from "../../components/AchievementModalWrapper";
 import { useAchievementContext } from "../../contexts/AchievementContext";
 
 export default function ReadingLessonDetail() {
@@ -123,7 +122,26 @@ export default function ReadingLessonDetail() {
     // Update progress khi hoàn thành bài đọc và check achievements
     try {
       if (user?._id && id) {
-        await completeLessonWithAchievementCheck(id, "reading");
+        const newAchievements = await completeLessonWithAchievementCheck(
+          id,
+          "reading"
+        );
+
+        // Navigate to achievement page if any achievements were unlocked
+        if (newAchievements && newAchievements.length > 0) {
+          console.log(
+            "Navigating to achievement page with:",
+            newAchievements[0]
+          );
+          setTimeout(() => {
+            router.push({
+              pathname: "/(achievements)/achievement-unlocked",
+              params: {
+                achievement: JSON.stringify(newAchievements[0]),
+              },
+            });
+          }, 800); // Small delay to show results first
+        }
       } else {
         console.warn("Missing user ID or lesson ID:", {
           userId: user?._id,
@@ -405,7 +423,6 @@ export default function ReadingLessonDetail() {
       </Modal>
 
       {/* Achievement Unlock Modal */}
-      <AchievementModalWrapper />
     </SafeAreaView>
   );
 }

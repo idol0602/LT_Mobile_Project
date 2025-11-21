@@ -4,14 +4,13 @@ import { useAchievements, type Achievement } from "../hooks/useAchievements";
 import API from "../api";
 
 interface AchievementContextType {
-  showAchievementModal: boolean;
-  currentAchievement: Achievement | null;
   achievementQueue: Achievement[];
   completeLessonWithAchievementCheck: (
     lessonId: string,
     category: string
-  ) => Promise<void>;
-  handleCloseAchievementModal: () => void;
+  ) => Promise<Achievement[]>; // Return achievements instead of void
+  setAchievementQueue: React.Dispatch<React.SetStateAction<Achievement[]>>;
+  clearQueue: () => void;
 }
 
 const AchievementContext = createContext<AchievementContextType | undefined>(
@@ -25,20 +24,17 @@ export function AchievementProvider({
 }) {
   const { user } = useAuth();
   const { checkAndUnlock } = useAchievements(user?._id);
-
-  const [showAchievementModal, setShowAchievementModal] = useState(false);
-  const [currentAchievement, setCurrentAchievement] =
-    useState<Achievement | null>(null);
   const [achievementQueue, setAchievementQueue] = useState<Achievement[]>([]);
 
   /**
    * Complete lesson and automatically check for achievements
+   * Returns array of newly unlocked achievements
    */
   const completeLessonWithAchievementCheck = useCallback(
-    async (lessonId: string, category: string) => {
+    async (lessonId: string, category: string): Promise<Achievement[]> => {
       if (!user?._id) {
         console.warn("User not logged in");
-        return;
+        return [];
       }
 
       try {
@@ -50,24 +46,31 @@ export function AchievementProvider({
 
         if (response.success) {
           // Check for newly unlocked achievements
+          console.log("🔍 Checking for achievements...");
           const newAchievements = await checkAndUnlock();
+          console.log("🎯 checkAndUnlock returned:", newAchievements);
 
           if (newAchievements && newAchievements.length > 0) {
             console.log(
               "🎉 New achievements unlocked:",
-              newAchievements.length
+              newAchievements.length,
+              newAchievements
             );
 
-            // Show first achievement immediately
-            setCurrentAchievement(newAchievements[0]);
-            setShowAchievementModal(true);
-
-            // Queue remaining achievements
+            // Queue remaining achievements (all except first)
             if (newAchievements.length > 1) {
               setAchievementQueue(newAchievements.slice(1));
             }
+
+            return newAchievements;
+          } else {
+            console.log("❌ No new achievements unlocked");
           }
+        } else {
+          console.log("❌ Lesson completion failed:", response);
         }
+
+        return [];
       } catch (error) {
         console.error("Error completing lesson:", error);
         throw error;
@@ -77,29 +80,17 @@ export function AchievementProvider({
   );
 
   /**
-   * Handle closing achievement modal and show next in queue
+   * Clear achievement queue
    */
-  const handleCloseAchievementModal = useCallback(() => {
-    setShowAchievementModal(false);
-
-    // Show next achievement from queue if available
-    if (achievementQueue.length > 0) {
-      setTimeout(() => {
-        setCurrentAchievement(achievementQueue[0]);
-        setAchievementQueue((prev) => prev.slice(1));
-        setShowAchievementModal(true);
-      }, 500); // Small delay between modals
-    } else {
-      setCurrentAchievement(null);
-    }
-  }, [achievementQueue]);
+  const clearQueue = useCallback(() => {
+    setAchievementQueue([]);
+  }, []);
 
   const value = {
-    showAchievementModal,
-    currentAchievement,
     achievementQueue,
     completeLessonWithAchievementCheck,
-    handleCloseAchievementModal,
+    setAchievementQueue,
+    clearQueue,
   };
 
   return (

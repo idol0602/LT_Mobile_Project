@@ -27,7 +27,6 @@ import VocabularyCard from "./VocabularyCard";
 import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAchievementContext } from "../../contexts/AchievementContext";
-import { AchievementModalWrapper } from "../../components/AchievementModalWrapper";
 import type {
   Word,
   PronounResponse,
@@ -704,13 +703,41 @@ export default function VocabularyStudy() {
   const handleLessonComplete = async () => {
     try {
       if (user?._id && lessonId) {
-        await completeLessonWithAchievementCheck(lessonId, "vocab");
+        const newAchievements = await completeLessonWithAchievementCheck(
+          lessonId,
+          "vocab"
+        );
         console.log("Lesson completed, progress updated!");
+
+        // Show completion alert first
+        Alert.alert("Hoàn thành", "Bạn đã hoàn thành tất cả các giai đoạn!", [
+          {
+            text: "OK",
+            onPress: () => {
+              setStage(5);
+
+              // Navigate to achievement page if any achievements were unlocked
+              if (newAchievements && newAchievements.length > 0) {
+                console.log(
+                  "Navigating to achievement page with:",
+                  newAchievements[0]
+                );
+                setTimeout(() => {
+                  router.push({
+                    pathname: "/(achievements)/achievement-unlocked",
+                    params: {
+                      achievement: JSON.stringify(newAchievements[0]),
+                    },
+                  });
+                }, 500);
+              }
+            },
+          },
+        ]);
       }
     } catch (error) {
       console.error("Error updating lesson progress:", error);
-      // Không hiện lỗi cho user, vì việc học đã hoàn thành
-    } finally {
+      // Vẫn cho phép hoàn thành
       Alert.alert("Hoàn thành", "Bạn đã hoàn thành tất cả các giai đoạn!", [
         { text: "OK", onPress: () => setStage(5) },
       ]);
@@ -1328,9 +1355,6 @@ export default function VocabularyStudy() {
       </View>
 
       {renderFeedback()}
-
-      {/* Achievement Modal */}
-      <AchievementModalWrapper />
     </View>
   );
 }

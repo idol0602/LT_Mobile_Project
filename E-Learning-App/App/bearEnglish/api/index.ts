@@ -304,21 +304,28 @@ class API {
 
     async checkAndUnlockAchievements(userId: string): Promise<any> {
         try {
-          const response = await fetch(`${API_BASE}/api/achievements/user/${userId}/check`, {
+          console.log('📡 API: Checking achievements for user:', userId);
+          const url = `${API_BASE}/api/achievements/user/${userId}/check`;
+          console.log('📡 API URL:', url);
+          
+          const response = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
           });
           
+          console.log('📡 API Response status:', response.status);
+          
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
 
           const data = await response.json();
+          console.log('📡 API Response data:', data);
           return data;
         } catch (error) {
-          console.error('Error checking achievements:', error);
+          console.error('❌ API Error checking achievements:', error);
           throw error;
         }
     }

@@ -17,7 +17,6 @@ import { Audio } from "expo-av";
 import API from "../../api/index";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAchievementContext } from "../../contexts/AchievementContext";
-import { AchievementModalWrapper } from "../../components/AchievementModalWrapper";
 import type { Lesson as BaseLessonType } from "../../types";
 
 interface ListeningQuestion {
@@ -313,8 +312,27 @@ export default function ListeningPractice() {
   async function updateLessonProgress() {
     try {
       if (user?._id && lessonId) {
-        await completeLessonWithAchievementCheck(lessonId, "listening");
+        const newAchievements = await completeLessonWithAchievementCheck(
+          lessonId,
+          "listening"
+        );
         console.log("Listening lesson completed, progress updated!");
+
+        // Navigate to achievement page if any achievements were unlocked
+        if (newAchievements && newAchievements.length > 0) {
+          console.log(
+            "Navigating to achievement page with:",
+            newAchievements[0]
+          );
+          setTimeout(() => {
+            router.push({
+              pathname: "/(achievements)/achievement-unlocked",
+              params: {
+                achievement: JSON.stringify(newAchievements[0]),
+              },
+            });
+          }, 800); // Small delay to show results first
+        }
       }
     } catch (error) {
       console.error("Error updating lesson progress:", error);
@@ -673,7 +691,6 @@ export default function ListeningPractice() {
           </TouchableOpacity>
         )}
       </View>
-      <AchievementModalWrapper />
     </SafeAreaView>
   );
 }
