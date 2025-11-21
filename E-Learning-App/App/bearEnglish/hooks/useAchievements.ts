@@ -71,14 +71,31 @@ export function useAchievements(userId: string | undefined) {
 
       const response = await API.getUserAchievements(userId);
       
+      console.log('Achievement API response:', response);
+      
       if (response.success) {
-        setAchievements(response.data);
+        // Validate and filter out invalid data
+        const validAchievements = (response.data || []).filter((item: any) => {
+          if (!item || typeof item !== 'object') {
+            console.warn('Invalid achievement item:', item);
+            return false;
+          }
+          if (!item.achievement || typeof item.achievement !== 'object') {
+            console.warn('Achievement missing "achievement" field:', item);
+            return false;
+          }
+          return true;
+        });
+        
+        console.log('Valid achievements:', validAchievements.length);
+        setAchievements(validAchievements);
       } else {
         throw new Error(response.message || 'Failed to fetch achievements');
       }
     } catch (err: any) {
       console.error('Error fetching achievements:', err);
       setError(err.message || 'Failed to load achievements');
+      setAchievements([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }
@@ -135,28 +152,28 @@ export function useAchievements(userId: string | undefined) {
    * Get unlocked achievements only
    */
   const getUnlockedAchievements = useCallback((): UserAchievement[] => {
-    return achievements.filter(a => a.unlocked);
+    return achievements.filter(a => a && a.achievement && a.unlocked);
   }, [achievements]);
 
   /**
    * Get locked achievements only (excluding hidden ones)
    */
   const getLockedAchievements = useCallback((): UserAchievement[] => {
-    return achievements.filter(a => !a.unlocked && !a.achievement.hidden);
+    return achievements.filter(a => a && a.achievement && !a.unlocked && !a.achievement.hidden);
   }, [achievements]);
 
   /**
    * Get achievements by difficulty
    */
   const getAchievementsByDifficulty = useCallback((difficulty: 'easy' | 'normal' | 'hard'): UserAchievement[] => {
-    return achievements.filter(a => a.achievement.difficulty === difficulty);
+    return achievements.filter(a => a && a.achievement && a.achievement.difficulty === difficulty);
   }, [achievements]);
 
   /**
    * Get achievements by type
    */
   const getAchievementsByType = useCallback((type: Achievement['type']): UserAchievement[] => {
-    return achievements.filter(a => a.achievement.type === type);
+    return achievements.filter(a => a && a.achievement && a.achievement.type === type);
   }, [achievements]);
 
   /**

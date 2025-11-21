@@ -20,7 +20,7 @@ import PeopleIcon from "@mui/icons-material/People";
 
 const navItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
-  { text: "Topics", icon: <CategoryIcon />, path: "/topics" },
+  // { text: "Topics", icon: <CategoryIcon />, path: "/topics" },
   { text: "Lessons", icon: <SchoolIcon />, path: "/lessons" },
   { text: "Vocabularies", icon: <BookIcon />, path: "/vocabularies" },
   { text: "Achievements", icon: <EmojiEventsIcon />, path: "/achievements" },

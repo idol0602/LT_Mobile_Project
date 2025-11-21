@@ -366,8 +366,9 @@ export default function ProfileScreen() {
                 <Text style={styles.cardTitle}>Your Achievements</Text>
                 {achievementStats && (
                   <Text style={styles.cardSubtitle}>
-                    {achievementStats.unlockedAchievements} / {achievementStats.totalAchievements} unlocked
-                    {" "}({achievementStats.percentageUnlocked.toFixed(0)}%)
+                    {achievementStats.unlockedAchievements} /{" "}
+                    {achievementStats.totalAchievements} unlocked (
+                    {achievementStats.percentageUnlocked.toFixed(0)}%)
                   </Text>
                 )}
               </View>
@@ -672,6 +673,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
     marginTop: 8,
+    textAlign: "center",
+  },
+  achievementDescription: {
+    fontSize: 10,
+    color: "rgba(255, 255, 255, 0.7)",
+    marginTop: 4,
     textAlign: "center",
   },
 

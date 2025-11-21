@@ -181,11 +181,10 @@ exports.getUserAchievements = async (req, res) => {
       );
 
       return {
-        ...achievement.toObject(),
+        achievement: achievement.toObject(), // Wrap trong field 'achievement'
         unlocked: !!userAchievement,
         unlockedAt: userAchievement?.unlockedAt || null,
         progress: userAchievement?.progress || 0,
-        completed: userAchievement?.completed || false,
       };
     });
 
