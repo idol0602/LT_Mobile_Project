@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   useWindowDimensions,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -418,7 +419,7 @@ export default function ReadingLessonDetail() {
               style={styles.closeButton}
               onPress={() => setShowTranslation(false)}
             >
-              <X size={24} color="#e0e0e0" />
+              {/* <X size={24} color="#e0e0e0" /> */}
             </TouchableOpacity>
           </View>
 

@@ -321,10 +321,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  retryButton: {
-    backgroundColor: "#8B5CF6",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
+  // retryButton: {
+  //   backgroundColor: "#8B5CF6",
+  //   paddingHorizontal: 24,
+  //   paddingVertical: 12,
+  //   borderRadius: 8,
+  // },
 });
