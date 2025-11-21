@@ -8,6 +8,8 @@ require("./models/vocabulary.model");
 require("./models/lesson.model");
 require("./models/user.model");
 require("./models/progress.model");
+require("./models/achievement.model");
+require("./models/userAchievement.model");
 
 const audioRouter = require("./routes/audio");
 const vocabularyRouter = require("./routes/vocabulary.route");
@@ -15,6 +17,7 @@ const lessonRouter = require("./routes/lesson.route");
 const imageRouter = require("./routes/image");
 const userRouter = require("./routes/user.route");
 const progressRouter = require("./routes/progress.route");
+const achievementRouter = require("./routes/achievement.route");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -65,6 +68,7 @@ conn.once("open", () => {
   app.use("/api/images", imageRouter);
   app.use("/api/users", userRouter);
   app.use("/api/progress", progressRouter);
+  app.use("/api/achievements", achievementRouter);
   // router(app);
 
   app.listen(PORT, "0.0.0.0", () =>

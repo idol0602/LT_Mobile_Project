@@ -18,6 +18,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
 import API from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAchievements } from "../../hooks/useAchievements";
 
 // Icon components (emoji style)
 const IconSettings = () => (
@@ -46,6 +47,15 @@ export default function ProfileScreen() {
   const { user, isAuthenticated, logout, updateUser } = useAuth();
   const [progressStats, setProgressStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // Achievement hook
+  const {
+    achievements,
+    stats: achievementStats,
+    loading: achievementsLoading,
+    getUnlockedAchievements,
+    getLockedAchievements,
+  } = useAchievements(user?._id);
 
   // Debug function to check and fix AsyncStorage
   const checkAsyncStorage = async () => {
@@ -148,14 +158,9 @@ export default function ProfileScreen() {
     days: ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
   };
 
-  const achievements = [
-    { id: 1, title: "First Step", locked: false },
-    { id: 2, title: "Week Warrior", locked: false },
-    { id: 3, title: "Month Master", locked: true },
-    { id: 4, title: "Year Champion", locked: true },
-    { id: 5, title: "Perfect Streak", locked: false },
-    { id: 6, title: "Speed Demon", locked: true },
-  ];
+  // Get unlocked and locked achievements from the hook
+  const unlockedAchievements = getUnlockedAchievements();
+  const lockedAchievements = getLockedAchievements();
 
   return (
     <ImageBackground
@@ -357,35 +362,68 @@ export default function ProfileScreen() {
         {activeTab === "achievements" && (
           <View style={styles.tabContent}>
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Your Achievements</Text>
-              <View style={styles.achievementsGrid}>
-                {achievements.map((achievement) =>
-                  achievement.locked ? (
-                    <View
-                      key={achievement.id}
-                      style={[styles.achievementItem, styles.achievementLocked]}
-                    >
-                      <IconTrophy />
-                      <Text style={styles.achievementTitle}>
-                        {achievement.title}
-                      </Text>
-                    </View>
-                  ) : (
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Your Achievements</Text>
+                {achievementStats && (
+                  <Text style={styles.cardSubtitle}>
+                    {achievementStats.unlockedAchievements} / {achievementStats.totalAchievements} unlocked
+                    {" "}({achievementStats.percentageUnlocked.toFixed(0)}%)
+                  </Text>
+                )}
+              </View>
+
+              {achievementsLoading ? (
+                <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                  <ActivityIndicator size="large" color="#00D4FF" />
+                </View>
+              ) : achievements.length === 0 ? (
+                <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                  <Text style={{ color: "#A0A0A0", fontSize: 14 }}>
+                    No achievements yet. Keep learning!
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.achievementsGrid}>
+                  {/* Unlocked Achievements */}
+                  {unlockedAchievements.map((userAchievement) => (
                     <LinearGradient
-                      key={achievement.id}
+                      key={userAchievement.achievement._id}
                       colors={["#00D4FF", "#00FFAA"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.achievementItem}
                     >
-                      <IconTrophy />
+                      <Text style={{ fontSize: 32 }}>
+                        {userAchievement.achievement.icon}
+                      </Text>
                       <Text style={styles.achievementTitle}>
-                        {achievement.title}
+                        {userAchievement.achievement.name}
+                      </Text>
+                      <Text style={styles.achievementDescription}>
+                        {userAchievement.achievement.description}
                       </Text>
                     </LinearGradient>
-                  )
-                )}
-              </View>
+                  ))}
+
+                  {/* Locked Achievements */}
+                  {lockedAchievements.map((userAchievement) => (
+                    <View
+                      key={userAchievement.achievement._id}
+                      style={[styles.achievementItem, styles.achievementLocked]}
+                    >
+                      <Text style={{ fontSize: 32, opacity: 0.3 }}>
+                        {userAchievement.achievement.icon}
+                      </Text>
+                      <Text style={styles.achievementTitle}>
+                        {userAchievement.achievement.name}
+                      </Text>
+                      <Text style={styles.achievementDescription}>
+                        {userAchievement.achievement.description}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
         )}

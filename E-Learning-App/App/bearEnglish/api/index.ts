@@ -266,6 +266,83 @@ class API {
           throw error;
         }
     }
+
+    // ============ ACHIEVEMENT APIs ============
+
+    async getUserAchievements(userId: string, includeHidden: boolean = false): Promise<any> {
+        try {
+          const url = `${API_BASE}/api/achievements/user/${userId}${includeHidden ? '?includeHidden=true' : ''}`;
+          const response = await fetch(url);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error fetching user achievements:', error);
+          throw error;
+        }
+    }
+
+    async getUserAchievementStats(userId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/achievements/user/${userId}/stats`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error fetching achievement stats:', error);
+          throw error;
+        }
+    }
+
+    async checkAndUnlockAchievements(userId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/achievements/user/${userId}/check`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error checking achievements:', error);
+          throw error;
+        }
+    }
+
+    async markAchievementAsNotified(userId: string, achievementId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/achievements/user/${userId}/notify/${achievementId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error marking achievement as notified:', error);
+          throw error;
+        }
+    }
 }
 
 export default new API();
