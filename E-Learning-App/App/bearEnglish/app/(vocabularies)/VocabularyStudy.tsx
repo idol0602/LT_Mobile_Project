@@ -25,6 +25,7 @@ import {
 } from "react-native-reanimated";
 import VocabularyCard from "./VocabularyCard";
 import API from "../../api";
+import { useAuth } from "../../contexts/AuthContext";
 import type {
   Word,
   PronounResponse,
@@ -129,6 +130,7 @@ export default function VocabularyStudy() {
   const params = useLocalSearchParams();
   const lessonId = (params.lessonId as string) || undefined;
   const lessonTitle = (params.lessonTitle as string) || "Học từ vựng";
+  const { user, isLoading: authLoading } = useAuth();
 
   // Core states
   const [stage, setStage] = useState<number>(1);
@@ -684,13 +686,29 @@ export default function VocabularyStudy() {
             ]
           );
         } else {
-          Alert.alert("Hoàn thành", "Bạn đã hoàn thành tất cả các giai đoạn!", [
-            { text: "OK", onPress: () => setStage(5) },
-          ]);
+          // Hoàn thành tất cả stages - Gọi API để update progress
+          handleLessonComplete();
         }
       }
     } else {
       setCurrentIndex(nextIndex);
+    }
+  };
+
+  // Hàm xử lý khi hoàn thành bài học
+  const handleLessonComplete = async () => {
+    try {
+      if (user?._id && lessonId) {
+        await API.completeLesson(user._id, lessonId, "vocab");
+        console.log("Lesson completed, progress updated!");
+      }
+    } catch (error) {
+      console.error("Error updating lesson progress:", error);
+      // Không hiện lỗi cho user, vì việc học đã hoàn thành
+    } finally {
+      Alert.alert("Hoàn thành", "Bạn đã hoàn thành tất cả các giai đoạn!", [
+        { text: "OK", onPress: () => setStage(5) },
+      ]);
     }
   };
 

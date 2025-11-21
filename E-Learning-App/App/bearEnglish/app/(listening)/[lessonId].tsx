@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ArrowLeft } from "lucide-react-native";
 import { Audio } from "expo-av";
 import API from "../../api/index";
+import { useAuth } from "../../contexts/AuthContext";
 import type { Lesson as BaseLessonType } from "../../types";
 
 interface ListeningQuestion {
@@ -32,6 +33,7 @@ export default function ListeningPractice() {
   const params = useLocalSearchParams();
   const lessonId = params.lessonId as string;
   const lessonTitle = params.lessonTitle as string;
+  const { user, isLoading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [lesson, setLesson] = useState<ListeningLesson | null>(null);
@@ -329,17 +331,30 @@ export default function ListeningPractice() {
           { text: "Cancel", style: "cancel" },
           {
             text: "Submit",
-            onPress: () => {
+            onPress: async () => {
               setShowResults(true);
-              playSoundEffect("complete");
+              // Update progress
+              await updateLessonProgress();
             },
           },
         ]
       );
     } else {
       setShowResults(true);
-      // Play completion sound effect
-      playSoundEffect("complete");
+      // Update progress
+      updateLessonProgress();
+    }
+  }
+
+  async function updateLessonProgress() {
+    try {
+      if (user?._id && lessonId) {
+        await API.completeLesson(user._id, lessonId, "listening");
+        console.log("Listening lesson completed, progress updated!");
+      }
+    } catch (error) {
+      console.error("Error updating lesson progress:", error);
+      // Không hiện lỗi cho user
     }
   }
 

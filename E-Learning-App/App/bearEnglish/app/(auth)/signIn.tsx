@@ -94,7 +94,7 @@ const SignIn: React.FC = () => {
       }
 
       // Lưu thông tin user vào AuthContext
-      login(user, token);
+      await login(user, token);
 
       // Hiển thị success message và chuyển trang
       const userName = user?.fullName || user?.name || email.split("@")[0];
