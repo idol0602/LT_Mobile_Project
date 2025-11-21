@@ -15,13 +15,15 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import BookIcon from "@mui/icons-material/Book";
 import SchoolIcon from "@mui/icons-material/School";
 import CategoryIcon from "@mui/icons-material/Category";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PeopleIcon from "@mui/icons-material/People";
 
 const navItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
-  { text: "Topics", icon: <CategoryIcon />, path: "/topics" },
+  // { text: "Topics", icon: <CategoryIcon />, path: "/topics" },
   { text: "Lessons", icon: <SchoolIcon />, path: "/lessons" },
   { text: "Vocabularies", icon: <BookIcon />, path: "/vocabularies" },
+  { text: "Achievements", icon: <EmojiEventsIcon />, path: "/achievements" },
   { text: "Users", icon: <PeopleIcon />, path: "/users" },
 ];
 const navLinkStyle = {

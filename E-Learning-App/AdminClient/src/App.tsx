@@ -12,6 +12,7 @@ import VocabulariesPage from "./pages/vocabulary/VocabulariesPage";
 import TopicsPage from "./pages/TopicsPage";
 import LessonPage from "./pages/LessonPage";
 import UsersPage from "./pages/UsersPage";
+import AchievementsPage from "./pages/Achievement/AchievementsPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -82,6 +83,7 @@ const router = createBrowserRouter([
       { path: "vocabularies", element: <VocabulariesPage /> },
       { path: "topics", element: <TopicsPage /> },
       { path: "lessons", element: <LessonPage /> },
+      { path: "achievements", element: <AchievementsPage /> },
       { path: "users", element: <UsersPage /> },
       { path: "profile", element: <ProfilePage /> },
     ],

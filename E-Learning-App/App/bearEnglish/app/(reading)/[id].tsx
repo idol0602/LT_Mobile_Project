@@ -16,6 +16,7 @@ import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ReadingLesson } from "../../types";
 import RenderHTML from "react-native-render-html";
+import { useAchievementContext } from "../../contexts/AchievementContext";
 
 export default function ReadingLessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +35,9 @@ export default function ReadingLessonDetail() {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translatedContent, setTranslatedContent] = useState<string>("");
   const [isTranslating, setIsTranslating] = useState(false);
+
+  // Get achievement context
+  const { completeLessonWithAchievementCheck } = useAchievementContext();
 
   const fetchLesson = useCallback(async () => {
     try {
@@ -114,16 +118,28 @@ export default function ReadingLessonDetail() {
 
     setShowResults(true);
 
-    // Update progress khi hoàn thành bài đọc
+    // Update progress khi hoàn thành bài đọc và check achievements
     try {
       if (user?._id && id) {
-        console.log("Updating progress for user:", user._id, "lesson:", id);
-        const response = await API.completeLesson(user._id, id, "reading");
-        console.log("Reading lesson completed, response:", response);
+        const newAchievements = await completeLessonWithAchievementCheck(
+          id,
+          "reading"
+        );
 
-        if (response.success) {
-          console.log("Streak updated to:", response.data.streak);
-          // Streak updated silently, no alert needed
+        // Navigate to achievement page if any achievements were unlocked
+        if (newAchievements && newAchievements.length > 0) {
+          console.log(
+            "Navigating to achievement page with:",
+            newAchievements[0]
+          );
+          setTimeout(() => {
+            router.push({
+              pathname: "/(achievements)/achievement-unlocked",
+              params: {
+                achievement: JSON.stringify(newAchievements[0]),
+              },
+            });
+          }, 800); // Small delay to show results first
         }
       } else {
         console.warn("Missing user ID or lesson ID:", {
@@ -139,7 +155,6 @@ export default function ReadingLessonDetail() {
       );
     }
   };
-
   const calculateScore = () => {
     if (!lesson?.questions) return { correct: 0, total: 0, percentage: 0 };
 
@@ -388,6 +403,37 @@ export default function ReadingLessonDetail() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Translation Modal */}
+      <Modal
+        visible={showTranslation}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTranslation(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Vietnamese Translation</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowTranslation(false)}
+            >
+              <X size={24} color="#e0e0e0" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalScrollContent}
+          >
+            <View style={styles.translationContent}>
+              <Text style={styles.translationText}>{translatedContent}</Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Achievement Unlock Modal */}
     </SafeAreaView>
   );
 }

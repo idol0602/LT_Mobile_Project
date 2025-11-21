@@ -268,9 +268,9 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Active Level</Text>
-              <TouchableOpacity>
+              {/* <TouchableOpacity>
                 <Text style={styles.seeAll}>See Course</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
 
             <TouchableOpacity

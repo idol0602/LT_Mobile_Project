@@ -16,6 +16,7 @@ import { ArrowLeft } from "lucide-react-native";
 import { Audio } from "expo-av";
 import API from "../../api/index";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAchievementContext } from "../../contexts/AchievementContext";
 import type { Lesson as BaseLessonType } from "../../types";
 
 interface ListeningQuestion {
@@ -34,6 +35,7 @@ export default function ListeningPractice() {
   const lessonId = params.lessonId as string;
   const lessonTitle = params.lessonTitle as string;
   const { user, isLoading: authLoading } = useAuth();
+  const { completeLessonWithAchievementCheck } = useAchievementContext();
 
   const [loading, setLoading] = useState(false);
   const [lesson, setLesson] = useState<ListeningLesson | null>(null);
@@ -349,8 +351,27 @@ export default function ListeningPractice() {
   async function updateLessonProgress() {
     try {
       if (user?._id && lessonId) {
-        await API.completeLesson(user._id, lessonId, "listening");
+        const newAchievements = await completeLessonWithAchievementCheck(
+          lessonId,
+          "listening"
+        );
         console.log("Listening lesson completed, progress updated!");
+
+        // Navigate to achievement page if any achievements were unlocked
+        if (newAchievements && newAchievements.length > 0) {
+          console.log(
+            "Navigating to achievement page with:",
+            newAchievements[0]
+          );
+          setTimeout(() => {
+            router.push({
+              pathname: "/(achievements)/achievement-unlocked",
+              params: {
+                achievement: JSON.stringify(newAchievements[0]),
+              },
+            });
+          }, 800); // Small delay to show results first
+        }
       }
     } catch (error) {
       console.error("Error updating lesson progress:", error);
