@@ -18,7 +18,15 @@ const uploadStreamToGridFS = (buffer, filename, bucket) => {
 
 exports.createLesson = async (req, res) => {
   try {
-    const { name, level, topic, type, questions, readingContent } = req.body;
+    const {
+      name,
+      level,
+      topic,
+      type,
+      questions,
+      readingContent,
+      vocabularies,
+    } = req.body;
 
     // Parse questions nếu gửi dưới dạng JSON string
     let parsedQuestions = [];
@@ -57,6 +65,7 @@ exports.createLesson = async (req, res) => {
       type,
       readingContent: readingContent || "",
       questions: parsedQuestions,
+      vocabularies: vocabularies || [], // 🆕 Support vocab lesson
     });
 
     await newLesson.save();
@@ -163,7 +172,15 @@ exports.getLessonById = async (req, res) => {
 // ✏️ Cập nhật
 exports.updateLesson = async (req, res) => {
   try {
-    const { name, level, topic, type, questions, readingContent } = req.body;
+    const {
+      name,
+      level,
+      topic,
+      type,
+      questions,
+      readingContent,
+      vocabularies,
+    } = req.body;
 
     // Parse questions nếu gửi dưới dạng JSON string
     let parsedQuestions = [];
@@ -203,6 +220,7 @@ exports.updateLesson = async (req, res) => {
       type,
       readingContent,
       questions: parsedQuestions,
+      vocabularies, // 🆕 Support vocab lesson
     };
 
     // Loại bỏ các field undefined

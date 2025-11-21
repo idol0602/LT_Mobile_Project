@@ -117,7 +117,7 @@ export const VocabLessonModal: React.FC<VocabLessonModalProps> = ({
     if (!selectedLesson?._id) {
       setLoadingVocabs(false);
     }
-  }, [selectedLesson, open]); // Phụ thuộc vào 2 prop này
+  }, [selectedLesson?._id, open]); // Chỉ phụ thuộc vào _id và open, không phụ thuộc selectedLesson object
 
   // 🔹 Xử lý lưu bài học
   // nếu bạn muốn reset form khi đóng modal để lần mở tiếp là "sạch"
