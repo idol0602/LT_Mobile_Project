@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Languages } from "lucide-react-native";
+import { ArrowLeft, Languages, X } from "lucide-react-native";
 import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ReadingLesson } from "../../types";
@@ -419,7 +419,7 @@ export default function ReadingLessonDetail() {
               style={styles.closeButton}
               onPress={() => setShowTranslation(false)}
             >
-              {/* <X size={24} color="#e0e0e0" /> */}
+              <X size={24} color="#e0e0e0" />
             </TouchableOpacity>
           </View>
 
