@@ -13,6 +13,12 @@ router.post("/verify-otp", userController.verifyOTP);
 router.post("/resend-verification", userController.resendVerification);
 router.post("/resend-otp", userController.resendOTP);
 
+// Reset password routes
+router.post("/forgot-password", userController.forgotPassword);
+router.post("/verify-reset-otp", userController.verifyResetOTP);
+router.post("/reset-password", userController.resetPassword);
+router.post("/resend-reset-otp", userController.resendResetOTP);
+
 // Protected routes
 router.get("/me", protect, userController.getMe);
 router.put("/me", protect, userController.updateProfile);

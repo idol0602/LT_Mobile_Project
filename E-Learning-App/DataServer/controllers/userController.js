@@ -89,6 +89,191 @@ const sendOTPEmail = async (email, otp, fullName) => {
   }
 };
 
+// Gửi email OTP reset password
+const sendResetPasswordOTP = async (email, otp, fullName) => {
+  const mailOptions = {
+    from: {
+      name: "Bear English",
+      address: process.env.EMAIL_USER,
+    },
+    to: email,
+    subject: "🔐 Đặt lại mật khẩu - Bear English",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+          }
+          .content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-top: 20px;
+          }
+          .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            font-size: 16px;
+          }
+          h1 {
+            color: #2563eb;
+            margin-bottom: 15px;
+            font-size: 24px;
+          }
+          .greeting {
+            color: #4b5563;
+            margin-bottom: 20px;
+          }
+          .otp-box {
+            background: #f3f4f6;
+            border: 2px dashed #2563eb;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+          }
+          .otp-label {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          .otp-code {
+            font-size: 40px;
+            font-weight: bold;
+            color: #2563eb;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+          }
+          .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 6px;
+          }
+          .warning-title {
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 8px;
+          }
+          .warning ul {
+            margin: 10px 0;
+            padding-left: 20px;
+            color: #92400e;
+          }
+          .warning li {
+            margin: 5px 0;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+          }
+          .security-note {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #991b1b;
+            font-size: 13px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo">🐻 Bear English</div>
+          <div class="subtitle">Your English Learning Companion</div>
+          
+          <div class="content">
+            <h1>🔐 Đặt lại mật khẩu</h1>
+            <p class="greeting">Xin chào <strong>${fullName}</strong>,</p>
+            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Sử dụng mã OTP bên dưới để tiếp tục:</p>
+            
+            <div class="otp-box">
+              <div class="otp-label">Mã OTP của bạn:</div>
+              <div class="otp-code">${otp}</div>
+            </div>
+            
+            <div class="warning">
+              <div class="warning-title">⏰ Lưu ý quan trọng:</div>
+              <ul>
+                <li>Mã OTP này sẽ <strong>hết hạn sau 5 phút</strong></li>
+                <li>Bạn có tối đa <strong>3 lần nhập</strong> mã OTP</li>
+                <li>Nếu không phải bạn yêu cầu, vui lòng <strong>bỏ qua email này</strong></li>
+              </ul>
+            </div>
+            
+            <div class="security-note">
+              🔒 <strong>Bảo mật:</strong> Không chia sẻ mã OTP này với bất kỳ ai, kể cả nhân viên Bear English.
+            </div>
+            
+            <div class="footer">
+              <p>Email này được gửi tự động từ hệ thống Bear English.</p>
+              <p>Nếu bạn có thắc mắc, vui lòng liên hệ bộ phận hỗ trợ.</p>
+              <p style="color: #9ca3af; font-size: 12px; margin-top: 15px;">
+                © 2025 Bear English. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Bear English - Đặt lại mật khẩu
+
+Xin chào ${fullName},
+
+Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
+
+Mã OTP của bạn: ${otp}
+
+Lưu ý:
+- Mã này sẽ hết hạn sau 5 phút
+- Bạn có tối đa 3 lần nhập mã OTP
+- Nếu không phải bạn yêu cầu, vui lòng bỏ qua email này
+
+Không chia sẻ mã OTP này với bất kỳ ai.
+
+---
+Bear English Learning App
+© 2025 All rights reserved.
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Reset password OTP đã được gửi đến:", email);
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Lỗi gửi reset password OTP:", error);
+    return { success: false, error };
+  }
+};
+
 // @desc    Đăng ký tài khoản mới (Web - với link xác nhận)
 // @route   POST /api/users/register
 // @access  Public
@@ -896,6 +1081,277 @@ exports.createAdminAccount = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi server khi tạo tài khoản admin",
+      error: error.message,
+    });
+  }
+};
+
+// ============ RESET PASSWORD ROUTES ============
+
+// Store OTP cho reset password trong memory (production nên dùng Redis)
+const resetPasswordOTPStore = new Map();
+
+// @desc    Gửi OTP reset password
+// @route   POST /api/users/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email là bắt buộc",
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy tài khoản với email này",
+      });
+    }
+
+    // Tạo OTP 6 số
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Lưu OTP với thời gian hết hạn (5 phút)
+    resetPasswordOTPStore.set(email.toLowerCase(), {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+      attempts: 0,
+    });
+
+    // Gửi email OTP
+    const emailResult = await sendResetPasswordOTP(email, otp, user.fullName);
+
+    if (!emailResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: "Không thể gửi email OTP. Vui lòng thử lại sau.",
+      });
+    }
+
+    console.log(`📧 Reset password OTP for ${email}: ${otp}`);
+
+    res.json({
+      success: true,
+      message: "Mã OTP đã được gửi đến email của bạn",
+      // Chỉ để test, xóa dòng này trong production
+      otp: process.env.NODE_ENV === "development" ? otp : undefined,
+    });
+  } catch (error) {
+    console.error("Lỗi forgot password:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi xử lý yêu cầu",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Verify OTP reset password
+// @route   POST /api/users/verify-reset-otp
+// @access  Public
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email và OTP là bắt buộc",
+      });
+    }
+
+    const otpData = resetPasswordOTPStore.get(email.toLowerCase());
+
+    if (!otpData) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP không tồn tại hoặc đã hết hạn",
+      });
+    }
+
+    // Kiểm tra số lần thử
+    if (otpData.attempts >= 3) {
+      resetPasswordOTPStore.delete(email.toLowerCase());
+      return res.status(400).json({
+        success: false,
+        message: "Đã vượt quá số lần nhập OTP. Vui lòng yêu cầu mã mới.",
+      });
+    }
+
+    // Kiểm tra hết hạn
+    if (Date.now() > otpData.expiresAt) {
+      resetPasswordOTPStore.delete(email.toLowerCase());
+      return res.status(400).json({
+        success: false,
+        message: "OTP đã hết hạn. Vui lòng yêu cầu mã mới.",
+      });
+    }
+
+    // Kiểm tra OTP đúng
+    if (otpData.otp !== otp) {
+      otpData.attempts += 1;
+      return res.status(400).json({
+        success: false,
+        message: "Mã OTP không đúng",
+        remainingAttempts: 3 - otpData.attempts,
+      });
+    }
+
+    // Tạo reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // Lưu reset token vào store (thay thế OTP data)
+    resetPasswordOTPStore.set(email.toLowerCase(), {
+      resetToken,
+      expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes để reset password
+      verified: true,
+    });
+
+    res.json({
+      success: true,
+      message: "Xác thực OTP thành công",
+      resetToken,
+    });
+  } catch (error) {
+    console.error("Lỗi verify reset OTP:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi xác thực OTP",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Reset password với token
+// @route   POST /api/users/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ thông tin",
+      });
+    }
+
+    const resetData = resetPasswordOTPStore.get(email.toLowerCase());
+
+    if (
+      !resetData ||
+      !resetData.verified ||
+      resetData.resetToken !== resetToken
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Token không hợp lệ hoặc đã hết hạn",
+      });
+    }
+
+    // Kiểm tra hết hạn
+    if (Date.now() > resetData.expiresAt) {
+      resetPasswordOTPStore.delete(email.toLowerCase());
+      return res.status(400).json({
+        success: false,
+        message: "Token đã hết hạn. Vui lòng thử lại.",
+      });
+    }
+
+    // Tìm user và update password
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy tài khoản",
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    // Xóa reset token
+    resetPasswordOTPStore.delete(email.toLowerCase());
+
+    console.log(`✅ Password reset successfully for ${email}`);
+
+    res.json({
+      success: true,
+      message: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập.",
+    });
+  } catch (error) {
+    console.error("Lỗi reset password:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi đặt lại mật khẩu",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Resend OTP reset password
+// @route   POST /api/users/resend-reset-otp
+// @access  Public
+exports.resendResetOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email là bắt buộc",
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy tài khoản với email này",
+      });
+    }
+
+    // Tạo OTP mới
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Lưu OTP mới
+    resetPasswordOTPStore.set(email.toLowerCase(), {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      attempts: 0,
+    });
+
+    // Gửi email OTP
+    const emailResult = await sendResetPasswordOTP(email, otp, user.fullName);
+
+    if (!emailResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: "Không thể gửi email OTP. Vui lòng thử lại sau.",
+      });
+    }
+
+    console.log(`📧 Resend reset password OTP for ${email}: ${otp}`);
+
+    res.json({
+      success: true,
+      message: "Mã OTP mới đã được gửi",
+      // Chỉ để test
+      otp: process.env.NODE_ENV === "development" ? otp : undefined,
+    });
+  } catch (error) {
+    console.error("Lỗi resend reset OTP:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi gửi lại OTP",
       error: error.message,
     });
   }

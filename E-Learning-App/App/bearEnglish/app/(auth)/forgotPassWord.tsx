@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
@@ -12,16 +12,31 @@ import {
   SafeAreaView,
   Dimensions,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import API from "../../api";
 
 const { width } = Dimensions.get("window");
 
 const ForgotPasswordScreen = () => {
-  const [email, setEmail] = React.useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const sendButtonScale = useRef(new Animated.Value(1)).current;
   const backButtonScale = useRef(new Animated.Value(1)).current;
 
-  const handleSendPress = () => {
+  const handleSendPress = async () => {
+    if (!email.trim()) {
+      Alert.alert("Error", "Please enter your email");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      Alert.alert("Error", "Please enter a valid email");
+      return;
+    }
+
     Animated.sequence([
       Animated.spring(sendButtonScale, {
         toValue: 0.95,
@@ -32,6 +47,34 @@ const ForgotPasswordScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    setLoading(true);
+
+    try {
+      const response = await API.forgotPassword(email.trim().toLowerCase());
+
+      if (response.success) {
+        setShowSuccess(true);
+
+        // Navigate to OTP verification screen
+        setTimeout(() => {
+          router.push({
+            pathname: "/(auth)/verifyOTPForgot" as any,
+            params: {
+              email: email.trim().toLowerCase(),
+              otp: response.otp, // Only for development
+            },
+          });
+        }, 1500);
+      } else {
+        Alert.alert("Error", response.message || "Failed to send OTP");
+      }
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      Alert.alert("Error", "Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBackPress = () => {
@@ -72,15 +115,16 @@ const ForgotPasswordScreen = () => {
         </View>
 
         {/* Success Message */}
-        <View style={styles.messageContainer}>
-          <View style={styles.messageContent}>
-            <Text style={styles.messageIcon}>✓</Text>
-            <Text style={styles.messageText}>
-              An email has just been sent to you. you can use it to retrieve
-              your password
-            </Text>
+        {showSuccess && (
+          <View style={styles.messageContainer}>
+            <View style={styles.messageContent}>
+              <Text style={styles.messageIcon}>✓</Text>
+              <Text style={styles.messageText}>
+                An OTP has been sent to your email. Please check your inbox.
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         <Image
           source={require("../../assets/images/dont_worry.png")}
@@ -117,14 +161,16 @@ const ForgotPasswordScreen = () => {
         {/* Send Button */}
         <Animated.View style={{ transform: [{ scale: sendButtonScale }] }}>
           <TouchableOpacity
-            onPress={() => {
-              router.replace("/(auth)/resetPassWord");
-              handleSendPress();
-            }}
+            onPress={handleSendPress}
             activeOpacity={0.8}
-            style={styles.sendButton}
+            style={[styles.sendButton, loading && styles.sendButtonDisabled]}
+            disabled={loading}
           >
-            <Text style={styles.sendButtonText}>Send</Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.sendButtonText}>Send OTP</Text>
+            )}
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
@@ -272,6 +318,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
   sendButtonText: {
     color: "#ffffff",
