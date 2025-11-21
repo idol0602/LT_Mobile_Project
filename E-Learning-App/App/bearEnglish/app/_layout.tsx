@@ -7,6 +7,7 @@ import {
 import { StatusBar, AppState, AppStateStatus, Platform } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { AchievementProvider } from "../contexts/AchievementContext";
 
 const GLOBAL_DARK_BACKGROUND = "rgb(38, 39, 48)";
 const GLOBAL_TEXT_COLOR = "#FFFFFF";
@@ -64,22 +65,27 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={CustomFixedDarkTheme}>
-        <StatusBar barStyle="light-content" />
+      <AchievementProvider>
+        <ThemeProvider value={CustomFixedDarkTheme}>
+          <StatusBar barStyle="light-content" />
 
-        <Stack initialRouteName="(onboarding)">
-          <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tips)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="(vocabularies)"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="(reading)" options={{ headerShown: false }} />
-          <Stack.Screen name="(listening)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        </Stack>
-      </ThemeProvider>
+          <Stack initialRouteName="(onboarding)">
+            <Stack.Screen
+              name="(onboarding)"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tips)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="(vocabularies)"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="(reading)" options={{ headerShown: false }} />
+            <Stack.Screen name="(listening)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          </Stack>
+        </ThemeProvider>
+      </AchievementProvider>
     </AuthProvider>
   );
 }

@@ -17,6 +17,8 @@ import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ReadingLesson } from "../../types";
 import RenderHTML from "react-native-render-html";
+import { AchievementModalWrapper } from "../../components/AchievementModalWrapper";
+import { useAchievementContext } from "../../contexts/AchievementContext";
 
 export default function ReadingLessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,6 +37,9 @@ export default function ReadingLessonDetail() {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translatedContent, setTranslatedContent] = useState<string>("");
   const [isTranslating, setIsTranslating] = useState(false);
+
+  // Get achievement context
+  const { completeLessonWithAchievementCheck } = useAchievementContext();
 
   const fetchLesson = useCallback(async () => {
     try {
@@ -115,17 +120,10 @@ export default function ReadingLessonDetail() {
 
     setShowResults(true);
 
-    // Update progress khi hoàn thành bài đọc
+    // Update progress khi hoàn thành bài đọc và check achievements
     try {
       if (user?._id && id) {
-        console.log("Updating progress for user:", user._id, "lesson:", id);
-        const response = await API.completeLesson(user._id, id, "reading");
-        console.log("Reading lesson completed, response:", response);
-
-        if (response.success) {
-          console.log("Streak updated to:", response.data.streak);
-          // Streak updated silently, no alert needed
-        }
+        await completeLessonWithAchievementCheck(id, "reading");
       } else {
         console.warn("Missing user ID or lesson ID:", {
           userId: user?._id,
@@ -140,7 +138,6 @@ export default function ReadingLessonDetail() {
       );
     }
   };
-
   const calculateScore = () => {
     if (!lesson?.questions) return { correct: 0, total: 0, percentage: 0 };
 
@@ -406,6 +403,9 @@ export default function ReadingLessonDetail() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Achievement Unlock Modal */}
+      <AchievementModalWrapper />
     </SafeAreaView>
   );
 }
