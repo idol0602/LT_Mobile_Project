@@ -6,7 +6,7 @@ import {
 } from "@react-navigation/native";
 import { StatusBar, AppState, AppStateStatus, Platform } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
-import { AuthProvider } from "../contexts/AuthContext";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 const GLOBAL_DARK_BACKGROUND = "rgb(38, 39, 48)";
 const GLOBAL_TEXT_COLOR = "#FFFFFF";

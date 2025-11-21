@@ -16,8 +16,10 @@ import Svg, {
   LinearGradient,
   Stop,
 } from "react-native-svg";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
+import { useAuth } from "../../contexts/AuthContext";
+import API from "../../api";
 
 const { width } = Dimensions.get("window");
 
@@ -114,7 +116,86 @@ const GrammarIcon = ({ size = 50 }) => (
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
   const [tipsViewAll, setTipsViewAll] = useState(false);
+  const [progressData, setProgressData] = useState<any>(null);
+  const [currentLessonName, setCurrentLessonName] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  // Fetch user progress
+  useEffect(() => {
+    if (isAuthenticated && user?._id) {
+      fetchUserProgress();
+    }
+  }, [isAuthenticated, user?._id]);
+
+  const fetchUserProgress = async () => {
+    try {
+      setLoading(true);
+      const response = await API.getUserProgress(user!._id as any);
+      if (response.success) {
+        setProgressData(response.data);
+        console.log("User progress loaded:", response.data);
+
+        // Fetch lesson name if currentLesson exists
+        if (response.data?.currentLesson?.lessonId) {
+          fetchLessonName(response.data.currentLesson.lessonId);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user progress:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLessonName = async (lessonId: string) => {
+    try {
+      const response = await API.getLessonById(lessonId);
+      if (response.data?.name) {
+        setCurrentLessonName(response.data.name);
+      }
+    } catch (error) {
+      console.error("Error fetching lesson name:", error);
+      setCurrentLessonName(`Lesson ${lessonId.slice(-6)}`);
+    }
+  };
+
+  const handleNavigateToCurrentLesson = () => {
+    if (
+      !progressData?.currentLesson?.lessonId ||
+      !progressData?.currentLesson?.category
+    ) {
+      return;
+    }
+
+    const { lessonId, category } = progressData.currentLesson;
+
+    // Navigate based on category
+    switch (category) {
+      case "reading":
+        router.push(`/(reading)/${lessonId}` as any);
+        break;
+      case "vocab":
+        router.push({
+          pathname: "/(vocabularies)/VocabularyStudy",
+          params: { lessonId, lessonName: currentLessonName || "Vocabulary" },
+        } as any);
+        break;
+      case "listening":
+        router.push({
+          pathname: "/(listening)/[lessonId]",
+          params: { lessonId, lessonTitle: currentLessonName || "Listening" },
+        } as any);
+        break;
+      case "grammar":
+        // TODO: Add grammar route when ready
+        console.log("Grammar lessons coming soon!");
+        break;
+      default:
+        console.warn("Unknown category:", category);
+    }
+  };
 
   const tipsData = [
     {
@@ -149,16 +230,25 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.time}>9:41</Text>
+            <Text style={styles.time}></Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.headerStat}>
               <Text style={styles.headerStatIcon}>📚</Text>
-              <Text style={styles.headerStatText}>234</Text>
+              <Text style={styles.headerStatText}>
+                {progressData
+                  ? (progressData.reading?.data?.length || 0) +
+                    (progressData.vocab?.data?.length || 0) +
+                    (progressData.listening?.data?.length || 0) +
+                    (progressData.grammar?.data?.length || 0)
+                  : 0}
+              </Text>
             </View>
             <View style={styles.headerStat}>
               <Text style={styles.headerStatIcon}>🔥</Text>
-              <Text style={styles.headerStatText}>12</Text>
+              <Text style={styles.headerStatText}>
+                {progressData?.streak || 0}
+              </Text>
             </View>
             <View style={styles.headerStat}>
               <Text style={styles.headerStatIcon}>🔔</Text>
@@ -168,7 +258,9 @@ export default function HomeScreen() {
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.greetingSection}>
-            <Text style={styles.greetingText}>Hello, User! 👋</Text>
+            <Text style={styles.greetingText}>
+              Hello, {user?.fullName || user?.name || "User"}! 👋
+            </Text>
             <Text style={styles.greetingSubtext}>Ready to learn today?</Text>
           </View>
 
@@ -181,22 +273,43 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.activeCard}>
+            <TouchableOpacity
+              style={styles.activeCard}
+              onPress={handleNavigateToCurrentLesson}
+              disabled={!progressData?.currentLesson?.lessonId}
+            >
               <View style={styles.progressCircleContainer}>
                 <View style={styles.progressCircle}>
-                  <Text style={styles.progressText}>72%</Text>
+                  <Text style={styles.progressText}>
+                    {progressData?.currentLesson?.progress || 0}%
+                  </Text>
                 </View>
               </View>
               <View style={styles.courseInfo}>
-                <Text style={styles.courseChapter}>Chapter 2</Text>
-                <Text style={styles.courseTitle}>Discovering English</Text>
+                <Text style={styles.courseChapter}>
+                  {progressData?.currentLesson?.category
+                    ? progressData.currentLesson.category
+                        .charAt(0)
+                        .toUpperCase() +
+                      progressData.currentLesson.category.slice(1)
+                    : "Start Learning"}
+                </Text>
+                <Text style={styles.courseTitle}>
+                  {currentLessonName || "Begin Your Journey"}
+                </Text>
                 <Text style={styles.courseSubtitle}>
-                  Continue your journey!
+                  {progressData?.currentLesson?.progress === 100
+                    ? "Completed! Start a new lesson"
+                    : "Continue your journey!"}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
-            <TouchableOpacity style={styles.continueButton}>
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleNavigateToCurrentLesson}
+              disabled={!progressData?.currentLesson?.lessonId}
+            >
               <Text style={styles.continueButtonText}>Continue Studying</Text>
             </TouchableOpacity>
           </View>

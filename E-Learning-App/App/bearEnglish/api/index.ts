@@ -188,6 +188,84 @@ class API {
         const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(word)}`;
         return ttsUrl;
     }
+
+    // ============ PROGRESS APIs ============
+
+    async getUserProgress(userId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error fetching user progress:', error);
+          throw error;
+        }
+    }
+
+    async getProgressStats(userId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/stats`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error fetching progress stats:', error);
+          throw error;
+        }
+    }
+
+    async completeLesson(userId: string, lessonId: string, category: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/complete-lesson`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lessonId, category }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error completing lesson:', error);
+          throw error;
+        }
+    }
+
+    async updateCurrentLesson(userId: string, lessonId: string, category: string, progress: number): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/current-lesson`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lessonId, category, progress }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error updating current lesson:', error);
+          throw error;
+        }
+    }
 }
 
 export default new API();

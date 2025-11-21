@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,14 @@ import {
   Dimensions,
   Alert,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
+import API from "../../api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Icon components (emoji style)
 const IconSettings = () => (
@@ -40,7 +43,64 @@ const IconLock = () => <Text style={styles.iconText}>🔒</Text>;
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState("progress");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, updateUser } = useAuth();
+  const [progressStats, setProgressStats] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Debug function to check and fix AsyncStorage
+  const checkAsyncStorage = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+      const storedToken = await AsyncStorage.getItem("token");
+
+      console.log("=== AsyncStorage Debug ===");
+      console.log("Stored user:", storedUser);
+      console.log("Stored token:", storedToken);
+      console.log("Current user in context:", user);
+      console.log("========================");
+
+      if (!storedUser && user) {
+        // User is in context but not in AsyncStorage - fix it
+        await AsyncStorage.setItem("user", JSON.stringify(user));
+        console.log("Fixed: Saved user to AsyncStorage");
+        Alert.alert("Debug", "User saved to AsyncStorage!");
+      } else if (storedUser && !user) {
+        // User is in AsyncStorage but not in context - reload it
+        await updateUser(JSON.parse(storedUser));
+        console.log("Fixed: Loaded user to context");
+        Alert.alert("Debug", "User loaded from AsyncStorage!");
+      } else if (storedUser && user) {
+        Alert.alert("Debug", "User data is synced!");
+      } else {
+        Alert.alert("Debug", "No user data found. Please log in.");
+      }
+    } catch (error) {
+      console.error("AsyncStorage check error:", error);
+      Alert.alert("Error", "Failed to check AsyncStorage");
+    }
+  };
+
+  // Fetch progress stats when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?._id) {
+      fetchProgressStats();
+    }
+  }, [isAuthenticated, user?._id]);
+
+  const fetchProgressStats = async () => {
+    try {
+      setLoading(true);
+      const response = await API.getProgressStats(user!._id as any);
+      if (response.success) {
+        setProgressStats(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching progress stats:", error);
+      // Don't show error to user, just use default values
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Default avatar nếu chưa đăng nhập
   const defaultAvatar =
@@ -78,11 +138,11 @@ export default function ProfileScreen() {
     email: user?.email || "Not logged in",
     avatar: defaultAvatar,
     isPro: false,
-    streak: 15,
+    streak: progressStats?.streak || 0,
   };
 
   const progressData = {
-    lessonsCompleted: 115,
+    lessonsCompleted: progressStats?.totalCompleted || 0,
     minutesSpent: 350,
     weeklyData: [12, 19, 8, 15, 10, 18, 22],
     days: ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
@@ -116,12 +176,20 @@ export default function ProfileScreen() {
               </View>
             )}
             {isAuthenticated ? (
-              <TouchableOpacity
-                style={styles.settingsBtn}
-                onPress={() => setShowSettingsModal(true)}
-              >
-                <IconSettings />
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {/* <TouchableOpacity
+                  style={[styles.settingsBtn, { backgroundColor: "#FF6B6B" }]}
+                  onPress={checkAsyncStorage}
+                >
+                  <Text style={{ fontSize: 16 }}>🔍</Text>
+                </TouchableOpacity> */}
+                <TouchableOpacity
+                  style={styles.settingsBtn}
+                  onPress={() => setShowSettingsModal(true)}
+                >
+                  <IconSettings />
+                </TouchableOpacity>
+              </View>
             ) : (
               <TouchableOpacity
                 style={styles.loginBtn}
@@ -271,10 +339,15 @@ export default function ProfileScreen() {
               {/* Streak */}
               <View style={styles.streakContainer}>
                 <IconFire />
-                <Text style={styles.streakText}>
-                  <Text style={styles.streakNumber}>{userData.streak}</Text> day
-                  streak
-                </Text>
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.streakText}>
+                    <Text style={styles.streakNumber}>{userData.streak}</Text>{" "}
+                    day streak
+                    {userData.streak > 0 && " 🎉"}
+                  </Text>
+                )}
               </View>
             </View>
           </View>

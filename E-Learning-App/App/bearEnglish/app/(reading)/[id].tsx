@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Languages, X } from "lucide-react-native";
 import API from "../../api";
+import { useAuth } from "../../contexts/AuthContext";
 import type { ReadingLesson } from "../../types";
 import RenderHTML from "react-native-render-html";
 
@@ -21,6 +22,7 @@ export default function ReadingLessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { user, isLoading: authLoading } = useAuth();
 
   const [lesson, setLesson] = useState<ReadingLesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +60,15 @@ export default function ReadingLessonDetail() {
     fetchLesson();
   }, [fetchLesson]);
 
+  useEffect(() => {
+    console.log("========== AUTH STATE DEBUG ==========");
+    console.log("authLoading:", authLoading);
+    console.log("user object:", user);
+    console.log("user._id:", user?._id);
+    console.log("isAuthenticated:", !!user);
+    console.log("======================================");
+  }, [user, authLoading]);
+
   const handleTranslateContent = async () => {
     if (!lesson?.readingContent) return;
 
@@ -90,7 +101,7 @@ export default function ReadingLessonDetail() {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const totalQuestions = lesson?.questions?.length || 0;
     const answeredQuestions = Object.keys(selectedAnswers).length;
 
@@ -103,6 +114,31 @@ export default function ReadingLessonDetail() {
     }
 
     setShowResults(true);
+
+    // Update progress khi hoàn thành bài đọc
+    try {
+      if (user?._id && id) {
+        console.log("Updating progress for user:", user._id, "lesson:", id);
+        const response = await API.completeLesson(user._id, id, "reading");
+        console.log("Reading lesson completed, response:", response);
+
+        if (response.success) {
+          console.log("Streak updated to:", response.data.streak);
+          // Streak updated silently, no alert needed
+        }
+      } else {
+        console.warn("Missing user ID or lesson ID:", {
+          userId: user?._id,
+          lessonId: id,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating lesson progress:", error);
+      Alert.alert(
+        "Warning",
+        "Lesson completed but progress update failed. Please check your connection."
+      );
+    }
   };
 
   const calculateScore = () => {
@@ -141,7 +177,7 @@ export default function ReadingLessonDetail() {
     return styles.option;
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -306,15 +342,27 @@ export default function ReadingLessonDetail() {
                 {score.correct} / {score.total} correct
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => {
-                setSelectedAnswers({});
-                setShowResults(false);
-              }}
-            >
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
+
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => {
+                  setSelectedAnswers({});
+                  setShowResults(false);
+                }}
+              >
+                <Text style={styles.retryButtonText}>🔄 Try Again</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.completeButton}
+                onPress={() => {
+                  router.push("/(tabs)");
+                }}
+              >
+                <Text style={styles.completeButtonText}>✓ Complete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -531,13 +579,33 @@ const styles = StyleSheet.create({
     color: "#a0a0a0",
     marginTop: 8,
   },
+  actionButtonsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
   retryButton: {
+    flex: 1,
     backgroundColor: "#2196F3",
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
+    alignItems: "center",
   },
   retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  completeButton: {
+    flex: 1,
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: "center",
+  },
+  completeButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
