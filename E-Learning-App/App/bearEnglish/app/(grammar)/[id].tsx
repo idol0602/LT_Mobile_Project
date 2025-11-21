@@ -173,7 +173,10 @@ export default function GrammarLessonDetail() {
 
     setIsAskingAI(true);
     try {
-      const response = await API.sendMessageToAI(aiQuestion, "grammar-student");
+      const response = await API.sendMessageToAI(
+        aiQuestion + " vietnamese",
+        "grammar-student"
+      );
       setAiResponse(response.reply);
     } catch (error) {
       console.error("Error asking AI:", error);

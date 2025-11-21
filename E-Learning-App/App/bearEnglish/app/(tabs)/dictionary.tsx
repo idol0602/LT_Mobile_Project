@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import API from "../../api/index";
 
 interface BackendResult {
@@ -80,13 +81,13 @@ export default function Dictionary() {
 
     try {
       const data = await API.translate(trimmed, sourceLang, targetLang);
-      if (data.error) {
-        setError(data.error);
+      if ((data as any).error) {
+        setError((data as any).error);
         setLoading(false);
         return;
       }
 
-      setResult(data);
+      setResult(data as BackendResult);
     } catch (err) {
       console.error(err);
       setError("❌ Lỗi server hoặc kết nối!");
@@ -96,205 +97,392 @@ export default function Dictionary() {
   }, [text, sourceLang, targetLang]);
 
   return (
-    <ScrollView
-      style={styles.container}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingBottom: 50 }}
-      showsVerticalScrollIndicator={true} // ✅ Hiển thị thanh scroll dọc
-    >
-      <Text style={styles.title}>🌍 BearTranslate</Text>
-
-      {/* INPUT */}
-      <Text style={styles.label}>Văn bản cần dịch:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập văn bản..."
-        placeholderTextColor="#999"
-        value={text}
-        onChangeText={setText}
-        multiline
-        scrollEnabled={true}
-      />
-
-      {/* LANGUAGE SWAP */}
-      <View style={styles.langContainer}>
-        <Text style={styles.langText}>
-          {sourceLang === "en" ? "English" : "Vietnamese"}
-        </Text>
-
-        <TouchableOpacity style={styles.swapButton} onPress={swapLanguages}>
-          <Text style={styles.swapText}>🔁</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.langText}>
-          {targetLang === "en" ? "English" : "Vietnamese"}
-        </Text>
-      </View>
-
-      {/* TRANSLATE BUTTON */}
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleTranslate}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>🔄 Dịch ngay</Text>
-        )}
-      </TouchableOpacity>
-
-      {/* RESULT */}
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      {result && (
-        <View style={styles.resultBox}>
-          {/* Source */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              📝 Văn bản gốc ({sourceLang.toUpperCase()}):
-            </Text>
-            <ScrollView
-              style={styles.textScrollContainer}
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
-            >
-              <Text style={styles.textBlock}>{text}</Text>
-            </ScrollView>
-
-            {result.sourceIpa && (
-              <Text style={styles.ipa}>{result.sourceIpa}</Text>
-            )}
-
-            <TouchableOpacity
-              onPress={() => playAudio(result.originalAudio)}
-              style={styles.audioButton}
-            >
-              <Text style={{ color: "#fff" }}>🎧 Nghe gốc</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Translation */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              🌐 Bản dịch ({targetLang.toUpperCase()}):
-            </Text>
-            <ScrollView
-              style={styles.textScrollContainer}
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
-            >
-              <Text style={styles.textBlock}>{result.translated}</Text>
-            </ScrollView>
-
-            {result.ipa ? (
-              <Text style={styles.ipa}>{result.ipa}</Text>
-            ) : result.targetPhonetic ? (
-              <Text style={styles.phonetic}>[{result.targetPhonetic}]</Text>
-            ) : null}
-
-            <TouchableOpacity
-              onPress={() => playAudio(result.translatedAudio)}
-              style={styles.audioButton}
-            >
-              <Text style={{ color: "#fff" }}>🎧 Nghe dịch</Text>
-            </TouchableOpacity>
-          </View>
+    <View style={styles.container}>
+      {/* Header with gradient */}
+      <LinearGradient colors={["#0f0f23", "#16213e"]} style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}> White Bear Dictionary</Text>
+          <Text style={styles.headerSubtitle}>Translate with White Bear</Text>
         </View>
-      )}
-    </ScrollView>
+      </LinearGradient>
+
+      <ScrollView
+        style={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+      >
+        {/* MAIN TRANSLATION CARD */}
+        <View style={styles.translationCard}>
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabel}>📝 Enter text to translate</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Type something..."
+                placeholderTextColor="#a4b0be"
+                value={text}
+                onChangeText={setText}
+                multiline
+                scrollEnabled={true}
+              />
+            </View>
+          </View>
+
+          {/* LANGUAGE SELECTOR */}
+          <View style={styles.languageSection}>
+            <View style={styles.langRow}>
+              <TouchableOpacity style={styles.langSelector}>
+                <Text style={styles.langFlag}>
+                  {sourceLang === "en" ? "🇺🇸" : "🇻🇳"}
+                </Text>
+                <Text style={styles.langName}>
+                  {sourceLang === "en" ? "English" : "Tiếng Việt"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.swapButton}
+                onPress={swapLanguages}
+              >
+                <LinearGradient
+                  colors={["#00d4ff", "#0099ff"]}
+                  style={styles.swapIcon}
+                >
+                  <Text style={styles.swapText}>↔️</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.langSelector}>
+                <Text style={styles.langFlag}>
+                  {targetLang === "en" ? "🇺🇸" : "🇻🇳"}
+                </Text>
+                <Text style={styles.langName}>
+                  {targetLang === "en" ? "English" : "Tiếng Việt"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* TRANSLATE BUTTON */}
+          <TouchableOpacity
+            style={[styles.translateButton, loading && styles.buttonDisabled]}
+            onPress={handleTranslate}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={loading ? ["#666", "#444"] : ["#00d4ff", "#0099ff"]}
+              style={styles.translateGradient}
+            >
+              {loading ? (
+                <>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={styles.translateText}>Translating...</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.translateIcon}>⚡</Text>
+                  <Text style={styles.translateText}>Translate</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* ERROR */}
+        {error && (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* RESULT */}
+        {result && (
+          <View style={styles.resultCard}>
+            {/* Source Text */}
+            <View style={styles.resultSection}>
+              <View style={styles.resultSectionHeader}>
+                <Text style={styles.resultSectionTitle}>
+                  📝 Văn bản gốc ({sourceLang.toUpperCase()})
+                </Text>
+                <TouchableOpacity
+                  style={styles.audioBtn}
+                  onPress={() => playAudio(result.originalAudio)}
+                >
+                  <LinearGradient
+                    colors={["#00d4ff", "#0099ff"]}
+                    style={styles.audioBtnGradient}
+                  >
+                    <Text style={styles.audioBtnText}>🔊</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.resultText}>{text}</Text>
+              {result.sourceIpa && (
+                <Text style={styles.pronunciation}>{result.sourceIpa}</Text>
+              )}
+            </View>
+
+            {/* Translation */}
+            <View style={styles.resultSection}>
+              <View style={styles.resultSectionHeader}>
+                <Text style={styles.resultSectionTitle}>
+                  🌐 Bản dịch ({targetLang.toUpperCase()})
+                </Text>
+                <TouchableOpacity
+                  style={styles.audioBtn}
+                  onPress={() => playAudio(result.translatedAudio)}
+                >
+                  <LinearGradient
+                    colors={["#00d4ff", "#0099ff"]}
+                    style={styles.audioBtnGradient}
+                  >
+                    <Text style={styles.audioBtnText}>🔊</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.resultText}>{result.translated}</Text>
+              {result.ipa ? (
+                <Text style={styles.pronunciation}>{result.ipa}</Text>
+              ) : result.targetPhonetic ? (
+                <Text style={styles.pronunciation}>
+                  [{result.targetPhonetic}]
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "rgb(38, 39, 48)",
-    padding: 20,
+    backgroundColor: "#1a1a2e",
   },
-  title: {
-    fontSize: 26,
+  header: {
+    paddingTop: 44,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
+    fontSize: 24,
     fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#fff",
+    color: "#ffffff",
+    marginBottom: 4,
   },
-  label: {
+  headerSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "500",
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    paddingBottom: 50,
+  },
+  // Main Translation Card
+  translationCard: {
+    backgroundColor: "#2c2c54",
+    borderRadius: 20,
+    margin: 16,
+    padding: 20,
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#40407a",
+  },
+
+  // Input Section
+  inputSection: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
     fontWeight: "600",
-    color: "#ddd",
-    marginTop: 10,
-    marginBottom: 6,
+    color: "#f1f2f6",
+    marginBottom: 12,
+  },
+  inputWrapper: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#40407a",
+    minHeight: 100,
   },
   input: {
-    backgroundColor: "rgb(58, 59, 70)", // ✅ Đổi màu input
-    color: "#fff",
-    borderWidth: 1,
-    borderColor: "rgb(80, 81, 95)",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    color: "#f1f2f6",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
     minHeight: 80,
-    maxHeight: 150,
     textAlignVertical: "top",
   },
-  langContainer: {
+  // Language Section
+  languageSection: {
+    marginBottom: 20,
+  },
+  langRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  langSelector: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#40407a",
+  },
+  langFlag: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  langName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#f1f2f6",
+    flex: 1,
+  },
+  swapButton: {
+    marginHorizontal: 12,
+  },
+  swapIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  swapText: {
+    fontSize: 16,
+    color: "#fff",
+  },
+  // Translate Button
+  translateButton: {
+    marginTop: 20,
+  },
+  translateGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 15,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
   },
-  langText: {
+  translateIcon: {
+    fontSize: 18,
+    color: "#fff",
+  },
+  translateText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#fff",
-    marginHorizontal: 10,
-  },
-  swapButton: {
-    backgroundColor: "#3b82f6",
-    borderRadius: 30,
-    padding: 10,
-  },
-  swapText: {
-    fontSize: 20,
-    color: "#fff",
-  },
-  button: {
-    backgroundColor: "#10b981",
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    alignItems: "center",
   },
   buttonDisabled: {
-    backgroundColor: "#888",
+    opacity: 0.6,
   },
   buttonText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,
   },
-  error: {
-    color: "#f87171",
-    marginTop: 20,
-    textAlign: "center",
-  },
-  resultBox: {
-    marginTop: 25,
-    backgroundColor: "rgb(48, 49, 60)", // ✅ Đổi màu ô kết quả
+  // Error Card
+  errorCard: {
+    backgroundColor: "rgba(244, 67, 54, 0.1)",
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
+    margin: 16,
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgb(70, 71, 85)",
+    borderColor: "#f44336",
   },
-  section: {
-    marginBottom: 25,
+  errorIcon: {
+    fontSize: 20,
+    marginRight: 12,
   },
-  sectionTitle: {
-    color: "#60a5fa",
+  errorText: {
+    color: "#f87171",
+    fontSize: 14,
+    flex: 1,
+  },
+
+  // Result Card
+  resultCard: {
+    backgroundColor: "#2c2c54",
+    borderRadius: 20,
+    margin: 16,
+    padding: 20,
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#40407a",
+  },
+  resultHeader: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  resultTitle: {
+    fontSize: 18,
     fontWeight: "700",
+    color: "#00d4ff",
+  },
+  // Result Sections
+  resultSection: {
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  resultSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  resultSectionTitle: {
     fontSize: 16,
+    fontWeight: "600",
+    color: "#f1f2f6",
+  },
+  resultText: {
+    fontSize: 16,
+    color: "#e5e5e5",
+    lineHeight: 24,
     marginBottom: 8,
+  },
+  pronunciation: {
+    fontSize: 12,
+    color: "#a4b0be",
+    fontFamily: "monospace",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: "flex-start",
   },
   textScrollContainer: {
     maxHeight: 200,
@@ -328,11 +516,19 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 6,
   },
-  audioButton: {
-    backgroundColor: "#3b82f6",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 10,
+  // Audio Buttons
+  audioBtn: {
+    minWidth: 44,
+  },
+  audioBtnGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
     alignItems: "center",
+  },
+  audioBtnText: {
+    fontSize: 16,
+    color: "#fff",
   },
 });

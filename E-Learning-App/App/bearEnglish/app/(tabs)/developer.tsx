@@ -9,14 +9,10 @@ import {
   Pressable,
   Image,
   Linking,
-  ImageBackground,
+  TouchableOpacity,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
-
-// Tạo Animated component cho ImageBackground
-const AnimatedImageBackground =
-  Animated.createAnimatedComponent(ImageBackground);
+import { LinearGradient } from "expo-linear-gradient";
+import { Mail, Code, Github, Coffee, Heart, Star } from "lucide-react-native";
 
 interface Developer {
   id: number;
@@ -35,10 +31,89 @@ interface DeveloperCardProps {
   index: number;
 }
 
+const DeveloperCard: React.FC<DeveloperCardProps> = ({
+  developer,
+  scaleAnim,
+  fadeAnim,
+  index,
+}) => {
+  const pressAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  const handleEmailPress = () => {
+    Linking.openURL(`mailto:${developer.email}`);
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.cardContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ scale: Animated.multiply(scaleAnim, pressAnim) }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={
+          index % 2 === 0 ? ["#667eea", "#764ba2"] : ["#4CAF50", "#45a049"]
+        }
+        style={styles.card}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarContainer}>
+            <Image source={developer.image} style={styles.avatar} />
+            <View style={styles.onlineIndicator} />
+          </View>
+          <View style={styles.developerInfo}>
+            <Text style={styles.developerName}>{developer.name}</Text>
+            <View style={styles.roleContainer}>
+              <Code size={16} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.developerRole}>{developer.role}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.developerDescription}>{developer.description}</Text>
+
+        <View style={styles.skillsContainer}>
+          <Text style={styles.skillsTitle}>Skills:</Text>
+          <View style={styles.skillsGrid}>
+            {developer.skills.map((skill, skillIndex) => (
+              <View key={skillIndex} style={styles.skillTag}>
+                <Text style={styles.skillText}>{skill}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.contactButton}
+          onPress={handleEmailPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+        >
+          <Mail size={18} color="#ffffff" />
+          <Text style={styles.contactButtonText}>Contact Developer</Text>
+        </TouchableOpacity>
+      </LinearGradient>
+    </Animated.View>
+  );
+};
+
 const DeveloperScreen = () => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(50)).current;
-  const scrollAnim = React.useRef(new Animated.Value(0)).current;
 
   // Animation scale riêng cho từng card
   const scaleAnim1 = React.useRef(new Animated.Value(0.8)).current;
@@ -91,220 +166,121 @@ const DeveloperScreen = () => {
         }),
       ]),
     ]).start();
-  }, []);
-
-  const headerTranslateY = scrollAnim.interpolate({
-    inputRange: [0, 200],
-    outputRange: [0, -100],
-    extrapolate: "clamp",
-  });
-
-  const imageScale = scrollAnim.interpolate({
-    inputRange: [0, 400],
-    outputRange: [1, 1.2],
-    extrapolate: "clamp",
-  });
-
-  const DeveloperCard = ({
-    developer,
-    scaleAnim,
-    fadeAnim,
-  }: DeveloperCardProps) => {
-    const pressAnim = React.useRef(new Animated.Value(1)).current;
-    const imageScaleAnim = React.useRef(new Animated.Value(1)).current;
-
-    const handlePressIn = () => {
-      Animated.spring(pressAnim, {
-        toValue: 0.97,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(pressAnim, { toValue: 1, useNativeDriver: true }).start();
-    };
-
-    const handleImageHoverIn = () => {
-      Animated.spring(imageScaleAnim, {
-        toValue: 1.05,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handleImageHoverOut = () => {
-      Animated.spring(imageScaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handleEmailPress = () => {
-      Linking.openURL(`mailto:${developer.email}`);
-    };
-
-    return (
-      <Pressable
-        onPress={handleEmailPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <Animated.View
-          style={[
-            styles.developerCard,
-            {
-              transform: [{ scale: Animated.multiply(scaleAnim, pressAnim) }],
-              opacity: fadeAnim,
-            },
-          ]}
-        >
-          <Pressable
-            onPressIn={handleImageHoverIn}
-            onPressOut={handleImageHoverOut}
-          >
-            <Animated.View
-              style={[
-                styles.avatarContainer,
-                { transform: [{ scale: imageScaleAnim }] },
-              ]}
-            >
-              <Image source={developer.image} style={styles.developerImage} />
-              <View style={styles.imageInfoOverlay}>
-                <Text style={styles.overlayName}>{developer.name}</Text>
-                <Text style={styles.overlayRole}>{developer.role}</Text>
-              </View>
-            </Animated.View>
-          </Pressable>
-
-          <View style={styles.cardContent}>
-            <Text style={styles.developerDescription}>
-              {developer.description}
-            </Text>
-
-            <View style={styles.skillsContainer}>
-              {developer.skills.map((skill, index) => (
-                <View key={index} style={styles.skillBadge}>
-                  <Text style={styles.skillText}>{skill}</Text>
-                </View>
-              ))}
-            </View>
-
-            <Pressable onPress={handleEmailPress} style={styles.emailSection}>
-              <Text style={styles.emailLabel}>Email:</Text>
-              <Text style={styles.developerEmail}>{developer.email}</Text>
-            </Pressable>
-          </View>
-        </Animated.View>
-      </Pressable>
-    );
-  };
+  }, [fadeAnim, slideAnim, scaleAnim1, scaleAnim2]);
 
   // =========================================================
   // MAIN RENDER
   // =========================================================
   return (
-    <Animated.View style={{ flex: 1, transform: [{ scale: imageScale }] }}>
-      <AnimatedImageBackground
-        source={require("../../assets/images/iceland2.jpg")}
-        style={styles.backgroundImage}
-        imageStyle={styles.imageStyle}
+    <View style={styles.container}>
+      {/* Modern Header */}
+      <LinearGradient
+        colors={["#0f0f23", "#16213e"]}
+        style={styles.modernHeader}
       >
-        <View style={styles.darkOverlay} />
+        <View style={styles.headerContent}>
+          <Coffee size={28} color="#ffffff" />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.modernHeaderTitle}>Meet White Bear Team</Text>
+            <Text style={styles.modernHeaderSubtitle}>
+              White Bear English Developers
+            </Text>
+          </View>
+          <Heart size={24} color="rgba(255,255,255,0.8)" />
+        </View>
+      </LinearGradient>
 
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          onScroll={(e) => {
-            const y = e.nativeEvent.contentOffset.y;
-            scrollAnim.setValue(y);
-          }}
-          scrollEventThrottle={16}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* App Introduction */}
+        <Animated.View
+          style={[
+            styles.introSection,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
         >
-          {/* Header */}
-          <Animated.View
-            style={[
-              styles.headerSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: headerTranslateY }],
-              },
-            ]}
+          <LinearGradient
+            colors={["#4CAF50", "#45a049"]}
+            style={styles.introCard}
           >
-            <Animated.Text
-              style={[
-                styles.appTitle,
-                {
-                  transform: [
-                    {
-                      scale: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.8, 1],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              bearEnglish
-            </Animated.Text>
-            <View style={styles.separator} />
+            <View style={styles.logoContainer}>
+              <Text style={styles.bearEmoji}>🐻‍❄️</Text>
+              <Text style={styles.appTitle}>bearEnglish</Text>
+            </View>
             <Text style={styles.appSubtitle}>HỌC TIẾNG ANH, NÓI TỰ TIN</Text>
-          </Animated.View>
+          </LinearGradient>
+        </Animated.View>
 
-          {/* About */}
-          <Animated.View
-            style={[
-              styles.aboutSection,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
-          >
-            <Text style={styles.sectionTitle}>VỀ ỨNG DỤNG</Text>
+        {/* About Section */}
+        <Animated.View
+          style={[
+            styles.aboutSection,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <View style={styles.aboutCard}>
+            <View style={styles.aboutHeader}>
+              <Star size={24} color="#4CAF50" />
+              <Text style={styles.sectionTitle}>About bearEnglish</Text>
+            </View>
             <Text style={styles.aboutText}>
               bearEnglish là nền tảng học tiếng Anh toàn diện được thiết kế để
-              giúp người học ở mọi trình độ nắm vững tiếng Anh. Ứng dụng của
-              chúng tôi kết hợp các bài học tương tác, phản hồi phát âm thời
-              gian thực và lộ trình cá nhân hóa.
+              giúp người học ở mọi trình độ nắm vững tiếng Anh. Ứng dụng kết hợp
+              các bài học tương tác, AI hỗ trợ và lộ trình cá nhân hóa.
             </Text>
-          </Animated.View>
+          </View>
+        </Animated.View>
 
-          {/* Developers */}
-          <Animated.View
-            style={[styles.developersSection, { opacity: fadeAnim }]}
-          >
-            <Text style={styles.sectionTitle}>ĐỘI PHÁT TRIỂN</Text>
-            <Text style={styles.teamDescription}>
-              Gặp gỡ những người tài năng đằng sau bearEnglish
-            </Text>
-            <DeveloperCard
-              developer={developers[0]}
-              scaleAnim={scaleAnim1}
-              fadeAnim={fadeAnim}
-              index={0}
-            />
-            <DeveloperCard
-              developer={developers[1]}
-              scaleAnim={scaleAnim2}
-              fadeAnim={fadeAnim}
-              index={1}
-            />
-          </Animated.View>
+        {/* Developers Section */}
+        <Animated.View
+          style={[styles.developersSection, { opacity: fadeAnim }]}
+        >
+          <View style={styles.developersHeader}>
+            <Github size={24} color="#4CAF50" />
+            <Text style={styles.sectionTitle}>Development Team</Text>
+          </View>
+          <Text style={styles.teamDescription}>
+            Meet the talented developers behind bearEnglish 🐻‍❄️
+          </Text>
+          <DeveloperCard
+            developer={developers[0]}
+            scaleAnim={scaleAnim1}
+            fadeAnim={fadeAnim}
+            index={0}
+          />
+          <DeveloperCard
+            developer={developers[1]}
+            scaleAnim={scaleAnim2}
+            fadeAnim={fadeAnim}
+            index={1}
+          />
+        </Animated.View>
 
-          {/* Footer */}
-          <Animated.View
-            style={[
-              styles.footerSection,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
+        {/* Footer */}
+        <Animated.View
+          style={[
+            styles.footerSection,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <LinearGradient
+            colors={["#0f0f23", "#16213e"]}
+            style={styles.footerCard}
           >
             <Text style={styles.footerText}>
-              © {new Date().getFullYear()} bearEnglish. All rights reserved.
+              © {new Date().getFullYear()} White Bear English. All rights
+              reserved.
             </Text>
             <Text style={styles.versionText}>
-              Version 1.0.0 | Built with passion
+              Version 1.0.0 | Built with 🤍 by White Bear Team 🐻‍❄️
             </Text>
-          </Animated.View>
-        </ScrollView>
-      </AnimatedImageBackground>
-    </Animated.View>
+          </LinearGradient>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -312,204 +288,258 @@ const DeveloperScreen = () => {
 // STYLES
 // =========================================================
 const styles = StyleSheet.create({
-  backgroundImage: {
+  container: {
     flex: 1,
-    width: "100%",
-    height: "100%",
+    backgroundColor: "#1a1a2e",
   },
-  imageStyle: {
-    resizeMode: "cover",
+  modernHeader: {
+    paddingTop: 44,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  modernHeaderTitle: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  modernHeaderSubtitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    marginTop: 2,
   },
   scrollView: {
     flex: 1,
-    zIndex: 2,
   },
-  darkOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    zIndex: 1,
+  scrollContent: {
+    paddingBottom: 30,
   },
 
-  headerSection: {
+  introSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  introCard: {
+    borderRadius: 16,
+    padding: 24,
     alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    marginBottom: 16,
-    position: "relative",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 212, 255, 0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  bearEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
   },
   appTitle: {
-    fontSize: 42,
-    fontWeight: "900",
-    color: "#00D4FF",
-    marginBottom: 4,
-    letterSpacing: 1.5,
-    textShadowColor: "rgba(0, 212, 255, 0.8)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  separator: {
-    height: 2,
-    width: "30%",
-    backgroundColor: "#00D4FF",
-    marginVertical: 8,
-    borderRadius: 1,
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: 1,
   },
   appSubtitle: {
-    fontSize: 14,
-    color: "#A0A0A0",
+    fontSize: 16,
+    color: "rgba(255,255,255,0.9)",
     fontWeight: "600",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
 
   aboutSection: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  aboutCard: {
+    backgroundColor: "#2c2c54",
     borderRadius: 16,
-    backgroundColor: "rgba(42, 42, 58, 0.8)",
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: "#00D4FF",
+    padding: 20,
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#40407a",
+  },
+  aboutHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: "#f1f2f6",
   },
   aboutText: {
-    fontSize: 14,
-    color: "#D0D0D0",
-    lineHeight: 22,
+    fontSize: 15,
+    color: "#a4b0be",
+    lineHeight: 24,
   },
 
   developersSection: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginVertical: 10,
+    paddingVertical: 20,
+  },
+  developersHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    gap: 8,
   },
   teamDescription: {
-    fontSize: 14,
-    color: "#A0A0A0",
-    marginBottom: 25,
-    paddingHorizontal: 5,
+    fontSize: 15,
+    color: "#a4b0be",
+    marginBottom: 20,
+    textAlign: "center",
   },
-
-  developerCard: {
-    backgroundColor: "rgba(42, 42, 58, 0.8)",
+  cardContainer: {
+    marginBottom: 20,
+  },
+  card: {
     borderRadius: 16,
-    marginBottom: 30,
-    shadowColor: "#00D4FF",
+    padding: 20,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: "rgba(0, 212, 255, 0.3)",
-    overflow: "hidden",
+    elevation: 4,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
   },
   avatarContainer: {
-    width: "100%",
-    height: 250,
-    overflow: "hidden",
     position: "relative",
-    borderBottomWidth: 3,
-    borderColor: "rgba(0, 212, 255, 0.5)",
+    marginRight: 16,
   },
-  developerImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.3)",
   },
-  imageInfoOverlay: {
+  onlineIndicator: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#4CAF50",
+    borderWidth: 2,
+    borderColor: "#ffffff",
   },
-  overlayName: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0, 212, 255, 0.5)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+  developerInfo: {
+    flex: 1,
   },
-  overlayRole: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#00D4FF",
-    marginTop: 4,
-    letterSpacing: 0.5,
+  developerName: {
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 4,
   },
-  cardContent: {
-    padding: 20,
+  roleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-  developerDescription: {
+  developerRole: {
+    color: "rgba(255,255,255,0.8)",
     fontSize: 14,
-    color: "#D0D0D0",
+    fontWeight: "500",
+  },
+
+  developerDescription: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 15,
     lineHeight: 22,
     marginBottom: 16,
   },
   skillsContainer: {
+    marginBottom: 20,
+  },
+  skillsTitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  skillsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
-    paddingBottom: 15,
+    gap: 8,
   },
-  skillBadge: {
-    backgroundColor: "rgba(0, 212, 255, 0.1)",
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 15,
+  skillTag: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   skillText: {
+    color: "#ffffff",
     fontSize: 12,
-    color: "#00D4FF",
     fontWeight: "600",
   },
-  emailSection: {
+  contactButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 5,
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    gap: 8,
   },
-  emailLabel: {
-    fontSize: 14,
-    color: "#A0A0A0",
-    marginRight: 8,
+  contactButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "600",
-  },
-  developerEmail: {
-    fontSize: 14,
-    color: "#00D4FF",
-    fontWeight: "500",
   },
 
   footerSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  footerCard: {
+    borderRadius: 16,
+    padding: 20,
     alignItems: "center",
-    paddingVertical: 30,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-    marginTop: 20,
-    backgroundColor: "rgba(30, 30, 44, 0.7)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   footerText: {
-    fontSize: 13,
-    color: "#B0B0B0",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.9)",
     marginBottom: 4,
+    textAlign: "center",
   },
   versionText: {
     fontSize: 12,
-    color: "#707070",
+    color: "rgba(255,255,255,0.7)",
+    textAlign: "center",
   },
 });
 

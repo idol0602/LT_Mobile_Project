@@ -7,12 +7,10 @@ import {
   Image,
   TouchableOpacity,
   ImageBackground,
-  Dimensions,
   Alert,
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { LineChart } from "react-native-chart-kit";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
@@ -27,11 +25,7 @@ const IconSettings = () => (
   </View>
 );
 
-const IconEdit = () => (
-  <View style={styles.icon}>
-    <Text style={styles.iconText}>✏️</Text>
-  </View>
-);
+// Removed IconEdit - not used
 
 const IconBook = () => <Text style={styles.iconText}>📚</Text>;
 const IconClock = () => <Text style={styles.iconText}>⏱️</Text>;
@@ -46,7 +40,6 @@ export default function ProfileScreen() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { user, isAuthenticated, logout, updateUser } = useAuth();
   const [progressStats, setProgressStats] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
 
   // Achievement hook
   const {
@@ -92,25 +85,22 @@ export default function ProfileScreen() {
 
   // Fetch progress stats when user is authenticated
   useEffect(() => {
+    const fetchProgressStats = async () => {
+      try {
+        const response = await API.getProgressStats(user!._id as any);
+        if (response.success) {
+          setProgressStats(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching progress stats:", error);
+        // Don't show error to user, just use default values
+      }
+    };
+
     if (isAuthenticated && user?._id) {
       fetchProgressStats();
     }
-  }, [isAuthenticated, user?._id]);
-
-  const fetchProgressStats = async () => {
-    try {
-      setLoading(true);
-      const response = await API.getProgressStats(user!._id as any);
-      if (response.success) {
-        setProgressStats(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching progress stats:", error);
-      // Don't show error to user, just use default values
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isAuthenticated, user]);
 
   // Default avatar nếu chưa đăng nhập
   const defaultAvatar =
@@ -163,274 +153,300 @@ export default function ProfileScreen() {
   const lockedAchievements = getLockedAchievements();
 
   return (
-    <ImageBackground
-      source={require("../../assets/images/background-profile.jpg")}
-      style={styles.container}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      {/* Modern Header */}
+      <LinearGradient
+        colors={["#0f0f23", "#16213e", "#1a1a2e"]}
+        style={styles.modernHeader}
       >
-        {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.headerWrapper}>
           <View style={styles.headerTop}>
-            <Text style={styles.headerTitle}>{userData.name}</Text>
-            {userData.isPro && (
-              <View style={styles.proBadge}>
-                <Text style={styles.proBadgeText}>Pro</Text>
-              </View>
-            )}
-            {isAuthenticated ? (
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                {/* <TouchableOpacity
-                  style={[styles.settingsBtn, { backgroundColor: "#FF6B6B" }]}
-                  onPress={checkAsyncStorage}
-                >
-                  <Text style={{ fontSize: 16 }}>🔍</Text>
-                </TouchableOpacity> */}
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerTitle}>Your Profile</Text>
+            </View>
+            <View style={styles.headerRight}>
+              {isAuthenticated ? (
                 <TouchableOpacity
-                  style={styles.settingsBtn}
+                  style={styles.headerSettingsBtn}
                   onPress={() => setShowSettingsModal(true)}
                 >
-                  <IconSettings />
+                  <LinearGradient
+                    colors={["#00d4ff", "#0099ff"]}
+                    style={styles.headerSettingsGradient}
+                  >
+                    <IconSettings />
+                  </LinearGradient>
                 </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.loginBtn}
-                onPress={() => router.push("/(auth)/signIn")}
-              >
-                <Text style={styles.loginBtnText}>Đăng nhập</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Avatar */}
-          <View style={styles.avatarSection}>
-            <Image source={{ uri: userData.avatar }} style={styles.avatar} />
-            {/* <TouchableOpacity style={styles.editAvatarWrapper}>
-              <LinearGradient
-                colors={['#00D4FF', '#0099FF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.editAvatarBtn}
-              >
-                <IconEdit />
-              </LinearGradient>
-            </TouchableOpacity> */}
-          </View>
-
-          <View style={styles.userInfo}>
-            <Text style={styles.userEmail}>{userData.email}</Text>
-          </View>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          {["progress", "achievements"].map((tab) => (
-            <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
-              <LinearGradient
-                colors={
-                  activeTab === tab
-                    ? ["#00D4FF", "#0099FF"]
-                    : ["rgba(255,255,255,0.08)", "rgba(255,255,255,0.05)"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.tab]}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === tab && styles.tabTextActive,
-                  ]}
-                >
-                  {tab === "progress" ? "Progress" : "Achievements"}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Progress Tab */}
-        {activeTab === "progress" && (
-          <View style={styles.tabContent}>
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Activity</Text>
-                <Text style={styles.cardSubtitle}>
-                  Keep track of your efforts
-                </Text>
-              </View>
-
-              {/* Buttons */}
-              <View style={styles.timePeriodContainer}>
-                {["Last 7 days", "Last 12 months"].map((label) => (
-                  <TouchableOpacity key={label}>
-                    <LinearGradient
-                      colors={["#00D4FF", "#00FFAA"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.timePeriodBtn}
-                    >
-                      <Text style={styles.timePeriodText}>{label}</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Stats */}
-              <View style={styles.statsContainer}>
-                <LinearGradient
-                  colors={["#0099FF", "#00D4FF"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statCard}
-                >
-                  <IconBook />
-                  <Text style={styles.statNumber}>
-                    {progressData.lessonsCompleted}
-                  </Text>
-                  <Text style={styles.statLabel}>LESSONS COMPLETED</Text>
-                </LinearGradient>
-
-                <LinearGradient
-                  colors={["#FFA500", "#FFD700"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statCard}
-                >
-                  <IconClock />
-                  <Text style={styles.statNumber}>
-                    {progressData.minutesSpent}
-                  </Text>
-                  <Text style={styles.statLabel}>MINUTES SPENT</Text>
-                </LinearGradient>
-              </View>
-
-              {/* Chart */}
-              <View style={styles.chartContainer}>
-                <LineChart
-                  data={{
-                    labels: progressData.days,
-                    datasets: [
-                      {
-                        data: progressData.weeklyData,
-                        color: () => "#00D4FF",
-                        strokeWidth: 3,
-                      },
-                    ],
-                  }}
-                  width={Dimensions.get("window").width - 40}
-                  height={220}
-                  chartConfig={{
-                    backgroundColor: "transparent",
-                    backgroundGradientFrom: "transparent",
-                    backgroundGradientTo: "transparent",
-                    color: () => "rgba(255, 255, 255, 0.3)",
-                    labelColor: () => "#A0A0A0",
-                    style: { borderRadius: 16 },
-                    propsForDots: {
-                      r: "5",
-                      strokeWidth: "2",
-                      stroke: "#00D4FF",
-                    },
-                  }}
-                  bezier
-                  style={styles.chart}
-                />
-              </View>
-
-              {/* Streak */}
-              <View style={styles.streakContainer}>
-                <IconFire />
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.streakText}>
-                    <Text style={styles.streakNumber}>{userData.streak}</Text>{" "}
-                    day streak
-                    {userData.streak > 0 && " 🎉"}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Achievements Tab */}
-        {activeTab === "achievements" && (
-          <View style={styles.tabContent}>
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Your Achievements</Text>
-                {achievementStats && (
-                  <Text style={styles.cardSubtitle}>
-                    {achievementStats.unlockedAchievements} /{" "}
-                    {achievementStats.totalAchievements} unlocked (
-                    {(achievementStats.percentageUnlocked || 0).toFixed(0)}%)
-                  </Text>
-                )}
-              </View>
-
-              {achievementsLoading ? (
-                <View style={{ paddingVertical: 40, alignItems: "center" }}>
-                  <ActivityIndicator size="large" color="#00D4FF" />
-                </View>
-              ) : achievements.length === 0 ? (
-                <View style={{ paddingVertical: 40, alignItems: "center" }}>
-                  <Text style={{ color: "#A0A0A0", fontSize: 14 }}>
-                    No achievements yet. Keep learning!
-                  </Text>
-                </View>
               ) : (
-                <View style={styles.achievementsGrid}>
-                  {/* Unlocked Achievements */}
-                  {unlockedAchievements.map((userAchievement) => (
-                    <LinearGradient
-                      key={userAchievement.achievement._id}
-                      colors={["#00D4FF", "#00FFAA"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.achievementItem}
-                    >
-                      <Text style={{ fontSize: 32 }}>
-                        {userAchievement.achievement.icon}
-                      </Text>
-                      <Text style={styles.achievementTitle}>
-                        {userAchievement.achievement.name}
-                      </Text>
-                      <Text style={styles.achievementDescription}>
-                        {userAchievement.achievement.description}
-                      </Text>
-                    </LinearGradient>
-                  ))}
-
-                  {/* Locked Achievements */}
-                  {lockedAchievements.map((userAchievement) => (
-                    <View
-                      key={userAchievement.achievement._id}
-                      style={[styles.achievementItem, styles.achievementLocked]}
-                    >
-                      <Text style={{ fontSize: 32, opacity: 0.3 }}>
-                        {userAchievement.achievement.icon}
-                      </Text>
-                      <Text style={styles.achievementTitle}>
-                        {userAchievement.achievement.name}
-                      </Text>
-                      <Text style={styles.achievementDescription}>
-                        {userAchievement.achievement.description}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+                <TouchableOpacity
+                  style={styles.headerLoginBtn}
+                  onPress={() => router.push("/(auth)/signIn")}
+                >
+                  <LinearGradient
+                    colors={["#00d4ff", "#0099ff"]}
+                    style={styles.headerLoginGradient}
+                  >
+                    <Text style={styles.headerLoginText}>Login</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
               )}
             </View>
           </View>
-        )}
 
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+          {/* Quick Stats Bar */}
+          <View style={styles.quickStatsBar}>
+            <View style={styles.quickStat}>
+              <Text style={styles.quickStatIcon}>🔥</Text>
+              <Text style={styles.quickStatValue}>{userData.streak}</Text>
+              <Text style={styles.quickStatLabel}>Streak</Text>
+            </View>
+            <View style={styles.quickStat}>
+              <Text style={styles.quickStatIcon}>📚</Text>
+              <Text style={styles.quickStatValue}>
+                {progressData.lessonsCompleted}
+              </Text>
+              <Text style={styles.quickStatLabel}>Lessons</Text>
+            </View>
+            <View style={styles.quickStat}>
+              <Text style={styles.quickStatIcon}>🏆</Text>
+              <Text style={styles.quickStatValue}>
+                {achievementStats?.unlockedAchievements || 0}
+              </Text>
+              <Text style={styles.quickStatLabel}>Achievements</Text>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ImageBackground
+        source={require("../../assets/images/background-profile.jpg")}
+        style={styles.backgroundContainer}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* User Profile Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileCardHeader}>
+              <Image
+                source={{ uri: userData.avatar }}
+                style={styles.profileAvatar}
+              />
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>{userData.name}</Text>
+                <Text style={styles.profileEmail}>{userData.email}</Text>
+                {userData.isPro && (
+                  <View style={styles.profileProBadge}>
+                    <Text style={styles.profileProText}>✨ Pro Member</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Modern Tabs */}
+          <View style={styles.modernTabContainer}>
+            {[
+              { key: "progress", label: "📊 Progress", icon: "📈" },
+              { key: "achievements", label: "🏆 Achievements", icon: "🎖️" },
+            ].map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={styles.modernTabButton}
+              >
+                <LinearGradient
+                  colors={
+                    activeTab === tab.key
+                      ? ["#00d4ff", "#0099ff"]
+                      : ["#2c2c54", "#40407a"]
+                  }
+                  style={styles.modernTab}
+                >
+                  <View style={styles.modernTabContent}>
+                    <Text style={styles.modernTabIcon}>{tab.icon}</Text>
+                    <Text
+                      style={[
+                        styles.modernTabText,
+                        activeTab === tab.key && styles.modernTabTextActive,
+                      ]}
+                    >
+                      {tab.label.split(" ")[1]}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Progress Tab */}
+          {activeTab === "progress" && (
+            <View style={styles.tabContent}>
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>Activity</Text>
+                  <Text style={styles.cardSubtitle}>
+                    Keep track of your efforts
+                  </Text>
+                </View>
+
+                {/* Buttons */}
+                <View style={styles.timePeriodContainer}>
+                  {["Last 7 days", "Last 12 months"].map((label) => (
+                    <TouchableOpacity key={label}>
+                      <LinearGradient
+                        colors={["#00D4FF", "#00FFAA"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.timePeriodBtn}
+                      >
+                        <Text style={styles.timePeriodText}>{label}</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Progress Overview */}
+                <View style={styles.progressOverview}>
+                  <Text style={styles.overviewTitle}>Learning Progress</Text>
+                  <View style={styles.progressGrid}>
+                    <View style={styles.progressItem}>
+                      <LinearGradient
+                        colors={["#00d4ff", "#0099ff"]}
+                        style={styles.progressIcon}
+                      >
+                        <IconBook />
+                      </LinearGradient>
+                      <Text style={styles.progressValue}>
+                        {progressData.lessonsCompleted}
+                      </Text>
+                      <Text style={styles.progressLabel}>
+                        Lessons Completed
+                      </Text>
+                    </View>
+
+                    <View style={styles.progressItem}>
+                      <LinearGradient
+                        colors={["#FFA500", "#FFD700"]}
+                        style={styles.progressIcon}
+                      >
+                        <IconClock />
+                      </LinearGradient>
+                      <Text style={styles.progressValue}>
+                        {progressData.minutesSpent}
+                      </Text>
+                      <Text style={styles.progressLabel}>Minutes Spent</Text>
+                    </View>
+
+                    <View style={styles.progressItem}>
+                      <LinearGradient
+                        colors={["#FF6B6B", "#FF5722"]}
+                        style={styles.progressIcon}
+                      >
+                        <IconFire />
+                      </LinearGradient>
+                      <Text style={styles.progressValue}>
+                        {userData.streak}
+                      </Text>
+                      <Text style={styles.progressLabel}>Day Streak</Text>
+                    </View>
+
+                    <View style={styles.progressItem}>
+                      <LinearGradient
+                        colors={["#4CAF50", "#66BB6A"]}
+                        style={styles.progressIcon}
+                      >
+                        <IconTrophy />
+                      </LinearGradient>
+                      <Text style={styles.progressValue}>
+                        {achievementStats?.unlockedAchievements || 0}
+                      </Text>
+                      <Text style={styles.progressLabel}>Achievements</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Achievements Tab */}
+          {activeTab === "achievements" && (
+            <View style={styles.tabContent}>
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>Your Achievements</Text>
+                  {achievementStats && (
+                    <Text style={styles.cardSubtitle}>
+                      {achievementStats.unlockedAchievements} /{" "}
+                      {achievementStats.totalAchievements} unlocked (
+                      {(achievementStats.percentageUnlocked || 0).toFixed(0)}%)
+                    </Text>
+                  )}
+                </View>
+
+                {achievementsLoading ? (
+                  <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                    <ActivityIndicator size="large" color="#00D4FF" />
+                  </View>
+                ) : achievements.length === 0 ? (
+                  <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                    <Text style={{ color: "#A0A0A0", fontSize: 14 }}>
+                      No achievements yet. Keep learning!
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.achievementsGrid}>
+                    {/* Unlocked Achievements */}
+                    {unlockedAchievements.map((userAchievement) => (
+                      <LinearGradient
+                        key={userAchievement.achievement._id}
+                        colors={["#00D4FF", "#00FFAA"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.achievementItem}
+                      >
+                        <Text style={{ fontSize: 32 }}>
+                          {userAchievement.achievement.icon}
+                        </Text>
+                        <Text style={styles.achievementTitle}>
+                          {userAchievement.achievement.name}
+                        </Text>
+                        <Text style={styles.achievementDescription}>
+                          {userAchievement.achievement.description}
+                        </Text>
+                      </LinearGradient>
+                    ))}
+
+                    {/* Locked Achievements */}
+                    {lockedAchievements.map((userAchievement) => (
+                      <View
+                        key={userAchievement.achievement._id}
+                        style={[
+                          styles.achievementItem,
+                          styles.achievementLocked,
+                        ]}
+                      >
+                        <Text style={{ fontSize: 32, opacity: 0.3 }}>
+                          {userAchievement.achievement.icon}
+                        </Text>
+                        <Text style={styles.achievementTitle}>
+                          {userAchievement.achievement.name}
+                        </Text>
+                        <Text style={styles.achievementDescription}>
+                          {userAchievement.achievement.description}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+      </ImageBackground>
 
       {/* Settings Modal */}
       <Modal
@@ -484,24 +500,162 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F1419",
+    backgroundColor: "#1a1a2e",
   },
-  scrollView: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 30 },
+  // Compact Header Styles
+  modernHeader: {
+    paddingTop: 40,
+    paddingBottom: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerWrapper: {
+    paddingHorizontal: 16,
+  },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 12,
   },
-  headerTitle: { fontSize: 28, fontWeight: "700", color: "#FFFFFF" },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    marginLeft: 12,
+  },
+  welcomeText: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.6)",
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  headerSettingsBtn: {
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  headerSettingsGradient: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerLoginBtn: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  headerLoginGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerLoginText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  backgroundContainer: {
+    flex: 1,
+  },
+  scrollView: { flex: 1 },
+
+  // User Info Card with Transparent Background
+  // Compact Profile Card Styles
+  profileCard: {
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 16,
+    margin: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  profileCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#00d4ff",
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 3,
+  },
+  profileEmail: {
+    fontSize: 13,
+    color: "#a4b0be",
+    marginBottom: 6,
+  },
+  profileProBadge: {
+    backgroundColor: "rgba(255, 165, 0, 0.2)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#FFA500",
+  },
+  profileProText: {
+    fontSize: 12,
+    color: "#FFA500",
+    fontWeight: "600",
+  },
+  // Compact Quick Stats Bar
+  quickStatsBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 3,
+  },
+  quickStat: {
+    alignItems: "center",
+    flex: 1,
+  },
+  quickStatIcon: {
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  quickStatValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 1,
+  },
+  quickStatLabel: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "500",
+  },
   proBadge: {
     backgroundColor: "#FFA500",
     paddingHorizontal: 12,
@@ -528,28 +682,7 @@ const styles = StyleSheet.create({
   },
   icon: { justifyContent: "center", alignItems: "center" },
   iconText: { fontSize: 20 },
-  avatarSection: { alignItems: "center", marginBottom: 20 },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: "#00D4FF",
-  },
-  editAvatarWrapper: {
-    position: "absolute",
-    bottom: 0,
-    right: "35%",
-  },
-  editAvatarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  userInfo: { alignItems: "center" },
-  userEmail: { fontSize: 14, color: "#A0A0A0" },
+  // Removed old avatar and user info styles
 
   /** ⭐ TAB BUTTONS ⭐ **/
   tabContainer: {
@@ -623,29 +756,59 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginVertical: 8,
   },
-  statLabel: {
+  progressStatLabel: {
     fontSize: 11,
     fontWeight: "600",
     color: "#FFFFFF",
     textAlign: "center",
   },
 
-  /** ⭐ CHART ⭐ **/
-  chartContainer: { marginVertical: 20, alignItems: "center" },
-  chart: { borderRadius: 16 },
-
-  /** ⭐ STREAK ⭐ **/
-  streakContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    backgroundColor: "rgba(255,165,0,0.15)",
-    borderRadius: 12,
-    gap: 8,
+  /** ⭐ PROGRESS OVERVIEW ⭐ **/
+  progressOverview: {
+    marginBottom: 20,
   },
-  streakText: { fontSize: 14, color: "#FFFFFF" },
-  streakNumber: { fontWeight: "700", fontSize: 16 },
+  overviewTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 16,
+  },
+  progressGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  progressItem: {
+    width: "48%",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    minHeight: 100,
+  },
+  progressIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  progressValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 2,
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: "#a4b0be",
+    textAlign: "center",
+    lineHeight: 14,
+  },
 
   /** ⭐ ACHIEVEMENTS ⭐ **/
   achievementsGrid: {
@@ -744,5 +907,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#A0A0A0",
+  },
+
+  // Modern Tabs Styles
+  modernTabContainer: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  modernTabButton: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  modernTab: {
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  modernTabContent: {
+    alignItems: "center",
+    gap: 4,
+  },
+  modernTabIcon: {
+    fontSize: 20,
+  },
+  modernTabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.7)",
+  },
+  modernTabTextActive: {
+    color: "#FFFFFF",
   },
 });

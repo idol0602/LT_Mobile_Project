@@ -8,11 +8,10 @@ import {
   ActivityIndicator,
   Alert,
   useWindowDimensions,
-  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Languages, X } from "lucide-react-native";
+import { ArrowLeft, Languages } from "lucide-react-native";
 import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ReadingLesson } from "../../types";
@@ -76,6 +75,12 @@ export default function ReadingLessonDetail() {
   const handleTranslateContent = async () => {
     if (!lesson?.readingContent) return;
 
+    // Nếu đã có bản dịch, toggle hiển thị
+    if (translatedContent && !isTranslating) {
+      setShowTranslation(!showTranslation);
+      return;
+    }
+
     setIsTranslating(true);
     try {
       // Chuyển HTML thành plain text để dịch
@@ -90,7 +95,7 @@ export default function ReadingLessonDetail() {
       setShowTranslation(true);
     } catch (error) {
       console.error("Translation error:", error);
-      Alert.alert("Error", "Failed to translate content. Please try again.");
+      Alert.alert("Lỗi", "Không thể dịch nội dung. Vui lòng thử lại.");
     } finally {
       setIsTranslating(false);
     }
@@ -243,7 +248,10 @@ export default function ReadingLessonDetail() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Reading Passage</Text>
             <TouchableOpacity
-              style={styles.translateButton}
+              style={[
+                styles.translateButton,
+                showTranslation && styles.translateButtonActive,
+              ]}
               onPress={handleTranslateContent}
               disabled={isTranslating}
             >
@@ -253,7 +261,11 @@ export default function ReadingLessonDetail() {
                 <Languages size={20} color="#fff" />
               )}
               <Text style={styles.translateButtonText}>
-                {isTranslating ? "Translating..." : "Translate"}
+                {isTranslating
+                  ? "Translating..."
+                  : showTranslation
+                  ? "Hide Translation"
+                  : "Translate"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -404,35 +416,6 @@ export default function ReadingLessonDetail() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* Translation Modal */}
-      <Modal
-        visible={showTranslation}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowTranslation(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Vietnamese Translation</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowTranslation(false)}
-            >
-              <X size={24} color="#e0e0e0" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.modalContent}
-            contentContainerStyle={styles.modalScrollContent}
-          >
-            <View style={styles.translationContent}>
-              <Text style={styles.translationText}>{translatedContent}</Text>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
 
       {/* Achievement Unlock Modal */}
     </SafeAreaView>
@@ -693,49 +676,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 6,
   },
+  translateButtonActive: {
+    backgroundColor: "#FF9800",
+  },
   translateButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgb(38, 39, 48)",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgb(60, 62, 75)",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#e0e0e0",
-  },
-  closeButton: {
-    padding: 8,
-  },
-  modalContent: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    padding: 16,
-  },
-  translationContent: {
-    backgroundColor: "rgb(50, 52, 65)",
-    borderRadius: 12,
-    padding: 16,
-  },
-  translationText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "#e0e0e0",
-  },
+
   // Translation section styles
   translationSection: {
     marginTop: 16,
@@ -750,5 +699,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#2196F3",
     marginBottom: 12,
+  },
+  translationContent: {
+    backgroundColor: "rgb(50, 52, 65)",
+    borderRadius: 12,
+    padding: 16,
+  },
+  translationText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#e0e0e0",
   },
 });
