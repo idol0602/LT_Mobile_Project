@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -13,7 +13,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Chip,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -41,36 +40,97 @@ export function Step2_Vocab({
   onVocabChange,
 }: Step2_VocabProps) {
   const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
+  const [selectedVocabDetails, setSelectedVocabDetails] = useState<
+    Vocabulary[]
+  >([]); // 🆕 Cache cho vocabularies đã chọn
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [posFilter, setPosFilter] = useState("");
-  const [searchLang, setSearchLang] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [posFilter] = useState(""); // Giữ cho useEffect
+  const [searchLang] = useState(""); // Giữ cho useEffect
   const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 20; // Giảm từ 50 xuống 20 để tối ưu
 
-  // 🔹 Lấy vocab từ DB (khi mount hoặc khi tìm kiếm)
+  // 🔹 Debounce search term (500ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(0); // Reset về trang đầu khi search
+      setVocabList([]); // Clear list cũ
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // 🆕 Load chi tiết vocabularies đã chọn khi mount hoặc selectedVocabIds thay đổi
+  useEffect(() => {
+    const loadSelectedVocabs = async () => {
+      if (selectedVocabIds.length === 0) {
+        setSelectedVocabDetails([]);
+        return;
+      }
+
+      try {
+        const res = await getVocabulariesByIds(selectedVocabIds);
+        const data = res.data?.data || res.data || [];
+        setSelectedVocabDetails(data);
+      } catch (err: any) {
+        console.error("❌ Lỗi khi tải từ vựng đã chọn:", err);
+      }
+    };
+
+    loadSelectedVocabs();
+  }, [selectedVocabIds]);
+
+  // 🔹 Lấy vocab từ DB với pagination
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      if (page === 0) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError("");
+
       try {
         const res = await getVocabularies(
-          0,
-          50,
-          searchTerm,
+          page,
+          PAGE_SIZE,
+          debouncedSearch,
           searchLang,
           posFilter
         );
         const data = res.data?.data || res.data || [];
-        setVocabList(data);
+
+        if (page === 0) {
+          setVocabList(data);
+        } else {
+          setVocabList((prev) => [...prev, ...data]);
+        }
+
+        // Kiểm tra còn data không
+        setHasMore(data.length === PAGE_SIZE);
       } catch (err: any) {
         console.error("❌ Lỗi khi tải từ vựng:", err);
         setError("Không thể tải dữ liệu từ vựng từ server.");
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
+
     fetchData();
-  }, [searchTerm, posFilter, searchLang]);
+  }, [page, debouncedSearch, posFilter, searchLang]);
+
+  // 🔸 Load more vocabularies
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  };
 
   // 🔸 Thêm từ vựng
   const handleAddVocab = (id: string) => {
@@ -86,9 +146,14 @@ export function Step2_Vocab({
 
   const handleClearSearch = () => setSearchTerm("");
 
-  // 🔸 Lấy dữ liệu từ vocabList hoặc fallback
-  const findVocab = (id: string): Vocabulary | undefined =>
-    vocabList.find((v) => v._id === id);
+  // 🔸 Lấy dữ liệu từ vocabList hoặc selectedVocabDetails
+  const findVocab = (id: string): Vocabulary | undefined => {
+    // Ưu tiên tìm trong selectedVocabDetails (đã chọn), sau đó mới tìm trong vocabList (search results)
+    return (
+      selectedVocabDetails.find((v) => v._id === id) ||
+      vocabList.find((v) => v._id === id)
+    );
+  };
 
   return (
     <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mt: 1 }}>
@@ -171,6 +236,33 @@ export function Step2_Vocab({
                 )}
               </TableBody>
             </Table>
+
+            {/* Load More Button */}
+            {hasMore && vocabList.length > 0 && (
+              <Box
+                sx={{
+                  p: 2,
+                  textAlign: "center",
+                  borderTop: "1px solid #E5E7EB",
+                }}
+              >
+                <Button
+                  variant="text"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  fullWidth
+                >
+                  {loadingMore ? (
+                    <>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Đang tải...
+                    </>
+                  ) : (
+                    `Tải thêm (${vocabList.length} từ)`
+                  )}
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
       </Box>

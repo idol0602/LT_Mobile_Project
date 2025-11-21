@@ -61,9 +61,31 @@ export const VocabLessonModal: React.FC<VocabLessonModalProps> = ({
   });
   const [loading, setLoading] = useState(false); // Dùng khi 'Save'
   const [loadingVocabs, setLoadingVocabs] = useState(false); // 👈 Dùng khi fetch vocabs
-  const [error, setError] = useState(""); // 🔹 Khi mở modal, load dữ liệu CƠ BẢN
+  const [error, setError] = useState("");
 
+  // 🔹 Consolidated useEffect: Load lesson data và fetch vocabularies
   useEffect(() => {
+    // Helper function để fetch vocabularies
+    const fetchVocabularies = async (lessonId: string) => {
+      setLoadingVocabs(true);
+      setError("");
+      try {
+        const response = await getVocabulariesByLessonId(lessonId);
+        const fetchedVocabs: IVocabulary[] = response.data.data || [];
+        const vocabIds = fetchedVocabs.map((v) => v._id);
+
+        setLessonData((prev) => ({
+          ...prev,
+          vocabularies: vocabIds,
+        }));
+      } catch (err: any) {
+        console.error("Failed to fetch vocabularies for lesson:", err);
+        setError("Failed to load vocabularies for this lesson.");
+      } finally {
+        setLoadingVocabs(false);
+      }
+    };
+
     if (selectedLesson) {
       setLessonData((prev) => ({
         _id: selectedLesson._id,
@@ -71,12 +93,14 @@ export const VocabLessonModal: React.FC<VocabLessonModalProps> = ({
         level: selectedLesson.level || "Beginner",
         topic: selectedLesson.topic || "",
         type: "vocab",
-        // nếu selectedLesson đã có vocabularies (từ server khi fetch lessons),
-        // dùng luôn; nếu không có thì giữ prev.vocabularies (tránh xóa selection).
-        vocabularies: (selectedLesson as any).vocabularies?.length
-          ? (selectedLesson as any).vocabularies
-          : prev.vocabularies || [],
+        // Giữ vocabularies hiện tại, sẽ được update bởi fetchVocabularies
+        vocabularies: prev.vocabularies || [],
       }));
+
+      // Fetch vocabularies nếu đang edit (có _id) và modal đang open
+      if (selectedLesson._id && open) {
+        fetchVocabularies(selectedLesson._id);
+      }
     } else {
       // tạo mới: reset đầy đủ
       setLessonData({
@@ -90,38 +114,12 @@ export const VocabLessonModal: React.FC<VocabLessonModalProps> = ({
 
     // reset error & loading flag mỗi lần mở modal
     setError("");
-    setLoadingVocabs(false);
-  }, [selectedLesson, open]); // Phụ thuộc vào 2 prop này // 🔹 Khi có lessonId (từ effect trên), fetch danh sách vocab
-  // useEffect 2: fetch vocabularies whenever modal được mở (open === true) và có selectedLesson._id
-  useEffect(() => {
-    const fetchVocabularies = async (lessonId: string) => {
-      setLoadingVocabs(true);
-      setError("");
-      try {
-        const response = await getVocabulariesByLessonId(lessonId);
-        const fetchedVocabs: IVocabulary[] = response.data.data || [];
-        const vocabIds = fetchedVocabs.map((v) => v._id);
-
-        // Gán luôn vocabIds vào lessonData (ghi đè nếu server trả)
-        setLessonData((prev) => ({
-          ...prev,
-          vocabularies: vocabIds,
-        }));
-      } catch (err: any) {
-        console.error("Failed to fetch vocabularies for lesson:", err);
-        setError("Failed to load vocabularies for this lesson.");
-      } finally {
-        setLoadingVocabs(false);
-      }
-    };
-
-    if (open && selectedLesson?._id) {
-      fetchVocabularies(selectedLesson._id);
+    if (!selectedLesson?._id) {
+      setLoadingVocabs(false);
     }
+  }, [selectedLesson, open]); // Phụ thuộc vào 2 prop này
 
-    // nếu modal đóng, không làm gì (hoặc có thể reset state nếu muốn)
-  }, [selectedLesson?._id, open]); // chạy khi modal open hoặc selectedLesson thay đổi
-  // 👈 Chỉ phụ thuộc vào lessonData._id // 🔹 Xử lý lưu bài học
+  // 🔹 Xử lý lưu bài học
   // nếu bạn muốn reset form khi đóng modal để lần mở tiếp là "sạch"
   const handleCloseAndReset = () => {
     // reset toàn bộ state về mặc định
