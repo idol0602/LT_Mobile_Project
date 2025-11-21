@@ -314,7 +314,10 @@ export default function HomeScreen() {
                 <Text style={styles.moduleSubtitle}>Read & understand</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.moduleCard}>
+              <TouchableOpacity
+                style={styles.moduleCard}
+                onPress={() => router.push("/(grammar)" as any)}
+              >
                 <View style={styles.iconContainer}>
                   <GrammarIcon size={50} />
                 </View>

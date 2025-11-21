@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   studyLabel: {
     fontSize: 12,
-    color: "#808080",
+    color: "#8B5CF6",
     fontStyle: "italic",
   },
   errorState: {
@@ -320,5 +320,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  retryButton: {
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
 });

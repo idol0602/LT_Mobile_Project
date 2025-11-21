@@ -51,6 +51,21 @@ export interface ReadingLesson extends Omit<Lesson, 'questions'> {
   readingContent: string;
 }
 
+// --- Grammar Question Type ---
+export interface GrammarQuestion {
+  _id?: string;
+  questionText: string;
+  options: string[];
+  correctAnswerIndex: number | null;
+  answerText?: string;
+}
+
+// --- Grammar Lesson Type ---
+export interface GrammarLesson extends Omit<Lesson, 'questions'> {
+  questions?: GrammarQuestion[];
+  readingContent?: string; // Grammar explanation content
+}
+
 // --- Vocabulary Types ---
 export interface Vocabulary {
   _id: string;

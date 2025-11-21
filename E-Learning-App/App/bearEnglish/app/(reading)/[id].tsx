@@ -7,12 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Languages, X } from "lucide-react-native";
+import { ArrowLeft, Languages } from "lucide-react-native";
 import API from "../../api";
 import type { ReadingLesson } from "../../types";
 import RenderHTML from "react-native-render-html";
@@ -218,6 +217,18 @@ export default function ReadingLessonDetail() {
               }}
             />
           </View>
+
+          {/* Translation content displayed below reading */}
+          {showTranslation && translatedContent && (
+            <View style={styles.translationSection}>
+              <Text style={styles.translationSectionTitle}>
+                Vietnamese Translation
+              </Text>
+              <View style={styles.translationContent}>
+                <Text style={styles.translationText}>{translatedContent}</Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Questions */}
@@ -329,35 +340,6 @@ export default function ReadingLessonDetail() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* Translation Modal */}
-      <Modal
-        visible={showTranslation}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowTranslation(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Vietnamese Translation</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowTranslation(false)}
-            >
-              <X size={24} color="#e0e0e0" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.modalContent}
-            contentContainerStyle={styles.modalScrollContent}
-          >
-            <View style={styles.translationContent}>
-              <Text style={styles.translationText}>{translatedContent}</Text>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -638,5 +620,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: "#e0e0e0",
+  },
+  // Translation section styles
+  translationSection: {
+    marginTop: 16,
+    backgroundColor: "rgb(50, 52, 65)",
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2196F3",
+  },
+  translationSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2196F3",
+    marginBottom: 12,
   },
 });

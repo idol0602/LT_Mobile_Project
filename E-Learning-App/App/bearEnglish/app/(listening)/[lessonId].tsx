@@ -42,6 +42,7 @@ export default function ListeningPractice() {
   const [showResults, setShowResults] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [soundEffect, setSoundEffect] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     fetchLesson();
@@ -49,6 +50,9 @@ export default function ListeningPractice() {
       // Cleanup audio when component unmounts
       if (sound) {
         sound.unloadAsync();
+      }
+      if (soundEffect) {
+        soundEffect.unloadAsync();
       }
     };
   }, [lessonId]);
@@ -120,6 +124,37 @@ export default function ListeningPractice() {
     }
   }
 
+  async function playSoundEffect(soundFile: string) {
+    try {
+      // Unload previous sound effect if exists
+      if (soundEffect) {
+        await soundEffect.unloadAsync();
+        setSoundEffect(null);
+      }
+
+      const { sound: newSoundEffect } = await Audio.Sound.createAsync(
+        soundFile === "correct"
+          ? require("../../assets/sounds/correct.mp3")
+          : soundFile === "incorrect"
+          ? require("../../assets/sounds/incorrect.mp3")
+          : require("../../assets/sounds/complete.mp3"),
+        { shouldPlay: true }
+      );
+
+      setSoundEffect(newSoundEffect);
+
+      // Auto cleanup after playing
+      newSoundEffect.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          newSoundEffect.unloadAsync();
+          setSoundEffect(null);
+        }
+      });
+    } catch (error) {
+      console.error("Error playing sound effect:", error);
+    }
+  }
+
   function handleAnswerChange(text: string) {
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestionIndex] = text;
@@ -142,6 +177,10 @@ export default function ListeningPractice() {
     const newChecked = [...checkedAnswers];
     newChecked[currentQuestionIndex] = true;
     setCheckedAnswers(newChecked);
+
+    // Play sound effect based on answer correctness
+    const isCorrect = isCurrentAnswerCorrect();
+    playSoundEffect(isCorrect ? "correct" : "incorrect");
   }
 
   function isCurrentAnswerCorrect(): boolean {
@@ -288,11 +327,19 @@ export default function ListeningPractice() {
         }. Do you want to submit anyway?`,
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Submit", onPress: () => setShowResults(true) },
+          {
+            text: "Submit",
+            onPress: () => {
+              setShowResults(true);
+              playSoundEffect("complete");
+            },
+          },
         ]
       );
     } else {
       setShowResults(true);
+      // Play completion sound effect
+      playSoundEffect("complete");
     }
   }
 
