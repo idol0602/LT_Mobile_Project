@@ -9,9 +9,9 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { BookOpen, ArrowLeft } from "lucide-react-native";
+import { BookOpen, ArrowLeft, Star } from "lucide-react-native";
 import API from "../../api";
 import type { Lesson } from "../../types";
 
@@ -74,55 +74,47 @@ export default function ReadingScreen() {
         router.push(`/(reading)/${item._id}` as any);
       }}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <BookOpen size={24} color="#EC4899" />
+      <LinearGradient
+        colors={["#2d2d2d", "#3a3a3a"]}
+        style={styles.cardGradient}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <BookOpen size={24} color="#EC4899" />
+          </View>
+          <View style={styles.levelBadge}>
+            <Star size={14} color="#ffd700" />
+            <Text style={styles.levelText}>{item.level}</Text>
+          </View>
         </View>
-        <View style={styles.cardHeaderText}>
-          <Text style={styles.lessonName} numberOfLines={2}>
-            {item.name}
-          </Text>
-          <Text style={styles.lessonTopic}>{item.topic}</Text>
-        </View>
-      </View>
-
-      <View style={styles.cardFooter}>
-        <View
-          style={[
-            styles.levelBadge,
-            { backgroundColor: getLevelColor(item.level as any) + "20" },
-          ]}
-        >
-          <Text
-            style={[
-              styles.levelText,
-              { color: getLevelColor(item.level as any) },
-            ]}
-          >
-            {item.level}
-          </Text>
-        </View>
-        <Text style={styles.questionCount}>
-          {item.questions?.length || 0} questions
+        <Text style={styles.lessonName} numberOfLines={2}>
+          {item.name}
         </Text>
-      </View>
+        <Text style={styles.lessonTopic}>{item.topic || "Reading lesson"}</Text>
+        <View style={styles.cardFooter}>
+          <Text style={styles.questionCount}>
+            📖 {item.questions?.length || 0} questions
+          </Text>
+          <Text style={styles.studyLabel}>Tap to study →</Text>
+        </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#EC4899" />
           <Text style={styles.loadingText}>Loading reading lessons...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.errorContainer}>
           <BookOpen size={64} color="#F44336" />
           <Text style={styles.errorTitle}>Không thể tải bài học</Text>
@@ -134,26 +126,33 @@ export default function ReadingScreen() {
             <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)")}
-        >
-          <ArrowLeft size={24} color="#EC4899" />
-        </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Reading Lessons</Text>
-          <Text style={styles.headerSubtitle}>
-            {lessons.length} lesson{lessons.length !== 1 ? "s" : ""} available
-          </Text>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={["#EC4899", "#8B5CF6"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/(tabs)")}
+          >
+            <ArrowLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>📚 Reading Lessons</Text>
+            <Text style={styles.headerSubtitle}>
+              {lessons.length} lesson{lessons.length !== 1 ? "s" : ""} available
+            </Text>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       <FlatList
         data={lessons}
@@ -178,7 +177,7 @@ export default function ReadingScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -187,15 +186,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1a1a1a",
   },
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
   },
   backButton: {
-    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    padding: 12,
+    borderRadius: 12,
     marginRight: 16,
   },
   headerTextContainer: {
@@ -203,70 +208,84 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: "700",
-    color: "#e0e0e0",
+    fontWeight: "800",
+    color: "#ffffff",
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: "#a0a0a0",
+    fontSize: 16,
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
   },
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
   lessonCard: {
-    backgroundColor: "rgb(50, 52, 65)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "rgb(60, 62, 75)",
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 20,
+    shadowColor: "#EC4899",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  cardGradient: {
+    borderRadius: 20,
+    padding: 20,
   },
   cardHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
+    backgroundColor: "rgba(236,72,153,0.2)",
+    padding: 12,
     borderRadius: 12,
-    backgroundColor: "#EC489920",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
   },
-  cardHeaderText: {
-    flex: 1,
+  levelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,215,0,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  levelText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#b8860b",
+    marginLeft: 4,
   },
   lessonName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#e0e0e0",
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginBottom: 8,
   },
   lessonTopic: {
-    fontSize: 12,
     color: "#a0a0a0",
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
   },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  levelBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  levelText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
   questionCount: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#EC4899",
+  },
+  studyLabel: {
     fontSize: 12,
     color: "#808080",
+    fontStyle: "italic",
   },
   loadingContainer: {
     flex: 1,

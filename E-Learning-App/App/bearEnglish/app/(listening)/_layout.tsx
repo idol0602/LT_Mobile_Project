@@ -4,14 +4,15 @@ export default function ListeningLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: "rgb(38, 39, 48)",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "600",
-        },
         headerShown: false,
+        gestureEnabled: true,
+        // headerStyle: {
+        //   backgroundColor: "rgb(38, 39, 48)",
+        // },
+        // headerTintColor: "#fff",
+        // headerTitleStyle: {
+        //   fontWeight: "600",
+        // },
       }}
     >
       <Stack.Screen
