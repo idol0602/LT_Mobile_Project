@@ -38,6 +38,9 @@ yarn-error.*
 
 app-example
 
+# API configuration
+constants/api.ts
+
 # generated native folders
 /ios
 /android
