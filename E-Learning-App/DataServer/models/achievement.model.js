@@ -28,7 +28,7 @@ const AchievementSchema = new mongoose.Schema(
       minLessonsCompleted: { type: Number },
       minWordsLearned: { type: Number },
       minStreak: { type: Number },
-      category: { type: String }, // reading, vocab, listening...
+      category: { type: String },
     },
 
     difficulty: {

@@ -26,6 +26,8 @@ import {
 import VocabularyCard from "./VocabularyCard";
 import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAchievementContext } from "../../contexts/AchievementContext";
+import { AchievementModalWrapper } from "../../components/AchievementModalWrapper";
 import type {
   Word,
   PronounResponse,
@@ -695,11 +697,14 @@ export default function VocabularyStudy() {
     }
   };
 
+  // Get achievement context
+  const { completeLessonWithAchievementCheck } = useAchievementContext();
+
   // Hàm xử lý khi hoàn thành bài học
   const handleLessonComplete = async () => {
     try {
       if (user?._id && lessonId) {
-        await API.completeLesson(user._id, lessonId, "vocab");
+        await completeLessonWithAchievementCheck(lessonId, "vocab");
         console.log("Lesson completed, progress updated!");
       }
     } catch (error) {
@@ -1323,6 +1328,9 @@ export default function VocabularyStudy() {
       </View>
 
       {renderFeedback()}
+
+      {/* Achievement Modal */}
+      <AchievementModalWrapper />
     </View>
   );
 }

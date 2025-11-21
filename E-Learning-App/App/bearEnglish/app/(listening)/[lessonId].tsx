@@ -16,6 +16,8 @@ import { ArrowLeft } from "lucide-react-native";
 import { Audio } from "expo-av";
 import API from "../../api/index";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAchievementContext } from "../../contexts/AchievementContext";
+import { AchievementModalWrapper } from "../../components/AchievementModalWrapper";
 import type { Lesson as BaseLessonType } from "../../types";
 
 interface ListeningQuestion {
@@ -34,6 +36,7 @@ export default function ListeningPractice() {
   const lessonId = params.lessonId as string;
   const lessonTitle = params.lessonTitle as string;
   const { user, isLoading: authLoading } = useAuth();
+  const { completeLessonWithAchievementCheck } = useAchievementContext();
 
   const [loading, setLoading] = useState(false);
   const [lesson, setLesson] = useState<ListeningLesson | null>(null);
@@ -310,7 +313,7 @@ export default function ListeningPractice() {
   async function updateLessonProgress() {
     try {
       if (user?._id && lessonId) {
-        await API.completeLesson(user._id, lessonId, "listening");
+        await completeLessonWithAchievementCheck(lessonId, "listening");
         console.log("Listening lesson completed, progress updated!");
       }
     } catch (error) {
@@ -670,6 +673,7 @@ export default function ListeningPractice() {
           </TouchableOpacity>
         )}
       </View>
+      <AchievementModalWrapper />
     </SafeAreaView>
   );
 }
