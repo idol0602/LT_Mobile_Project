@@ -350,6 +350,80 @@ class API {
           throw error;
         }
     }
+
+    // ============ AUTH APIs ============
+
+    async forgotPassword(email: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/users/forgot-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in forgotPassword:', error);
+          throw error;
+        }
+    }
+
+    async verifyOTP(email: string, otp: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/users/verify-reset-otp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, otp }),
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in verifyOTP:', error);
+          throw error;
+        }
+    }
+
+    async resetPassword(email: string, resetToken: string, newPassword: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/users/reset-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, resetToken, newPassword }),
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in resetPassword:', error);
+          throw error;
+        }
+    }
+
+    async resendOTP(email: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/users/resend-reset-otp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in resendOTP:', error);
+          throw error;
+        }
+    }
 }
 
 export default new API();
