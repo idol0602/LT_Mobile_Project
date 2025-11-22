@@ -123,7 +123,8 @@ export default function AchievementUnlockedScreen() {
       const nextAchievement = achievementQueue[0];
       setAchievementQueue((prev) => prev.slice(1));
 
-      router.push({
+      // Use replace to avoid building up navigation stack
+      router.replace({
         pathname: "/(achievements)/achievement-unlocked",
         params: {
           achievement: JSON.stringify(nextAchievement),

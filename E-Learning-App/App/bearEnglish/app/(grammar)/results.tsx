@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Home, RotateCcw, Trophy, Star } from "lucide-react-native";
 import { Audio } from "expo-av";
+import { useAchievementContext } from "../../contexts/AchievementContext";
 
 // Confetti Animation Component
 const AnimatedConfetti = () => {
@@ -81,13 +82,16 @@ const AnimatedConfetti = () => {
 
 export default function GrammarResults() {
   const router = useRouter();
-  const { lessonId, lessonName, score, correct, total } = useLocalSearchParams<{
-    lessonId: string;
-    lessonName: string;
-    score: string;
-    correct: string;
-    total: string;
-  }>();
+  const { lessonId, lessonName, score, correct, total, achievements } =
+    useLocalSearchParams<{
+      lessonId: string;
+      lessonName: string;
+      score: string;
+      correct: string;
+      total: string;
+      achievements?: string;
+    }>();
+  const { setAchievementQueue } = useAchievementContext();
 
   const [soundEffect, setSoundEffect] = useState<Audio.Sound | null>(null);
   const [scaleAnimation] = useState(new Animated.Value(0));
@@ -115,12 +119,39 @@ export default function GrammarResults() {
       }),
     ]).start();
 
+    // Check for achievements and navigate after showing results
+    if (achievements) {
+      try {
+        const achievementsData = JSON.parse(achievements);
+        if (achievementsData && achievementsData.length > 0) {
+          console.log("🎉 Achievements received in results:", achievementsData);
+
+          // Queue remaining achievements (all except first)
+          if (achievementsData.length > 1) {
+            setAchievementQueue(achievementsData.slice(1));
+          }
+
+          // Navigate to achievement page after 2 seconds (show results first)
+          setTimeout(() => {
+            router.push({
+              pathname: "/(achievements)/achievement-unlocked",
+              params: {
+                achievement: JSON.stringify(achievementsData[0]),
+              },
+            });
+          }, 2000);
+        }
+      } catch (error) {
+        console.error("Error parsing achievements:", error);
+      }
+    }
+
     return () => {
       if (soundEffect) {
         soundEffect.unloadAsync();
       }
     };
-  }, []);
+  }, [achievements]);
 
   const playCelebrationSound = async () => {
     try {

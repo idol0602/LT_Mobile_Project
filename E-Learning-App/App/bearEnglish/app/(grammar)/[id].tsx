@@ -207,19 +207,8 @@ export default function GrammarLessonDetail() {
     // Calculate score
     const score = calculateScore();
 
-    // Navigate to results screen first
-    router.push({
-      pathname: "/(grammar)/results",
-      params: {
-        lessonId: id,
-        lessonName: lesson?.name || "Grammar Lesson",
-        score: score.percentage.toString(),
-        correct: score.correct.toString(),
-        total: score.total.toString(),
-      },
-    } as any);
-
-    // Update progress and check for achievements in background
+    // Update progress and check for achievements BEFORE navigation
+    let achievementsData = null;
     if (user?._id) {
       try {
         await API.updateCurrentLesson(
@@ -240,25 +229,29 @@ export default function GrammarLessonDetail() {
           score.percentage
         );
 
-        // Navigate to achievement page if any achievements were unlocked
         if (newAchievements && newAchievements.length > 0) {
-          console.log(
-            "🎉 Navigating to achievement page with:",
-            newAchievements[0]
-          );
-          setTimeout(() => {
-            router.push({
-              pathname: "/(achievements)/achievement-unlocked",
-              params: {
-                achievement: JSON.stringify(newAchievements[0]),
-              },
-            });
-          }, 800); // Small delay to show results first
+          achievementsData = newAchievements;
+          console.log("🎉 Achievements unlocked:", newAchievements);
         }
       } catch (error) {
         console.error("Error updating progress:", error);
       }
     }
+
+    // Navigate to results screen with achievement data
+    router.push({
+      pathname: "/(grammar)/results",
+      params: {
+        lessonId: id,
+        lessonName: lesson?.name || "Grammar Lesson",
+        score: score.percentage.toString(),
+        correct: score.correct.toString(),
+        total: score.total.toString(),
+        achievements: achievementsData
+          ? JSON.stringify(achievementsData)
+          : undefined,
+      },
+    } as any);
   };
 
   const calculateScore = () => {
