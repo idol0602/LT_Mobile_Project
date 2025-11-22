@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -121,9 +121,12 @@ export default function ProfileScreen() {
   // Refresh user data when screen comes into focus (after editing profile)
   useFocusEffect(
     React.useCallback(() => {
-      // Refresh user from AsyncStorage to get latest updates
-      const refreshUser = async () => {
+      // Refresh all data when screen comes into focus
+      const refreshAllData = async () => {
+        if (!isAuthenticated || !user?._id) return;
+
         try {
+          // Refresh user from AsyncStorage
           const storedUser = await AsyncStorage.getItem("user");
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
@@ -138,13 +141,30 @@ export default function ProfileScreen() {
               await updateUser(parsedUser);
             }
           }
+
+          // Refresh progress stats
+          const progressResponse = await API.getProgressStats(user._id as any);
+          if (progressResponse.success) {
+            console.log("🔄 Progress stats auto-refreshed on focus");
+            setProgressStats(progressResponse.data);
+          }
+
+          // Refresh app time
+          const appTimeResponse = await API.getAppTime(user._id as any);
+          if (appTimeResponse.success) {
+            console.log(
+              "🔄 App time auto-refreshed on focus:",
+              appTimeResponse.data.totalAppTime
+            );
+            setAppTime(appTimeResponse.data.totalAppTime || 0);
+          }
         } catch (error) {
-          console.error("Error refreshing user:", error);
+          console.error("Error refreshing data on focus:", error);
         }
       };
 
-      refreshUser();
-    }, [user?.avatar, updateUser])
+      refreshAllData();
+    }, [user?._id, isAuthenticated, updateUser])
   );
 
   // Pull to refresh function
@@ -153,15 +173,22 @@ export default function ProfileScreen() {
 
     setRefreshing(true);
     try {
+      console.log("🔄 Starting refresh...");
+
       // Refresh progress stats
       const progressResponse = await API.getProgressStats(user._id as any);
       if (progressResponse.success) {
+        console.log("✅ Progress stats refreshed:", progressResponse.data);
         setProgressStats(progressResponse.data);
       }
 
       // Refresh app time
       const appTimeResponse = await API.getAppTime(user._id as any);
       if (appTimeResponse.success) {
+        console.log(
+          "✅ App time refreshed:",
+          appTimeResponse.data.totalAppTime
+        );
         setAppTime(appTimeResponse.data.totalAppTime || 0);
       }
 
@@ -173,8 +200,10 @@ export default function ProfileScreen() {
           await updateUser(parsedUser);
         }
       }
+
+      console.log("✅ Refresh completed!");
     } catch (error) {
-      console.error("Error refreshing data:", error);
+      console.error("❌ Error refreshing data:", error);
     } finally {
       setRefreshing(false);
     }
@@ -221,12 +250,18 @@ export default function ProfileScreen() {
   console.log("Profile screen - user avatar:", user?.avatar);
   console.log("Profile screen - using avatar:", userData.avatar);
 
-  const progressData = {
-    lessonsCompleted: progressStats?.totalCompleted || 0,
-    minutesSpent: Math.floor(appTime / 60),
-    weeklyData: [12, 19, 8, 15, 10, 18, 22],
-    days: ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
-  };
+  const progressData = useMemo(() => {
+    const minutes = Math.floor(appTime / 60);
+    console.log(
+      `📊 Calculating progressData - appTime: ${appTime}s → ${minutes}m`
+    );
+    return {
+      lessonsCompleted: progressStats?.totalCompleted || 0,
+      minutesSpent: minutes,
+      weeklyData: [12, 19, 8, 15, 10, 18, 22],
+      days: ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
+    };
+  }, [appTime, progressStats]);
 
   // Get unlocked and locked achievements from the hook
   const unlockedAchievements = getUnlockedAchievements();

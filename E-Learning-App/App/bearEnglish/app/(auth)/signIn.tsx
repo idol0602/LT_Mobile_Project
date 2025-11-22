@@ -96,17 +96,9 @@ const SignIn: React.FC = () => {
       // Lưu thông tin user vào AuthContext
       await login(user, token);
 
-      // Hiển thị success message và chuyển trang
-      const userName = user?.fullName || user?.name || email.split("@")[0];
-      Alert.alert("Success", `Welcome back, ${userName}!`, [
-        {
-          text: "OK",
-          onPress: () => {
-            console.log("Navigating to tabs...");
-            router.replace("/(tabs)");
-          },
-        },
-      ]);
+      // Chuyển trực tiếp sang home không hiển thị thông báo
+      console.log("Login successful, navigating to tabs...");
+      router.replace("/(tabs)");
     } catch (error) {
       console.error("Login error:", error);
       Alert.alert(
