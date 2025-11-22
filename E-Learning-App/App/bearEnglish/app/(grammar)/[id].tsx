@@ -20,6 +20,7 @@ import RenderHTML from "react-native-render-html";
 import API from "../../api";
 import type { GrammarLesson } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAchievementContext } from "../../contexts/AchievementContext";
 
 // Component to render AI response with basic markdown formatting
 const MarkdownText = ({ text }: { text: string }) => {
@@ -69,6 +70,7 @@ export default function GrammarLessonDetail() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
+  const { completeLessonWithAchievementCheck } = useAchievementContext();
 
   const [lesson, setLesson] = useState<GrammarLesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,32 +207,7 @@ export default function GrammarLessonDetail() {
     // Calculate score
     const score = calculateScore();
 
-    // 🆕 Update currentLesson progress to 100%
-    if (user?._id) {
-      try {
-        await API.updateCurrentLesson(
-          user._id as any,
-          id as string,
-          "grammar",
-          100
-        );
-
-        // 🆕 Mark lesson as completed if score >= 70%
-        if (score.percentage >= 70) {
-          await API.completeLesson(
-            user._id as any,
-            id as string,
-            "grammar",
-            score.percentage // ✅ Pass score
-          );
-          console.log("✅ Grammar lesson marked as completed");
-        }
-      } catch (error) {
-        console.error("Error updating progress:", error);
-      }
-    }
-
-    // Navigate to results screen
+    // Navigate to results screen first
     router.push({
       pathname: "/(grammar)/results",
       params: {
@@ -241,6 +218,47 @@ export default function GrammarLessonDetail() {
         total: score.total.toString(),
       },
     } as any);
+
+    // Update progress and check for achievements in background
+    if (user?._id) {
+      try {
+        await API.updateCurrentLesson(
+          user._id as any,
+          id as string,
+          "grammar",
+          100
+        );
+
+        // Mark lesson as completed and check for achievements
+        const newAchievements = await completeLessonWithAchievementCheck(
+          id as string,
+          "grammar",
+          score.percentage
+        );
+        console.log(
+          "✅ Grammar lesson marked as completed with score:",
+          score.percentage
+        );
+
+        // Navigate to achievement page if any achievements were unlocked
+        if (newAchievements && newAchievements.length > 0) {
+          console.log(
+            "🎉 Navigating to achievement page with:",
+            newAchievements[0]
+          );
+          setTimeout(() => {
+            router.push({
+              pathname: "/(achievements)/achievement-unlocked",
+              params: {
+                achievement: JSON.stringify(newAchievements[0]),
+              },
+            });
+          }, 800); // Small delay to show results first
+        }
+      } catch (error) {
+        console.error("Error updating progress:", error);
+      }
+    }
   };
 
   const calculateScore = () => {
