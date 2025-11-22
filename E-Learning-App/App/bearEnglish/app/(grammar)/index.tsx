@@ -14,12 +14,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { ArrowLeft, BookText } from "lucide-react-native";
 import API from "../../api";
 import type { Lesson } from "../../types";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function GrammarLessons() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [completedPercent, setCompletedPercent] = useState(0);
 
   useEffect(() => {
     fetchLessons();
@@ -38,6 +41,24 @@ export default function GrammarLessons() {
       console.log("Number of grammar lessons:", data.length);
 
       setLessons(data);
+
+      // Fetch progress if user is logged in
+      if (user?._id) {
+        try {
+          const progressResponse = await API.getUserProgress(user._id as any);
+          if (progressResponse.success && progressResponse.data?.grammar) {
+            setCompletedPercent(
+              progressResponse.data.grammar.completedPercent || 0
+            );
+            console.log(
+              "Grammar progress:",
+              progressResponse.data.grammar.completedPercent
+            );
+          }
+        } catch (err) {
+          console.error("Error fetching progress:", err);
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch grammar lessons", err);
       setError(err instanceof Error ? err.message : "Failed to load lessons");
@@ -136,6 +157,24 @@ export default function GrammarLessons() {
             <Text style={styles.headerSubtitle}>
               {lessons.length} lessons available
             </Text>
+
+            {/* Progress bar */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Progress</Text>
+                <Text style={styles.progressPercent}>
+                  {completedPercent.toFixed(0)}%
+                </Text>
+              </View>
+              <View style={styles.progressBarBackground}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${completedPercent}%` },
+                  ]}
+                />
+              </View>
+            </View>
           </View>
         </View>
       </LinearGradient>
@@ -332,5 +371,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#F59E0B",
     fontWeight: "600",
+  },
+  progressContainer: {
+    marginTop: 16,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+  },
+  progressPercent: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "700",
+  },
+  progressBarBackground: {
+    height: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
   },
 });

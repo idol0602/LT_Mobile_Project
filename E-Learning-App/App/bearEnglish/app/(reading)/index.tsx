@@ -14,13 +14,16 @@ import { useRouter } from "expo-router";
 import { BookOpen, ArrowLeft, Star } from "lucide-react-native";
 import API from "../../api";
 import type { Lesson } from "../../types";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ReadingScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [completedPercent, setCompletedPercent] = useState(0);
 
   const fetchReadingLessons = async () => {
     try {
@@ -30,6 +33,20 @@ export default function ReadingScreen() {
       const response = await API.getLessons("reading");
       console.log("Reading lessons response:", response);
       setLessons(response.data || []);
+
+      // Fetch progress if user is logged in
+      if (user?._id) {
+        try {
+          const progressResponse = await API.getUserProgress(user._id as any);
+          if (progressResponse.success && progressResponse.data?.reading) {
+            setCompletedPercent(
+              progressResponse.data.reading.completedPercent || 0
+            );
+          }
+        } catch (err) {
+          console.error("Error fetching progress:", err);
+        }
+      }
     } catch (error) {
       console.error("Error fetching reading lessons:", error);
       const errorMsg =
@@ -150,6 +167,24 @@ export default function ReadingScreen() {
             <Text style={styles.headerSubtitle}>
               {lessons.length} lesson{lessons.length !== 1 ? "s" : ""} available
             </Text>
+
+            {/* Progress bar */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Progress</Text>
+                <Text style={styles.progressPercent}>
+                  {completedPercent.toFixed(0)}%
+                </Text>
+              </View>
+              <View style={styles.progressBarBackground}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${completedPercent}%` },
+                  ]}
+                />
+              </View>
+            </View>
           </View>
         </View>
       </LinearGradient>
@@ -345,5 +380,35 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  progressContainer: {
+    marginTop: 16,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+  },
+  progressPercent: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "700",
+  },
+  progressBarBackground: {
+    height: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
   },
 });
