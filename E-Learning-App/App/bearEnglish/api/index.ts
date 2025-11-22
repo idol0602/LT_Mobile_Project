@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE, UTILS_BASE } from "../constants/api";
 import type {
   ChatResponse,
@@ -14,6 +15,18 @@ import type {
 
 class API {
     BASE_URL = API_BASE; // Expose base URL for external use
+
+    // ============ AUTHENTICATION HELPER ============
+    
+    async getToken(): Promise<string | null> {
+        try {
+            const token = await AsyncStorage.getItem('token');
+            return token;
+        } catch (error) {
+            console.error('Error getting token:', error);
+            return null;
+        }
+    }
 
     // ============ UTILS SERVER APIs ============
 
@@ -421,6 +434,130 @@ class API {
           return data;
         } catch (error) {
           console.error('Error in resendOTP:', error);
+          throw error;
+        }
+    }
+
+    // ============ PROFILE MANAGEMENT APIs ============
+
+    async updateProfile(fullName?: string, phoneNumber?: string, avatar?: string): Promise<any> {
+        try {
+          const token = await this.getToken();
+          const response = await fetch(`${API_BASE}/api/users/me`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+              fullName, 
+              phoneNumber, 
+              avatar 
+            }),
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in updateProfile:', error);
+          throw error;
+        }
+    }
+
+    async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+        try {
+          const token = await this.getToken();
+          const response = await fetch(`${API_BASE}/api/users/change-password`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+              currentPassword, 
+              newPassword 
+            }),
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in changePassword:', error);
+          throw error;
+        }
+    }
+
+    async uploadAvatar(imageUri: string): Promise<any> {
+        try {
+          const token = await this.getToken();
+          
+          const formData = new FormData();
+          formData.append('avatar', {
+            uri: imageUri,
+            name: `avatar_${Date.now()}.jpg`,
+            type: 'image/jpeg',
+          } as any);
+
+          console.log('Uploading avatar to:', `${API_BASE}/api/images/upload-avatar`);
+          
+          const response = await fetch(`${API_BASE}/api/images/upload-avatar`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              // Don't set Content-Type for FormData, let the browser set it
+            },
+            body: formData,
+          });
+          
+          console.log('Upload response status:', response.status);
+          
+          const responseText = await response.text();
+          console.log('Upload response text:', responseText);
+          
+          // Check if server returned an error
+          if (!response.ok) {
+            console.error('Upload failed with status:', response.status);
+            console.error('Error response:', responseText);
+            
+            // If response is HTML (like 404 page), extract meaningful error
+            if (responseText.includes('<html>') || responseText.includes('<!DOCTYPE')) {
+              throw new Error(`Server error: ${response.status} - Server may be down or route not found`);
+            }
+            
+            throw new Error(`Upload failed: ${response.status} - ${responseText}`);
+          }
+
+          // Try to parse as JSON
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('Failed to parse JSON:', parseError);
+            console.error('Raw response:', responseText);
+            throw new Error(`Server returned invalid response. Status: ${response.status}. Please check if DataServer is running.`);
+          }
+          
+          return data;
+        } catch (error) {
+          console.error('Error in uploadAvatar:', error);
+          throw error;
+        }
+    }
+
+    async getCurrentUser(): Promise<any> {
+        try {
+          const token = await this.getToken();
+          const response = await fetch(`${API_BASE}/api/users/me`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+          });
+          
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error in getCurrentUser:', error);
           throw error;
         }
     }

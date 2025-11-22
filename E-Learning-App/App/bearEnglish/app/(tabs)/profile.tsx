@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import API from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAchievements } from "../../hooks/useAchievements";
@@ -102,6 +103,35 @@ export default function ProfileScreen() {
     }
   }, [isAuthenticated, user]);
 
+  // Refresh user data when screen comes into focus (after editing profile)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refresh user from AsyncStorage to get latest updates
+      const refreshUser = async () => {
+        try {
+          const storedUser = await AsyncStorage.getItem("user");
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            console.log(
+              "Profile screen focused - refreshed user from AsyncStorage:",
+              parsedUser
+            );
+
+            // Force update user context if avatar changed
+            if (parsedUser.avatar !== user?.avatar) {
+              console.log("Avatar changed detected, updating context...");
+              await updateUser(parsedUser);
+            }
+          }
+        } catch (error) {
+          console.error("Error refreshing user:", error);
+        }
+      };
+
+      refreshUser();
+    }, [user?.avatar, updateUser])
+  );
+
   // Default avatar nếu chưa đăng nhập
   const defaultAvatar =
     "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/474190UWU/anh-avatar-one-piece-sieu-dep_082621920.jpg";
@@ -123,23 +153,25 @@ export default function ProfileScreen() {
 
   const handleEditProfile = () => {
     setShowSettingsModal(false);
-    // TODO: Navigate to edit profile screen
-    Alert.alert("Thông báo", "Chức năng đang phát triển");
+    router.push("/(auth)/editProfile");
   };
 
   const handleChangePassword = () => {
     setShowSettingsModal(false);
-    // TODO: Navigate to change password screen
-    Alert.alert("Thông báo", "Chức năng đang phát triển");
+    router.push("/(auth)/changePassword");
   };
 
   const userData = {
     name: user?.fullName || user?.name || "Guest",
     email: user?.email || "Not logged in",
-    avatar: defaultAvatar,
+    avatar: user?.avatar || defaultAvatar,
     isPro: false,
     streak: progressStats?.streak || 0,
   };
+
+  // Debug log to check avatar value
+  console.log("Profile screen - user avatar:", user?.avatar);
+  console.log("Profile screen - using avatar:", userData.avatar);
 
   const progressData = {
     lessonsCompleted: progressStats?.totalCompleted || 0,
