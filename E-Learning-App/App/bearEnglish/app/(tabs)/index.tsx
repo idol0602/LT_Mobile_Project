@@ -281,7 +281,11 @@ export default function HomeScreen() {
               <View style={styles.progressCircleContainer}>
                 <View style={styles.progressCircle}>
                   <Text style={styles.progressText}>
-                    {progressData?.currentLesson?.progress || 0}%
+                    {progressData?.currentLesson?.category
+                      ? progressData[progressData.currentLesson.category]
+                          ?.completedPercent || 0
+                      : 0}
+                    %
                   </Text>
                 </View>
               </View>
@@ -298,8 +302,11 @@ export default function HomeScreen() {
                   {currentLessonName || "Begin Your Journey"}
                 </Text>
                 <Text style={styles.courseSubtitle}>
-                  {progressData?.currentLesson?.progress === 100
-                    ? "Completed! Start a new lesson"
+                  {progressData?.currentLesson?.category
+                    ? `${
+                        progressData[progressData.currentLesson.category]?.data
+                          ?.length || 0
+                      } lessons completed`
                     : "Continue your journey!"}
                 </Text>
               </View>

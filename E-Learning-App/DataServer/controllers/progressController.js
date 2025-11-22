@@ -1,5 +1,24 @@
 // controllers/progressController.js
 const UserProgress = require("../models/progress.model");
+const Lesson = require("../models/lesson.model");
+
+/**
+ * Helper function: Lấy tổng số lesson theo type và tính completedPercent
+ */
+const calculateCompletedPercent = async (progress, category) => {
+  try {
+    const totalCount = await Lesson.countDocuments({ type: category });
+    const completedCount = progress[category].data.length;
+
+    if (totalCount > 0) {
+      return Math.round((completedCount / totalCount) * 100);
+    }
+    return 0;
+  } catch (error) {
+    console.error(`Error calculating percent for ${category}:`, error);
+    return 0;
+  }
+};
 
 /**
  * GET /api/progress/:userId
@@ -106,12 +125,11 @@ exports.completeLesson = async (req, res) => {
 
     progress.lastStudyDate = new Date();
 
-    // Tính completed percent nếu có totalLessons
-    if (progress.totalLessons && progress.totalLessons[category] > 0) {
-      progress[category].completedPercent = Math.round(
-        (progress[category].data.length / progress.totalLessons[category]) * 100
-      );
-    }
+    // 🆕 Tự động tính completedPercent dựa trên tổng lessons trong DB
+    progress[category].completedPercent = await calculateCompletedPercent(
+      progress,
+      category
+    );
 
     // Update words learned cho vocab
     if (category === "vocab") {

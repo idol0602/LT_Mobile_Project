@@ -310,3 +310,45 @@ exports.getVocabulariesByLessonId = async (req, res) => {
     });
   }
 };
+
+// 📊 Lấy tổng số lesson theo từng loại (vocab, grammar, reading, listening)
+exports.getLessonCountByType = async (req, res) => {
+  try {
+    const counts = await Lesson.aggregate([
+      {
+        $group: {
+          _id: "$type", // Group theo field type
+          count: { $sum: 1 }, // Đếm số lượng
+        },
+      },
+    ]);
+
+    // Chuyển đổi từ array sang object để dễ sử dụng
+    const result = {
+      vocab: 0,
+      grammar: 0,
+      reading: 0,
+      listening: 0,
+      total: 0,
+    };
+
+    counts.forEach((item) => {
+      if (item._id && result.hasOwnProperty(item._id)) {
+        result[item._id] = item.count;
+        result.total += item.count;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error("❌ Error getting lesson count by type:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get lesson count",
+      error: error.message,
+    });
+  }
+};
