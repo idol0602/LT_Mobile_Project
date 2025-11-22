@@ -156,7 +156,7 @@ export default function GrammarResults() {
   const playCelebrationSound = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require("../../assets/sounds/complete.mp3"),
+        require("../../assets/sounds/winning.mp3"),
         { shouldPlay: true }
       );
       setSoundEffect(sound);

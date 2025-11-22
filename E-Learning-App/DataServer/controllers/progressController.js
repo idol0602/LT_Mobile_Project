@@ -5,10 +5,20 @@ const Lesson = require("../models/lesson.model");
 /**
  * Helper function: Lấy tổng số lesson theo type và tính completedPercent
  */
-const calculateCompletedPercent = async (progress, category) => {
+const calculateCompletedPercent = async (
+  progress,
+  category,
+  lessonType = null
+) => {
   try {
-    const totalCount = await Lesson.countDocuments({ type: category });
+    // Use lessonType if provided, otherwise use category
+    const typeToCount = lessonType || category;
+    const totalCount = await Lesson.countDocuments({ type: typeToCount });
     const completedCount = progress[category].data.length;
+
+    console.log(
+      `Calculating ${category} progress: ${completedCount}/${totalCount} lessons (type: ${typeToCount})`
+    );
 
     if (totalCount > 0) {
       return Math.round((completedCount / totalCount) * 100);
@@ -47,6 +57,28 @@ exports.getUserProgress = async (req, res) => {
         },
       });
     }
+
+    // Map category to lesson type for accurate counting
+    const categoryToLessonType = {
+      reading: "reading",
+      vocab: "vocab",
+      listening: "listen",
+      grammar: "grammar",
+    };
+
+    // Recalculate completedPercent for all categories to ensure accuracy
+    const categories = ["reading", "vocab", "listening", "grammar"];
+    for (const category of categories) {
+      const lessonType = categoryToLessonType[category];
+      progress[category].completedPercent = await calculateCompletedPercent(
+        progress,
+        category,
+        lessonType
+      );
+    }
+
+    // Save updated progress
+    await progress.save();
 
     res.json({
       success: true,
@@ -89,6 +121,14 @@ exports.completeLesson = async (req, res) => {
       });
     }
 
+    // Map category to lesson type for counting
+    const categoryToLessonType = {
+      reading: "reading",
+      vocab: "vocab",
+      listening: "listen",
+      grammar: "grammar",
+    };
+
     let progress = await UserProgress.findOne({ userId });
 
     if (!progress) {
@@ -98,6 +138,11 @@ exports.completeLesson = async (req, res) => {
     // Thêm lessonId vào data nếu chưa có
     if (!progress[category].data.includes(lessonId)) {
       progress[category].data.push(lessonId);
+      console.log(
+        `✅ Added lesson ${lessonId} to ${category} progress. Total: ${progress[category].data.length}`
+      );
+    } else {
+      console.log(`⚠️ Lesson ${lessonId} already completed for ${category}`);
     }
 
     // Update last study date và streak
@@ -139,9 +184,11 @@ exports.completeLesson = async (req, res) => {
     progress.lastCompletionTime = completionTime || 0;
 
     // 🆕 Tự động tính completedPercent dựa trên tổng lessons trong DB
+    const lessonType = categoryToLessonType[category];
     progress[category].completedPercent = await calculateCompletedPercent(
       progress,
-      category
+      category,
+      lessonType
     );
 
     // Update words learned cho vocab
@@ -159,6 +206,10 @@ exports.completeLesson = async (req, res) => {
     };
 
     await progress.save();
+
+    console.log(
+      `🎯 Lesson completion result for ${category}: ${progress[category].completedPercent}% (${progress[category].data.length} lessons)`
+    );
 
     res.json({
       success: true,

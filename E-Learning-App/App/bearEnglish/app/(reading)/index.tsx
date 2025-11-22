@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { BookOpen, ArrowLeft, Star } from "lucide-react-native";
 import API from "../../api";
 import type { Lesson } from "../../types";
@@ -24,6 +26,7 @@ export default function ReadingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completedPercent, setCompletedPercent] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
 
   const fetchReadingLessons = async () => {
     try {
@@ -42,6 +45,7 @@ export default function ReadingScreen() {
             setCompletedPercent(
               progressResponse.data.reading.completedPercent || 0
             );
+            setCompletedLessons(progressResponse.data.reading.data || []);
           }
         } catch (err) {
           console.error("Error fetching progress:", err);
@@ -70,6 +74,14 @@ export default function ReadingScreen() {
     fetchReadingLessons();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?._id) {
+        fetchReadingLessons();
+      }
+    }, [user])
+  );
+
   const getLevelColor = (level: string) => {
     switch (level) {
       case "Beginner":
@@ -83,40 +95,56 @@ export default function ReadingScreen() {
     }
   };
 
-  const renderLessonCard = ({ item }: { item: Lesson }) => (
-    <TouchableOpacity
-      style={styles.lessonCard}
-      onPress={() => {
-        console.log("Opening lesson:", item._id);
-        router.push(`/(reading)/${item._id}` as any);
-      }}
-    >
-      <LinearGradient
-        colors={["#2d2d2d", "#3a3a3a"]}
-        style={styles.cardGradient}
+  const renderLessonCard = ({ item }: { item: Lesson }) => {
+    const isCompleted = completedLessons.includes(item._id);
+
+    return (
+      <TouchableOpacity
+        style={styles.lessonCard}
+        onPress={() => {
+          console.log("Opening lesson:", item._id);
+          router.push(`/(reading)/${item._id}` as any);
+        }}
       >
-        <View style={styles.cardHeader}>
-          <View style={styles.iconContainer}>
-            <BookOpen size={24} color="#EC4899" />
+        <LinearGradient
+          colors={isCompleted ? ["#1a5f3f", "#2d7a4f"] : ["#2d2d2d", "#3a3a3a"]}
+          style={styles.cardGradient}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.iconContainer}>
+              <BookOpen size={24} color="#EC4899" />
+            </View>
+            <View style={styles.cardRightHeader}>
+              {isCompleted && (
+                <View style={styles.completedBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  <Text style={styles.completedText}>Completed</Text>
+                </View>
+              )}
+              <View style={styles.levelBadge}>
+                <Star size={14} color="#ffd700" />
+                <Text style={styles.levelText}>{item.level}</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.levelBadge}>
-            <Star size={14} color="#ffd700" />
-            <Text style={styles.levelText}>{item.level}</Text>
-          </View>
-        </View>
-        <Text style={styles.lessonName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.lessonTopic}>{item.topic || "Reading lesson"}</Text>
-        <View style={styles.cardFooter}>
-          <Text style={styles.questionCount}>
-            📖 {item.questions?.length || 0} questions
+          <Text style={styles.lessonName} numberOfLines={2}>
+            {item.name}
           </Text>
-          <Text style={styles.studyLabel}>Tap to study →</Text>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
+          <Text style={styles.lessonTopic}>
+            {item.topic || "Reading lesson"}
+          </Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.questionCount}>
+              📖 {item.questions?.length || 0} questions
+            </Text>
+            <Text style={styles.studyLabel}>
+              {isCompleted ? "Review →" : "Tap to study →"}
+            </Text>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -280,6 +308,25 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(236,72,153,0.2)",
     padding: 12,
     borderRadius: 12,
+  },
+  cardRightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  completedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  completedText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#10B981",
+    marginLeft: 4,
   },
   levelBadge: {
     flexDirection: "row",

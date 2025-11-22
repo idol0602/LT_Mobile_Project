@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Audio } from "expo-av";
 import { useLocalSearchParams, router } from "expo-router";
@@ -27,15 +28,9 @@ import VocabularyCard from "./VocabularyCard";
 import API from "../../api";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAchievementContext } from "../../contexts/AchievementContext";
-import type {
-  Word,
-  PronounResponse,
-  StageStats,
-  MatchingItem,
-  FeedbackType,
-} from "../../types";
+import type { Word } from "../../types";
 
-// Animated Confetti Piece Component
+// Enhanced Confetti Piece Component with fade out effect
 const ConfettiPiece = ({
   index,
   screenWidth,
@@ -47,43 +42,66 @@ const ConfettiPiece = ({
 }) => {
   const animatedY = useRef(new Animated.Value(-100)).current;
   const animatedRotation = useRef(new Animated.Value(0)).current;
+  const animatedOpacity = useRef(new Animated.Value(1)).current;
 
   const colors = [
-    "#FFD700",
-    "#FF6B6B",
-    "#4ECDC4",
-    "#45B7D1",
-    "#96CEB4",
-    "#FFEAA7",
-    "#DDA0DD",
-    "#98D8C8",
+    "#3B82F6",
+    "#1E40AF",
+    "#60A5FA",
+    "#93C5FD",
+    "#DBEAFE",
+    "#EFF6FF",
+    "#1D4ED8",
+    "#2563EB",
   ];
 
   React.useEffect(() => {
     const startAnimation = () => {
       animatedY.setValue(-100);
       animatedRotation.setValue(0);
+      animatedOpacity.setValue(1);
+
+      // Animation rơi xuống
+      const fallAnimation = Animated.timing(animatedY, {
+        toValue: screenHeight + 50,
+        duration: 2500 + Math.random() * 1500,
+        useNativeDriver: true,
+      });
+
+      // Animation xoay
+      const rotateAnimation = Animated.loop(
+        Animated.timing(animatedRotation, {
+          toValue: 1,
+          duration: 1000 + Math.random() * 1000,
+          useNativeDriver: true,
+        })
+      );
+
+      // Animation biến mất khi gần chạm đáy
+      const fadeOutAnimation = Animated.timing(animatedOpacity, {
+        toValue: 0,
+        duration: 800,
+        delay: 1800 + Math.random() * 1000,
+        useNativeDriver: true,
+      });
 
       Animated.parallel([
-        Animated.timing(animatedY, {
-          toValue: screenHeight + 100,
-          duration: 3000 + Math.random() * 2000,
-          useNativeDriver: true,
-        }),
-        Animated.loop(
-          Animated.timing(animatedRotation, {
-            toValue: 1,
-            duration: 1000 + Math.random() * 1000,
-            useNativeDriver: true,
-          })
-        ),
+        fallAnimation,
+        rotateAnimation,
+        fadeOutAnimation,
       ]).start(() => {
-        setTimeout(startAnimation, Math.random() * 2000);
+        // Restart animation for continuous effect
+        setTimeout(() => {
+          if (Math.random() > 0.3) {
+            // 70% chance to restart
+            startAnimation();
+          }
+        }, Math.random() * 2000);
       });
     };
 
     setTimeout(startAnimation, index * 50);
-  }, [animatedY, animatedRotation, index, screenHeight]);
+  }, [animatedY, animatedRotation, animatedOpacity, index, screenHeight]);
 
   const rotate = animatedRotation.interpolate({
     inputRange: [0, 1],
@@ -93,14 +111,14 @@ const ConfettiPiece = ({
   return (
     <Animated.View
       style={[
+        styles.confettiPiece,
         {
-          position: "absolute",
           left: Math.random() * screenWidth,
           width: 8 + Math.random() * 4,
           height: 12 + Math.random() * 6,
           backgroundColor: colors[Math.floor(Math.random() * colors.length)],
           borderRadius: Math.random() > 0.5 ? 4 : 0,
-          zIndex: 1000,
+          opacity: animatedOpacity,
           transform: [{ translateY: animatedY }, { rotate }],
         },
       ]}
@@ -108,16 +126,88 @@ const ConfettiPiece = ({
   );
 };
 
-// Animated Confetti Component
+// Emoji Confetti Component
+const EmojiConfetti = ({
+  emoji,
+  index,
+  screenWidth,
+  screenHeight,
+}: {
+  emoji: string;
+  index: number;
+  screenWidth: number;
+  screenHeight: number;
+}) => {
+  const animatedY = useRef(new Animated.Value(-50)).current;
+  const animatedOpacity = useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    const startAnimation = () => {
+      animatedY.setValue(-50);
+      animatedOpacity.setValue(1);
+
+      const fallAnimation = Animated.timing(animatedY, {
+        toValue: screenHeight + 50,
+        duration: 3000 + Math.random() * 2000,
+        useNativeDriver: true,
+      });
+
+      const fadeAnimation = Animated.timing(animatedOpacity, {
+        toValue: 0,
+        duration: 1000,
+        delay: 2000 + Math.random() * 1000,
+        useNativeDriver: true,
+      });
+
+      Animated.parallel([fallAnimation, fadeAnimation]).start(() => {
+        setTimeout(() => {
+          if (Math.random() > 0.4) {
+            startAnimation();
+          }
+        }, Math.random() * 3000);
+      });
+    };
+
+    setTimeout(startAnimation, index * 100);
+  }, [animatedY, animatedOpacity, index, screenHeight]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.confettiEmoji,
+        {
+          left: Math.random() * screenWidth,
+          opacity: animatedOpacity,
+          transform: [{ translateY: animatedY }],
+        },
+      ]}
+    >
+      <Text style={styles.emojiText}>{emoji}</Text>
+    </Animated.View>
+  );
+};
+
+// Enhanced Animated Confetti Component
 const AnimatedConfetti = () => {
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height;
 
+  const emojis = ["🎉", "🎊", "🏆", "⭐", "💎", "🎯", "✨", "🌟"];
+
   return (
     <View style={styles.confettiContainer}>
-      {Array.from({ length: 60 }, (_, index) => (
+      {Array.from({ length: 50 }, (_, index) => (
         <ConfettiPiece
-          key={index}
+          key={`confetti-${index}`}
+          index={index}
+          screenWidth={screenWidth}
+          screenHeight={screenHeight}
+        />
+      ))}
+      {Array.from({ length: 20 }, (_, index) => (
+        <EmojiConfetti
+          key={`emoji-${index}`}
+          emoji={emojis[Math.floor(Math.random() * emojis.length)]}
           index={index}
           screenWidth={screenWidth}
           screenHeight={screenHeight}
@@ -131,7 +221,7 @@ export default function VocabularyStudy() {
   const params = useLocalSearchParams();
   const lessonId = (params.lessonId as string) || undefined;
   const lessonTitle = (params.lessonTitle as string) || "Học từ vựng";
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
 
   // Core states
   const [stage, setStage] = useState<number>(1);
@@ -180,6 +270,16 @@ export default function VocabularyStudy() {
     2: { correct: 0, incorrect: 0 },
     3: { correct: 0, incorrect: 0 },
     4: { correct: 0, incorrect: 0 },
+  });
+
+  // Track words that have been marked as incorrect in each stage
+  const [incorrectWords, setIncorrectWords] = useState<{
+    [key: number]: Set<string>;
+  }>({
+    1: new Set(),
+    2: new Set(),
+    3: new Set(),
+    4: new Set(),
   });
 
   // Animation values
@@ -259,6 +359,12 @@ export default function VocabularyStudy() {
       setCurrentIndex(0);
       setRoundCount(1);
 
+      // Reset incorrect words tracking for the new stage
+      setIncorrectWords((prev) => ({
+        ...prev,
+        [newStage]: new Set(),
+      }));
+
       switch (newStage) {
         case 1:
           setFlippedCards(new Set());
@@ -328,12 +434,12 @@ export default function VocabularyStudy() {
     if (remembered) {
       newCompleted.add(currentWord._id);
       setCompletedWords(new Set(newCompleted));
-      updateStats(stage, true);
+      updateStats(stage, true, currentWord._id);
       playCorrectSound();
       animateCorrect();
       showFeedbackAnimation("correct");
     } else {
-      updateStats(stage, false);
+      updateStats(stage, false, currentWord._id);
       playIncorrectSound();
       animateIncorrect();
       showFeedbackAnimation("incorrect");
@@ -389,7 +495,7 @@ export default function VocabularyStudy() {
       selectedWord && selectedDef && selectedWord._id === selectedDef.id;
 
     if (isCorrect && selectedWord) {
-      updateStats(stage, true);
+      updateStats(stage, true, selectedWord._id);
       playCorrectSound();
       animateCorrect();
       showFeedbackAnimation("correct");
@@ -441,7 +547,11 @@ export default function VocabularyStudy() {
         return next;
       });
     } else {
-      updateStats(stage, false);
+      // Get the word ID for the incorrect match (use selectedLeft as it contains the word ID)
+      const incorrectWordId = selectedLeft;
+      if (incorrectWordId) {
+        updateStats(stage, false, incorrectWordId);
+      }
       playIncorrectSound();
       animateIncorrect();
       showFeedbackAnimation("incorrect");
@@ -561,7 +671,7 @@ export default function VocabularyStudy() {
   const playCompleteSound = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require("../../assets/sounds/complete.mp3")
+        require("../../assets/sounds/winning.mp3")
       );
       await sound.playAsync();
     } catch (error) {
@@ -569,15 +679,34 @@ export default function VocabularyStudy() {
     }
   };
 
-  // Update statistics
-  const updateStats = (stage: number, isCorrect: boolean) => {
-    setStageStats((prev) => ({
-      ...prev,
-      [stage]: {
-        correct: prev[stage].correct + (isCorrect ? 1 : 0),
-        incorrect: prev[stage].incorrect + (isCorrect ? 0 : 1),
-      },
-    }));
+  // Update statistics - only count incorrect once per word per stage
+  const updateStats = (stage: number, isCorrect: boolean, wordId?: string) => {
+    if (isCorrect) {
+      setStageStats((prev) => ({
+        ...prev,
+        [stage]: {
+          ...prev[stage],
+          correct: prev[stage].correct + 1,
+        },
+      }));
+    } else {
+      // Only increment incorrect count if this word hasn't been marked wrong before in this stage
+      if (wordId && !incorrectWords[stage].has(wordId)) {
+        setStageStats((prev) => ({
+          ...prev,
+          [stage]: {
+            ...prev[stage],
+            incorrect: prev[stage].incorrect + 1,
+          },
+        }));
+
+        // Mark this word as incorrect for this stage
+        setIncorrectWords((prev) => ({
+          ...prev,
+          [stage]: new Set([...prev[stage], wordId]),
+        }));
+      }
+    }
   };
 
   const uploadAndCheckPronunciation = async (audioUri: string) => {
@@ -595,7 +724,7 @@ export default function VocabularyStudy() {
         // Mark as completed and move to next immediately
         const newCompleted = new Set([...completedWords, currentWord._id]);
         setCompletedWords(newCompleted);
-        updateStats(stage, true);
+        updateStats(stage, true, currentWord._id);
         playCorrectSound();
         animateCorrect();
         showFeedbackAnimation("correct");
@@ -606,7 +735,8 @@ export default function VocabularyStudy() {
           },
         ]);
       } else {
-        updateStats(stage, false);
+        // Chỉ tăng số câu sai nếu từ này chưa bị đánh dấu sai trong stage 3
+        updateStats(stage, false, currentWord._id);
         playIncorrectSound();
         animateIncorrect();
         showFeedbackAnimation("incorrect");
@@ -617,8 +747,9 @@ export default function VocabularyStudy() {
       }
     } catch (error) {
       console.error("Pronunciation check error:", error);
-      updateStats(stage, false);
-      playIncorrectSound();
+
+      // KHÔNG tăng số câu sai khi có lỗi kỹ thuật
+      // Chỉ phát âm thực sự sai mới tăng số câu sai
 
       // Better error handling
       let errorMessage = "Không thể kiểm tra phát âm. Vui lòng thử lại.";
@@ -756,7 +887,7 @@ export default function VocabularyStudy() {
     if (userAnswer === correctAnswer) {
       const newCompleted = new Set([...completedWords, currentWord._id]);
       setCompletedWords(newCompleted);
-      updateStats(stage, true);
+      updateStats(stage, true, currentWord._id);
       playCorrectSound();
       animateCorrect();
       showFeedbackAnimation("correct");
@@ -765,7 +896,7 @@ export default function VocabularyStudy() {
         moveToNextWordWithCompleted(newCompleted);
       }, 700);
     } else {
-      updateStats(stage, false);
+      updateStats(stage, false, currentWord._id);
       playIncorrectSound();
       animateIncorrect();
       showFeedbackAnimation("incorrect");
@@ -1017,7 +1148,7 @@ export default function VocabularyStudy() {
           disabled={!selectedLeft || !selectedRight}
         >
           <LinearGradient
-            colors={["#2196F3", "#1976D2"]}
+            colors={["#1E40AF", "#3B82F6"]}
             style={styles.buttonGradient}
           >
             <Ionicons name="checkmark" size={18} color="white" />
@@ -1050,7 +1181,7 @@ export default function VocabularyStudy() {
     return (
       <Animated.View style={[styles.card, cardAnimatedStyle]}>
         <LinearGradient
-          colors={["#FF6B6B", "#FF8E53"]}
+          colors={["#1E40AF", "#3B82F6"]}
           style={styles.cardHeader}
         >
           <MaterialIcons name="record-voice-over" size={28} color="white" />
@@ -1060,7 +1191,7 @@ export default function VocabularyStudy() {
 
         <View style={styles.cardContent}>
           <View style={styles.pronunciationRow}>
-            <Ionicons name="volume-high" size={18} color="#FF6B6B" />
+            <Ionicons name="volume-high" size={18} color="#3B82F6" />
             <Text style={styles.pronunciation}>{word.pronunciation}</Text>
           </View>
 
@@ -1080,7 +1211,7 @@ export default function VocabularyStudy() {
               }
             }}
           >
-            <Ionicons name="play-circle" size={24} color="#FF6B6B" />
+            <Ionicons name="play-circle" size={24} color="#3B82F6" />
             <Text style={styles.playAudioText}>Nghe phát âm</Text>
           </TouchableOpacity>
 
@@ -1105,7 +1236,7 @@ export default function VocabularyStudy() {
                 disabled={uploading}
               >
                 <LinearGradient
-                  colors={["#FF6B6B", "#FF8E53"]}
+                  colors={["#1E40AF", "#3B82F6"]}
                   style={styles.recordingGradient}
                 >
                   <MaterialIcons name="mic" size={28} color="white" />
@@ -1148,7 +1279,7 @@ export default function VocabularyStudy() {
     return (
       <Animated.View style={[styles.card, cardAnimatedStyle]}>
         <LinearGradient
-          colors={["#9C27B0", "#673AB7"]}
+          colors={["#1E40AF", "#3B82F6"]}
           style={styles.cardHeader}
         >
           <MaterialIcons name="keyboard" size={28} color="white" />
@@ -1185,7 +1316,7 @@ export default function VocabularyStudy() {
             disabled={!typeAnswer.trim()}
           >
             <LinearGradient
-              colors={["#9C27B0", "#673AB7"]}
+              colors={["#1E40AF", "#3B82F6"]}
               style={styles.buttonGradient}
             >
               <Ionicons name="send" size={18} color="white" />
@@ -1315,13 +1446,16 @@ export default function VocabularyStudy() {
     );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
       {/* Exit button */}
       <TouchableOpacity style={styles.exitButton} onPress={exitToLesson}>
         <Ionicons name="close" size={24} color="white" />
       </TouchableOpacity>
 
-      <LinearGradient colors={["#3B82F6", "#1E40AF"]} style={styles.header}>
+      <LinearGradient colors={["#1E40AF", "#3B82F6"]} style={styles.header}>
         <Text style={styles.headerTitle}>{lessonTitle}</Text>
         <Text style={styles.headerSubtitle}>
           {stage === 5 ? "Hoàn thành" : `Giai đoạn ${stage}/4`}
@@ -1356,18 +1490,18 @@ export default function VocabularyStudy() {
       </View>
 
       {renderFeedback()}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
-// --- Styles (kept consistent with project theme)
+// --- Enhanced Styles with Dark Blue Theme
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f1724" },
+  container: { flex: 1, backgroundColor: "#0f1420" },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0f1724",
+    backgroundColor: "#0f1420",
   },
   loadingText: { marginTop: 12, color: "#fff" },
   errorContainer: {
@@ -1399,10 +1533,17 @@ const styles = StyleSheet.create({
 
   content: { flex: 1, padding: 16 },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: "#1e1e2e",
+    borderRadius: 18,
     marginBottom: 16,
     overflow: "hidden",
+    shadowColor: "#3B82F6",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "#2a2a3a",
   },
   cardHeader: { padding: 18, alignItems: "center" },
   wordTitle: { fontSize: 28, fontWeight: "800", color: "#fff", marginTop: 8 },
@@ -1449,14 +1590,16 @@ const styles = StyleSheet.create({
   pronunciation: {
     fontSize: 15,
     fontStyle: "italic",
-    color: "#4b66ff",
+    color: "#3B82F6",
     marginLeft: 8,
+    fontWeight: "600",
   },
   definition: {
     fontSize: 16,
-    color: "#333",
+    color: "#cccccc",
     textAlign: "center",
     marginBottom: 12,
+    lineHeight: 22,
   },
   exampleContainer: {
     flexDirection: "row",
@@ -1478,8 +1621,8 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", marginLeft: 8, fontWeight: "700" },
 
   progressContainer: { alignItems: "center", marginTop: 12 },
-  progressText: { color: "#7c9cff", fontWeight: "600" },
-  progressCount: { color: "#aaa", marginTop: 4 },
+  progressText: { color: "#3B82F6", fontWeight: "600" },
+  progressCount: { color: "#cccccc", marginTop: 4 },
 
   matchingContainer: { flex: 1 },
   stageTitle: {
@@ -1492,22 +1635,34 @@ const styles = StyleSheet.create({
   matchingGrid: { flexDirection: "row", gap: 8 },
   matchingColumn: { flex: 1, marginHorizontal: 4 },
   columnTitle: {
-    color: "#9fb0ff",
+    color: "#3B82F6",
     textAlign: "center",
     marginBottom: 8,
     fontWeight: "700",
+    fontSize: 16,
   },
   scrollColumn: { maxHeight: 400 },
   matchingItem: {
-    backgroundColor: "#fff",
+    backgroundColor: "#2a2a3a",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: "#3a3a4a",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
   },
-  matchingItemSelected: { borderColor: "#4b66ff", backgroundColor: "#f0f6ff" },
-  matchingText: { textAlign: "center", fontWeight: "600" },
+  matchingItemSelected: {
+    borderColor: "#3B82F6",
+    backgroundColor: "#1e2a4a",
+    shadowColor: "#3B82F6",
+    shadowOpacity: 0.3,
+    elevation: 6,
+  },
+  matchingText: { textAlign: "center", fontWeight: "600", color: "#ffffff" },
   checkButton: { borderRadius: 12, overflow: "hidden", marginVertical: 12 },
   checkButtonDisabled: { opacity: 0.5 },
 
@@ -1531,11 +1686,22 @@ const styles = StyleSheet.create({
   uploadingText: { marginLeft: 8, fontWeight: "700" },
 
   textInput: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: "#2a2a3a",
+    borderRadius: 16,
+    padding: 16,
     textAlign: "center",
     marginVertical: 12,
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "600",
+    borderWidth: 2,
+    borderColor: "#3B82F6",
+    shadowColor: "#3B82F6",
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 8,
+    minHeight: 56,
   },
   submitButton: { borderRadius: 12, overflow: "hidden" },
   submitButtonDisabled: { opacity: 0.5 },
@@ -1564,11 +1730,11 @@ const styles = StyleSheet.create({
   continueButtonText: { color: "#fff", fontWeight: "700" },
 
   footer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e1e2e",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: "#2a2a3a",
   },
   footerContent: { flexDirection: "row", justifyContent: "space-around" },
   footerItem: { flexDirection: "row", alignItems: "center" },
@@ -1589,21 +1755,26 @@ const styles = StyleSheet.create({
   feedbackIncorrect: { backgroundColor: "#f44336" },
   feedbackText: { color: "#fff", marginTop: 10, fontWeight: "800" },
 
-  // New styles for audio playback button
+  // Enhanced audio playback button styles
   playAudioButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF5F5",
+    backgroundColor: "#2a2a3a",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: "#FFE0E0",
+    borderColor: "#3B82F6",
+    shadowColor: "#3B82F6",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 4,
   },
   playAudioText: {
     marginLeft: 8,
-    color: "#FF6B6B",
+    color: "#3B82F6",
     fontWeight: "600",
     fontSize: 16,
   },
@@ -1624,10 +1795,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  // Summary screen styles
+  // Enhanced Summary screen styles
   summaryContainer: {
     flex: 1,
-    backgroundColor: "#0f1724",
+    backgroundColor: "#0f1420",
   },
   summaryHeader: {
     alignItems: "center",
@@ -1738,7 +1909,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 10,
   },
-  // Confetti animation styles
+  // Enhanced Confetti animation styles
   confettiContainer: {
     position: "absolute",
     top: 0,
@@ -1747,6 +1918,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 1000,
     pointerEvents: "none",
+    overflow: "hidden",
   },
   confettiEmoji: {
     position: "absolute",
@@ -1771,6 +1943,7 @@ const styles = StyleSheet.create({
   },
   confettiPiece: {
     position: "absolute",
+    zIndex: 1000,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
