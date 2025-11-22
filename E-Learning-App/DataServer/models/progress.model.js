@@ -41,6 +41,10 @@ const UserProgressSchema = new mongoose.Schema(
     lastCompletionTime: { type: Number, default: 0 }, // Thời gian hoàn thành bài (giây)
     achievementsUnlocked: { type: Number, default: 0 }, // Tổng số achievements đã unlock
 
+    // App session time tracking
+    totalAppTime: { type: Number, default: 0 }, // Tổng thời gian truy cập app (giây)
+    lastAppSessionStart: { type: Date }, // Thời điểm bắt đầu session app hiện tại
+
     totalLessons: {
       reading: Number,
       vocab: Number,

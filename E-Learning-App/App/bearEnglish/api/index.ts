@@ -291,6 +291,67 @@ class API {
         }
     }
 
+    // ============ APP SESSION TIME TRACKING ============
+
+    async startAppSession(userId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/start-app-session`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error starting app session:', error);
+          throw error;
+        }
+    }
+
+    async endAppSession(userId: string, duration: number): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/end-app-session`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ duration }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error ending app session:', error);
+          throw error;
+        }
+    }
+
+    async getAppTime(userId: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/app-time`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error getting app time:', error);
+          throw error;
+        }
+    }
+
     // ============ ACHIEVEMENT APIs ============
 
     async getUserAchievements(userId: string, includeHidden: boolean = false): Promise<any> {

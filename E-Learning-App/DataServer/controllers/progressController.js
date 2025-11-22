@@ -376,3 +376,113 @@ exports.resetProgress = async (req, res) => {
     });
   }
 };
+
+/**
+ * POST /api/progress/:userId/start-app-session
+ * Bắt đầu app session (khi user vào app)
+ */
+exports.startAppSession = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    let progress = await UserProgress.findOne({ userId });
+
+    if (!progress) {
+      progress = new UserProgress({ userId });
+    }
+
+    progress.lastAppSessionStart = new Date();
+    await progress.save();
+
+    res.json({
+      success: true,
+      message: "App session started",
+      data: {
+        sessionStartTime: progress.lastAppSessionStart,
+      },
+    });
+  } catch (error) {
+    console.error("Error starting app session:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to start app session",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/progress/:userId/end-app-session
+ * Kết thúc app session và cập nhật total app time
+ */
+exports.endAppSession = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { duration } = req.body; // duration in seconds
+
+    let progress = await UserProgress.findOne({ userId });
+
+    if (!progress) {
+      return res.status(404).json({
+        success: false,
+        message: "User progress not found",
+      });
+    }
+
+    const appDuration = duration || 0;
+
+    // Update total app time
+    progress.totalAppTime = (progress.totalAppTime || 0) + appDuration;
+    progress.lastAppSessionStart = null;
+    await progress.save();
+
+    res.json({
+      success: true,
+      message: "App session ended",
+      data: {
+        appDuration,
+        totalAppTime: progress.totalAppTime,
+      },
+    });
+  } catch (error) {
+    console.error("Error ending app session:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to end app session",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/progress/:userId/app-time
+ * Lấy tổng thời gian truy cập app
+ */
+exports.getAppTime = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const progress = await UserProgress.findOne({ userId });
+
+    if (!progress) {
+      return res.status(404).json({
+        success: false,
+        message: "User progress not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        totalAppTime: progress.totalAppTime || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting app time:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get app time",
+      error: error.message,
+    });
+  }
+};

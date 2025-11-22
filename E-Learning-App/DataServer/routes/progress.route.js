@@ -17,6 +17,11 @@ router.put("/:userId/current-lesson", progressController.updateCurrentLesson);
 // Cập nhật tổng số lessons (để tính percent)
 router.put("/:userId/total-lessons", progressController.updateTotalLessons);
 
+// App session time tracking
+router.post("/:userId/start-app-session", progressController.startAppSession);
+router.post("/:userId/end-app-session", progressController.endAppSession);
+router.get("/:userId/app-time", progressController.getAppTime);
+
 // Reset progress (testing/admin)
 router.delete("/:userId/reset", progressController.resetProgress);
 

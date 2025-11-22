@@ -41,6 +41,7 @@ export default function ProfileScreen() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { user, isAuthenticated, logout, updateUser } = useAuth();
   const [progressStats, setProgressStats] = useState<any>(null);
+  const [appTime, setAppTime] = useState<number>(0); // Total app time in seconds
 
   // Achievement hook
   const {
@@ -84,7 +85,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // Fetch progress stats when user is authenticated
+  // Fetch progress stats and app time when user is authenticated
   useEffect(() => {
     const fetchProgressStats = async () => {
       try {
@@ -98,8 +99,20 @@ export default function ProfileScreen() {
       }
     };
 
+    const fetchAppTime = async () => {
+      try {
+        const response = await API.getAppTime(user!._id as any);
+        if (response.success) {
+          setAppTime(response.data.totalAppTime || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching app time:", error);
+      }
+    };
+
     if (isAuthenticated && user?._id) {
       fetchProgressStats();
+      fetchAppTime();
     }
   }, [isAuthenticated, user]);
 
@@ -175,7 +188,7 @@ export default function ProfileScreen() {
 
   const progressData = {
     lessonsCompleted: progressStats?.totalCompleted || 0,
-    minutesSpent: 350,
+    minutesSpent: Math.floor(appTime / 60),
     weeklyData: [12, 19, 8, 15, 10, 18, 22],
     days: ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
   };

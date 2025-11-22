@@ -8,6 +8,7 @@ import { StatusBar, AppState, AppStateStatus, Platform } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { AchievementProvider } from "../contexts/AchievementContext";
+import { useAppSession } from "../hooks/useAppSession";
 
 const GLOBAL_DARK_BACKGROUND = "rgb(38, 39, 48)";
 const GLOBAL_TEXT_COLOR = "#FFFFFF";
@@ -21,6 +22,13 @@ const CustomFixedDarkTheme = {
     text: GLOBAL_TEXT_COLOR,
   },
 };
+
+// Component để tích hợp app session tracking
+function AppSessionTracker() {
+  const { user } = useAuth();
+  useAppSession(user?._id);
+  return null;
+}
 
 const showSystemBars = async () => {
   if (Platform.OS === "android") {
@@ -66,6 +74,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <AchievementProvider>
+        <AppSessionTracker />
         <ThemeProvider value={CustomFixedDarkTheme}>
           <StatusBar barStyle="light-content" />
 
