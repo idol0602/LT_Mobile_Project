@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/AuthContext";
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   const { user, isAuthenticated, logout, updateUser } = useAuth();
   const [progressStats, setProgressStats] = useState<any>(null);
   const [appTime, setAppTime] = useState<number>(0); // Total app time in seconds
+  const [refreshing, setRefreshing] = useState(false);
 
   // Achievement hook
   const {
@@ -144,6 +146,39 @@ export default function ProfileScreen() {
       refreshUser();
     }, [user?.avatar, updateUser])
   );
+
+  // Pull to refresh function
+  const onRefresh = async () => {
+    if (!isAuthenticated || !user?._id) return;
+
+    setRefreshing(true);
+    try {
+      // Refresh progress stats
+      const progressResponse = await API.getProgressStats(user._id as any);
+      if (progressResponse.success) {
+        setProgressStats(progressResponse.data);
+      }
+
+      // Refresh app time
+      const appTimeResponse = await API.getAppTime(user._id as any);
+      if (appTimeResponse.success) {
+        setAppTime(appTimeResponse.data.totalAppTime || 0);
+      }
+
+      // Refresh user data from AsyncStorage
+      const storedUser = await AsyncStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.avatar !== user?.avatar) {
+          await updateUser(parsedUser);
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Default avatar nếu chưa đăng nhập
   const defaultAvatar =
@@ -270,6 +305,14 @@ export default function ProfileScreen() {
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#00D4FF"
+              colors={["#00D4FF", "#00FFAA"]}
+            />
+          }
         >
           {/* User Profile Card */}
           <View style={styles.profileCard}>
