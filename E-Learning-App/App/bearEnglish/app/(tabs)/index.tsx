@@ -259,7 +259,7 @@ export default function HomeScreen() {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.greetingSection}>
             <Text style={styles.greetingText}>
-              Hello, {user?.fullName || user?.name || "User"}! 👋
+              Hello, {user?.fullName || user?.name || "User"}! 🤍🐻‍❄️
             </Text>
             <Text style={styles.greetingSubtext}>Ready to learn today?</Text>
           </View>

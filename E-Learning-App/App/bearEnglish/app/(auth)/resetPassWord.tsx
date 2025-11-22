@@ -10,6 +10,8 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -92,135 +94,150 @@ const ResetPasswordScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.innerContainer}>
-        <Text style={styles.title}>Reset your password</Text>
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.innerContainer}>
+          <Text style={styles.title}>Reset your password</Text>
 
-        <View style={styles.successBox}>
-          <Text style={styles.successBoxText}>
-            ✅ Your password has been reset and you can login from here.
-          </Text>
-        </View>
-
-        <Image
-          source={require("../../assets/images/enter_newpassword.png")}
-          style={styles.image}
-          resizeMode="contain"
-        />
-
-        <Text style={styles.subTitle}>Enter a new password</Text>
-
-        <View style={styles.passwordRequirementsBox}>
-          <Text style={styles.requirementsTitle}>Password must have:</Text>
-          {passwordRequirements.map((req, index) => {
-            const isMet = req.test(newPassword);
-            return (
-              <View key={index} style={styles.requirementItem}>
-                <Ionicons
-                  name={isMet ? "checkmark-circle" : "ellipse-outline"}
-                  size={16}
-                  color={isMet ? "#10b981" : "#888"}
-                />
-                <Text
-                  style={[
-                    styles.requirementText,
-                    isMet && styles.requirementTextMet,
-                  ]}
-                >
-                  {req.text}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="New Password"
-            placeholderTextColor="#ccc"
-            secureTextEntry={!showPassword}
-            value={newPassword}
-            onChangeText={setNewPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeIcon}
-          >
-            <Ionicons
-              name={showPassword ? "eye-outline" : "eye-off-outline"}
-              size={20}
-              color="#ccc"
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm New Password"
-            placeholderTextColor="#ccc"
-            secureTextEntry={!showConfirmPassword}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            style={styles.eyeIcon}
-          >
-            <Ionicons
-              name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
-              size={20}
-              color="#ccc"
-            />
-          </TouchableOpacity>
-        </View>
-        {confirmPassword !== "" && !doPasswordsMatch && (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={16} color="#ef4444" />
-            <Text style={styles.errorText}>Passwords don't match</Text>
+          <View style={styles.successBox}>
+            <Text style={styles.successBoxText}>
+              ✅ Your password has been reset and you can login from here.
+            </Text>
           </View>
-        )}
-        {doPasswordsMatch && confirmPassword !== "" && (
-          <View style={styles.successContainer}>
-            <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-            <Text style={styles.successText}>Passwords match</Text>
-          </View>
-        )}
 
-        <Animated.View style={{ transform: [{ scale: resetButtonScale }] }}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              (!isPasswordValid || !doPasswordsMatch || loading) &&
-                styles.buttonDisabled,
-            ]}
-            onPress={handleResetPassword}
-            disabled={!isPasswordValid || !doPasswordsMatch || loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Reset Password</Text>
-            )}
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </ScrollView>
+          <Image
+            source={require("../../assets/images/enter_newpassword.png")}
+            style={styles.image}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.subTitle}>Enter a new password</Text>
+
+          <View style={styles.passwordRequirementsBox}>
+            <Text style={styles.requirementsTitle}>Password must have:</Text>
+            {passwordRequirements.map((req, index) => {
+              const isMet = req.test(newPassword);
+              return (
+                <View key={index} style={styles.requirementItem}>
+                  <Ionicons
+                    name={isMet ? "checkmark-circle" : "ellipse-outline"}
+                    size={16}
+                    color={isMet ? "#10b981" : "#888"}
+                  />
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      isMet && styles.requirementTextMet,
+                    ]}
+                  >
+                    {req.text}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="New Password"
+              placeholderTextColor="#ccc"
+              secureTextEntry={!showPassword}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color="#ccc"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm New Password"
+              placeholderTextColor="#ccc"
+              secureTextEntry={!showConfirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color="#ccc"
+              />
+            </TouchableOpacity>
+          </View>
+          {confirmPassword !== "" && !doPasswordsMatch && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={16} color="#ef4444" />
+              <Text style={styles.errorText}>Passwords don&apos;t match</Text>
+            </View>
+          )}
+          {doPasswordsMatch && confirmPassword !== "" && (
+            <View style={styles.successContainer}>
+              <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+              <Text style={styles.successText}>Passwords match</Text>
+            </View>
+          )}
+
+          <Animated.View style={{ transform: [{ scale: resetButtonScale }] }}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                (!isPasswordValid || !doPasswordsMatch || loading) &&
+                  styles.buttonDisabled,
+              ]}
+              onPress={handleResetPassword}
+              disabled={!isPasswordValid || !doPasswordsMatch || loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Reset Password</Text>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 export default ResetPasswordScreen;
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+    backgroundColor: "rgb(38, 39, 48)",
+  },
   container: {
     flexGrow: 1,
     backgroundColor: "rgb(38, 39, 48)",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 20,
+    minHeight: "100%",
   },
   innerContainer: {
     width: "85%",
@@ -230,13 +247,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 20,
     fontWeight: "600",
-    marginBottom: 20,
+    marginBottom: 15,
   },
   successBox: {
     backgroundColor: "#1E90FF",
     borderRadius: 10,
     padding: 10,
-    marginBottom: 20,
+    marginBottom: 15,
     width: "100%",
   },
   successBoxText: {
@@ -245,20 +262,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   image: {
-    width: 220,
-    height: 220,
-    marginVertical: 20,
+    width: 180,
+    height: 180,
+    marginVertical: 15,
   },
   subTitle: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   inputContainer: {
     width: "100%",
     position: "relative",
-    marginVertical: 8,
+    marginVertical: 6,
   },
   input: {
     backgroundColor: "#444",
@@ -278,8 +295,8 @@ const styles = StyleSheet.create({
   passwordRequirementsBox: {
     backgroundColor: "#333",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
+    padding: 10,
+    marginBottom: 12,
     width: "100%",
   },
   requirementsTitle: {

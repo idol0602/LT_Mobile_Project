@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { ArrowLeft } from "lucide-react-native";
 
 // Import các components mẹo học chi tiết
 import DailyVocabularyTip from "./DailyVocabularyTip";
@@ -82,14 +84,25 @@ export default function TipDetailScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Giữ lại nút Back thủ công */}
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backText}>{"< Trở về"}</Text>
-      </TouchableOpacity>
+      <LinearGradient
+        colors={["#667eea", "#764ba2"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.8}
+        >
+          <ArrowLeft size={24} color="#ffffff" />
+        </TouchableOpacity>
 
-      <Text style={styles.mainTitle}>{tip.title}</Text>
+        <Text style={styles.mainTitle}>{tip.title}</Text>
+        <Text style={styles.subtitle}>{tip.description}</Text>
+      </LinearGradient>
 
-      {renderTipComponent()}
+      <View style={styles.contentContainer}>{renderTipComponent()}</View>
     </View>
   );
 }
@@ -100,32 +113,43 @@ export default function TipDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "rgb(38, 39, 48)",
-    paddingTop: 30, // Vẫn cần điều chỉnh padding vì header đã bị ẩn
+    backgroundColor: "#1a1a2e",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "900",
-    color: "#FF6347",
-    textAlign: "center",
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  backButton: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    padding: 12,
+    borderRadius: 12,
+    alignSelf: "flex-start",
     marginBottom: 20,
   },
   mainTitle: {
     fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+    fontWeight: "800",
+    color: "#ffffff",
     textAlign: "center",
-    marginVertical: 10,
-    paddingHorizontal: 20,
+    marginBottom: 8,
   },
-  backButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    alignSelf: "flex-start",
-  },
-  backText: {
-    color: "#ADD8E6",
+  subtitle: {
     fontSize: 16,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  contentContainer: {
+    flex: 1,
+    paddingTop: 20,
   },
   errorContainer: {
     flex: 1,
@@ -134,8 +158,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   errorText: {
-    color: "#D8BFD8",
+    color: "#ff6b6b",
     fontSize: 18,
     textAlign: "center",
+    fontWeight: "600",
   },
 });

@@ -9,6 +9,7 @@ export default function AuthLayout() {
       <Stack.Screen name="resetPassWord" options={{ headerShown: false }} />
       <Stack.Screen name="resetSuccess" options={{ headerShown: false }} />
       <Stack.Screen name="verifyOTPForgot" options={{ headerShown: false }} />
+      <Stack.Screen name="editProfile" options={{ headerShown: false }} />
     </Stack>
   );
 }

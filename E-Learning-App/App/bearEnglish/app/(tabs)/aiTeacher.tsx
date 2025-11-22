@@ -12,6 +12,8 @@ import {
   Platform,
   SafeAreaView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Send, Sparkles } from "lucide-react-native";
 import { useState, useRef, useCallback, useEffect } from "react";
 import Svg, { Circle, Path } from "react-native-svg";
 import API from "../../api/index";
@@ -208,18 +210,19 @@ export default function AIChatScreen() {
     >
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
+          {/* Modern Header */}
+          <LinearGradient colors={["#0f0f23", "#16213e"]} style={styles.header}>
             <View style={styles.headerContent}>
-              <WhiteBearIcon size={50} />
+              <Text style={styles.bearEmojiLarge}>🐻‍❄️</Text>
               <View style={styles.headerText}>
-                <Text style={styles.headerTitle}>
-                  English Learning Assistant
+                <Text style={styles.headerTitle}>AI Teacher Bear</Text>
+                <Text style={styles.headerSubtitle}>
+                  White Bear English Assistant
                 </Text>
-                <Text style={styles.headerSubtitle}>Always here to help</Text>
               </View>
+              <Sparkles size={24} color="rgba(255,255,255,0.8)" />
             </View>
-          </View>
+          </LinearGradient>
 
           {/* Chat Area */}
           <ScrollView
@@ -239,56 +242,76 @@ export default function AIChatScreen() {
               >
                 {!msg.isUser && (
                   <View style={styles.aiAvatarSmall}>
-                    <WhiteBearIcon size={32} />
+                    <Text style={styles.bearEmoji}>🐻‍❄️</Text>
                   </View>
                 )}
-                <View
-                  style={
-                    msg.isUser
-                      ? styles.userMessageBubble
-                      : styles.aiMessageBubble
-                  }
-                >
-                  {renderMessageContent(msg.text, msg.isUser)}
-                </View>
+                {msg.isUser ? (
+                  <LinearGradient
+                    colors={["#4CAF50", "#45a049"]}
+                    style={styles.userMessageBubble}
+                  >
+                    {renderMessageContent(msg.text, msg.isUser)}
+                  </LinearGradient>
+                ) : (
+                  <View style={styles.aiMessageBubble}>
+                    {renderMessageContent(msg.text, msg.isUser)}
+                  </View>
+                )}
               </View>
             ))}
 
             {isLoading && (
               <View style={styles.loadingContainer}>
                 <View style={styles.aiAvatarSmall}>
-                  <WhiteBearIcon size={32} />
+                  <Text style={styles.bearEmoji}>🐻‍❄️</Text>
                 </View>
                 <View style={styles.loadingBubble}>
-                  <ActivityIndicator size="small" color="#64B5F6" />
-                  <Text style={styles.loadingText}>Thinking...</Text>
+                  <ActivityIndicator size="small" color="#00d4ff" />
+                  <Text style={styles.loadingText}>
+                    White Bear is thinking...
+                  </Text>
                 </View>
               </View>
             )}
           </ScrollView>
 
-          {/* Input Area */}
+          {/* Modern Input Area */}
           <View style={styles.inputArea}>
-            <TextInput
-              style={styles.input}
-              placeholder="Ask me anything about English..."
-              placeholderTextColor="#808080"
-              value={inputText}
-              onChangeText={setInputText}
-              editable={!isLoading}
-              onSubmitEditing={handleSendPress}
-              multiline
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (isLoading || !inputText.trim()) && styles.sendButtonDisabled,
-              ]}
-              onPress={handleSendPress}
-              disabled={isLoading || !inputText.trim()}
-            >
-              <Text style={styles.sendButtonText}>Send</Text>
-            </TouchableOpacity>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Ask White Bear about English..."
+                placeholderTextColor="#a0a0a0"
+                value={inputText}
+                onChangeText={setInputText}
+                editable={!isLoading}
+                onSubmitEditing={handleSendPress}
+                multiline
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButtonWrapper,
+                  (isLoading || !inputText.trim()) && styles.sendButtonDisabled,
+                ]}
+                onPress={handleSendPress}
+                disabled={isLoading || !inputText.trim()}
+              >
+                <LinearGradient
+                  colors={
+                    isLoading || !inputText.trim()
+                      ? ["#95a5a6", "#7f8c8d"]
+                      : ["#4CAF50", "#45a049"]
+                  }
+                  style={styles.sendButton}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Send size={20} color="#ffffff" />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -299,40 +322,41 @@ export default function AIChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "rgb(38, 39, 48)",
+    backgroundColor: "#1a1a2e",
   },
   header: {
-    backgroundColor: "rgb(50, 52, 65)",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgb(60, 62, 75)",
+    paddingTop: 44,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
   },
   headerText: {
     flex: 1,
+    marginLeft: 12,
   },
   headerTitle: {
-    color: "#e0e0e0",
-    fontSize: 18,
+    color: "#ffffff",
+    fontSize: 22,
     fontWeight: "700",
   },
   headerSubtitle: {
-    color: "#a0a0a0",
-    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
     marginTop: 2,
   },
   chatArea: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   chatContentContainer: {
-    paddingVertical: 16,
-    gap: 12,
+    paddingVertical: 20,
+    gap: 16,
   },
   userMessageContainer: {
     flexDirection: "row",
@@ -347,45 +371,61 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   aiAvatarSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgb(50, 52, 65)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#2c2c54",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#40407a",
   },
   userMessageBubble: {
     maxWidth: "75%",
-    backgroundColor: "#2196F3",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: "#4CAF50",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userMessageText: {
-    color: "#fff",
-    fontSize: 14,
-    lineHeight: 20,
+    color: "#ffffff",
+    fontSize: 15,
+    lineHeight: 22,
   },
   aiMessageBubble: {
     maxWidth: "75%",
-    backgroundColor: "rgb(50, 52, 65)",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    backgroundColor: "#2c2c54",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "rgb(60, 62, 75)",
+    borderColor: "#40407a",
   },
   messageSection: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   aiMessageText: {
-    color: "#e0e0e0",
-    fontSize: 14,
-    lineHeight: 20,
+    color: "#f1f2f6",
+    fontSize: 15,
+    lineHeight: 22,
   },
   boldText: {
     fontWeight: "700",
-    color: "#64B5F6",
+    color: "#00d4ff",
   },
   loadingContainer: {
     flexDirection: "row",
@@ -393,59 +433,78 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loadingBubble: {
-    backgroundColor: "rgb(50, 52, 65)",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    backgroundColor: "#2c2c54",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "rgb(60, 62, 75)",
+    borderColor: "#40407a",
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   loadingText: {
-    color: "#a0a0a0",
-    fontSize: 12,
+    color: "#a4b0be",
+    fontSize: 14,
     fontStyle: "italic",
   },
   inputArea: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    paddingBottom: 80,
-    backgroundColor: "rgb(38, 39, 48)",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 90,
+    backgroundColor: "#1a1a2e",
     borderTopWidth: 1,
-    borderTopColor: "rgb(60, 62, 75)",
-    gap: 8,
+    borderTopColor: "#40407a",
+  },
+  inputWrapper: {
+    flexDirection: "row",
     alignItems: "flex-end",
+    gap: 12,
   },
   input: {
     flex: 1,
-    backgroundColor: "rgb(50, 52, 65)",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: "#e0e0e0",
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: "rgb(60, 62, 75)",
+    backgroundColor: "#2c2c54",
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: "#f1f2f6",
+    fontSize: 15,
     maxHeight: 100,
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#40407a",
+  },
+  sendButtonWrapper: {
+    alignSelf: "flex-end",
   },
   sendButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#4CAF50",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sendButtonDisabled: {
-    backgroundColor: "#666",
     opacity: 0.5,
   },
-  sendButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+  bearEmoji: {
+    fontSize: 18,
+  },
+  bearEmojiLarge: {
+    fontSize: 28,
   },
 });

@@ -80,6 +80,7 @@ export default function RootLayout() {
               name="(vocabularies)"
               options={{ headerShown: false }}
             />
+            <Stack.Screen name="(grammar)" options={{ headerShown: false }} />
             <Stack.Screen name="(reading)" options={{ headerShown: false }} />
             <Stack.Screen name="(listening)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
