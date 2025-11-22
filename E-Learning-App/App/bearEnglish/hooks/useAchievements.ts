@@ -9,12 +9,11 @@ export interface Achievement {
   icon: string;
   type: 'first' | 'progress' | 'vocab' | 'streak' | 'global';
   difficulty: 'easy' | 'normal' | 'hard';
-  condition: {
-    minLessonsCompleted?: number;
-    minWordsLearned?: number;
-    minStreak?: number;
-    category?: string;
-  };
+  conditions: Array<{
+    key: string;
+    operator: string;
+    value: any;
+  }>;
   hidden: boolean;
 }
 
@@ -192,33 +191,64 @@ export function useAchievements(userId: string | undefined) {
    * Calculate progress for a specific achievement
    */
   const calculateProgress = useCallback((achievement: Achievement, userProgress: any): number => {
-    if (!userProgress) return 0;
+    if (!userProgress || !achievement.conditions || achievement.conditions.length === 0) return 0;
 
-    const condition = achievement.condition;
-    let progress = 0;
+    const progressValues: number[] = [];
 
-    // Check lessons completed
-    if (condition.minLessonsCompleted) {
-      const completed = condition.category 
-        ? userProgress[condition.category]?.completed || 0
-        : userProgress.totalCompleted || 0;
-      
-      progress = Math.max(progress, (completed / condition.minLessonsCompleted) * 100);
+    // Evaluate each condition
+    for (const condition of achievement.conditions) {
+      const { key, operator, value } = condition;
+      let currentValue: any;
+      let targetValue: any = value;
+
+      // Get current value based on key
+      switch (key) {
+        case 'totalLessons':
+          currentValue = userProgress.totalCompleted || 0;
+          break;
+        case 'wordsLearned':
+          currentValue = userProgress.wordsLearned || 0;
+          break;
+        case 'streak':
+          currentValue = userProgress.streak || 0;
+          break;
+        case 'lessonScore':
+          currentValue = userProgress.lastLessonScore || 0;
+          break;
+        case 'category':
+          // For category, we check if it matches
+          currentValue = userProgress.lastCategory || '';
+          break;
+        case 'lessonsInOneDay':
+          currentValue = userProgress.lessonsToday || 0;
+          break;
+        case 'completionTime':
+          currentValue = userProgress.lastCompletionTime || 0;
+          break;
+        case 'achievementsCount':
+          currentValue = userProgress.achievementsUnlocked || 0;
+          break;
+        default:
+          currentValue = 0;
+      }
+
+      // Calculate progress based on operator (only for numeric comparisons)
+      if (operator === '>=' || operator === '<=' || operator === '>' || operator === '<') {
+        if (typeof currentValue === 'number' && typeof targetValue === 'number') {
+          const percentage = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
+          progressValues.push(Math.min(percentage, 100));
+        }
+      } else if (operator === '=') {
+        // For exact match, either 0% or 100%
+        progressValues.push(currentValue === targetValue ? 100 : 0);
+      }
+      // For 'in' and 'contains' operators, we don't calculate progress (0 or 100)
     }
 
-    // Check words learned
-    if (condition.minWordsLearned) {
-      const learned = userProgress.wordsLearned || 0;
-      progress = Math.max(progress, (learned / condition.minWordsLearned) * 100);
-    }
-
-    // Check streak
-    if (condition.minStreak) {
-      const streak = userProgress.streak || 0;
-      progress = Math.max(progress, (streak / condition.minStreak) * 100);
-    }
-
-    return Math.min(progress, 100);
+    // Return average progress across all conditions
+    if (progressValues.length === 0) return 0;
+    const avgProgress = progressValues.reduce((sum, val) => sum + val, 0) / progressValues.length;
+    return Math.min(avgProgress, 100);
   }, []);
 
   /**

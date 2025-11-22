@@ -217,7 +217,12 @@ export default function GrammarLessonDetail() {
 
         // 🆕 Mark lesson as completed if score >= 70%
         if (score.percentage >= 70) {
-          await API.completeLesson(user._id as any, id as string, "grammar");
+          await API.completeLesson(
+            user._id as any,
+            id as string,
+            "grammar",
+            score.percentage // ✅ Pass score
+          );
           console.log("✅ Grammar lesson marked as completed");
         }
       } catch (error) {

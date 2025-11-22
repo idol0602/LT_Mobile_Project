@@ -3,6 +3,73 @@ const Achievement = require("../models/achievement.model");
 const UserAchievement = require("../models/userAchievement.model");
 const UserProgress = require("../models/progress.model");
 
+// Valid condition keys and operators
+const VALID_CONDITION_KEYS = [
+  "totalLessons",
+  "wordsLearned",
+  "streak",
+  "lessonScore",
+  "lessonsInOneDay",
+  "completionTime",
+  "achievementsCount",
+  "category",
+  "timeBefore",
+  "timeAfter",
+];
+
+const VALID_OPERATORS = ["=", ">=", "<=", ">", "<", "in", "contains"];
+
+/**
+ * Validate achievement conditions
+ */
+function validateConditions(conditions) {
+  if (!Array.isArray(conditions) || conditions.length === 0) {
+    return { valid: false, error: "Conditions must be a non-empty array" };
+  }
+
+  for (let i = 0; i < conditions.length; i++) {
+    const { key, operator, value } = conditions[i];
+
+    if (!key || !operator) {
+      return {
+        valid: false,
+        error: `Condition ${i + 1}: 'key' and 'operator' are required`,
+      };
+    }
+
+    if (!VALID_CONDITION_KEYS.includes(key)) {
+      return {
+        valid: false,
+        error: `Condition ${
+          i + 1
+        }: Invalid key '${key}'. Valid keys: ${VALID_CONDITION_KEYS.join(
+          ", "
+        )}`,
+      };
+    }
+
+    if (!VALID_OPERATORS.includes(operator)) {
+      return {
+        valid: false,
+        error: `Condition ${
+          i + 1
+        }: Invalid operator '${operator}'. Valid operators: ${VALID_OPERATORS.join(
+          ", "
+        )}`,
+      };
+    }
+
+    if (value === undefined || value === null) {
+      return {
+        valid: false,
+        error: `Condition ${i + 1}: 'value' is required`,
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
 /**
  * GET /api/achievements
  * Lấy tất cả achievements (admin hoặc public)
@@ -31,6 +98,66 @@ exports.getAllAchievements = async (req, res) => {
     });
   }
 };
+
+/**
+ * GET /api/achievements/metadata
+ * Lấy metadata cho achievement (valid keys, operators)
+ */
+exports.getAchievementMetadata = async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        validKeys: VALID_CONDITION_KEYS.map((key) => ({
+          value: key,
+          label: key,
+          description: getKeyDescription(key),
+        })),
+        validOperators: VALID_OPERATORS.map((op) => ({
+          value: op,
+          label: op,
+          description: getOperatorDescription(op),
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("Error getting achievement metadata:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get achievement metadata",
+      error: error.message,
+    });
+  }
+};
+
+function getKeyDescription(key) {
+  const descriptions = {
+    totalLessons: "Total lessons completed (all categories)",
+    wordsLearned: "Total vocabulary words learned",
+    streak: "Current learning streak (consecutive days)",
+    lessonScore: "Score of the last completed lesson (0-100)",
+    lessonsInOneDay: "Number of lessons completed today",
+    completionTime: "Time taken to complete last lesson (seconds)",
+    achievementsCount: "Total achievements unlocked",
+    category: "Specific lesson category (reading, vocab, listening, grammar)",
+    timeBefore: "Time before certain hour (HH:MM format)",
+    timeAfter: "Time after certain hour (HH:MM format)",
+  };
+  return descriptions[key] || "";
+}
+
+function getOperatorDescription(operator) {
+  const descriptions = {
+    "=": "Equal to",
+    ">=": "Greater than or equal to",
+    "<=": "Less than or equal to",
+    ">": "Greater than",
+    "<": "Less than",
+    in: "Value is in array",
+    contains: "Array contains value",
+  };
+  return descriptions[operator] || "";
+}
 
 /**
  * GET /api/achievements/:id
@@ -69,6 +196,18 @@ exports.getAchievementById = async (req, res) => {
 exports.createAchievement = async (req, res) => {
   try {
     const achievementData = req.body;
+
+    // Validate conditions
+    if (achievementData.conditions) {
+      const validation = validateConditions(achievementData.conditions);
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: validation.error,
+        });
+      }
+    }
+
     const achievement = await Achievement.create(achievementData);
 
     res.status(201).json({
@@ -94,6 +233,17 @@ exports.updateAchievement = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    // Validate conditions if provided
+    if (updateData.conditions) {
+      const validation = validateConditions(updateData.conditions);
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: validation.error,
+        });
+      }
+    }
 
     const achievement = await Achievement.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -302,6 +452,76 @@ exports.markAsNotified = async (req, res) => {
  * POST /api/achievements/user/:userId/check
  * Kiểm tra và unlock các achievement đủ điều kiện
  */
+/**
+ * Helper function to evaluate a single condition
+ */
+function evaluateCondition(condition, userProgress, userStats) {
+  const { key, operator, value } = condition;
+  let currentValue;
+
+  // Get current value based on key
+  switch (key) {
+    case "totalLessons":
+      currentValue =
+        (userProgress.reading?.data?.length || 0) +
+        (userProgress.vocab?.data?.length || 0) +
+        (userProgress.listening?.data?.length || 0) +
+        (userProgress.grammar?.data?.length || 0);
+      break;
+    case "wordsLearned":
+      currentValue = userProgress.vocab?.wordsLearned || 0;
+      break;
+    case "streak":
+      currentValue = userProgress.streak || 0;
+      break;
+    case "lessonScore":
+      currentValue = userProgress.lastLessonScore || 0;
+      break;
+    case "lessonsInOneDay":
+      currentValue = userProgress.lessonsToday || 0;
+      break;
+    case "completionTime":
+      currentValue = userProgress.lastCompletionTime || 0;
+      break;
+    case "achievementsCount":
+      currentValue = userProgress.achievementsUnlocked || 0;
+      break;
+    case "timeBefore":
+    case "timeAfter":
+      // Time-based conditions need special handling
+      // For now, return false (can be implemented later)
+      return false;
+    case "category":
+      // For category, we need to check if lessons exist in that category
+      const categoryData = userProgress[value]?.data?.length || 0;
+      return categoryData > 0; // Return true if any lesson completed in this category
+    default:
+      console.warn(`Unknown condition key: ${key}`);
+      return false;
+  }
+
+  // Evaluate based on operator
+  switch (operator) {
+    case ">=":
+      return currentValue >= value;
+    case "<=":
+      return currentValue <= value;
+    case ">":
+      return currentValue > value;
+    case "<":
+      return currentValue < value;
+    case "=":
+      return currentValue === value;
+    case "in":
+      return Array.isArray(value) && value.includes(currentValue);
+    case "contains":
+      return Array.isArray(currentValue) && currentValue.includes(value);
+    default:
+      console.warn(`Unknown operator: ${operator}`);
+      return false;
+  }
+}
+
 exports.checkAndUnlockAchievements = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -332,47 +552,24 @@ exports.checkAndUnlockAchievements = async (req, res) => {
         continue;
       }
 
-      let shouldUnlock = false;
-
-      // Kiểm tra điều kiện
-      const condition = achievement.condition || {};
-
-      // Check streak
-      if (condition.minStreak && userProgress.streak >= condition.minStreak) {
-        shouldUnlock = true;
+      // Kiểm tra tất cả conditions (AND logic)
+      const conditions = achievement.conditions || [];
+      if (conditions.length === 0) {
+        continue; // Skip achievement without conditions
       }
 
-      // Check total lessons
-      if (condition.minLessonsCompleted) {
-        const totalCompleted =
-          (userProgress.reading?.data?.length || 0) +
-          (userProgress.vocab?.data?.length || 0) +
-          (userProgress.listening?.data?.length || 0) +
-          (userProgress.grammar?.data?.length || 0);
+      let allConditionsMet = true;
 
-        if (totalCompleted >= condition.minLessonsCompleted) {
-          shouldUnlock = true;
-        }
-      }
-
-      // Check words learned (vocab)
-      if (
-        condition.minWordsLearned &&
-        userProgress.vocab?.wordsLearned >= condition.minWordsLearned
-      ) {
-        shouldUnlock = true;
-      }
-
-      // Check category-specific
-      if (condition.category && condition.minLessonsCompleted) {
-        const categoryProgress = userProgress[condition.category];
-        if (categoryProgress?.data?.length >= condition.minLessonsCompleted) {
-          shouldUnlock = true;
+      for (const condition of conditions) {
+        const conditionMet = evaluateCondition(condition, userProgress);
+        if (!conditionMet) {
+          allConditionsMet = false;
+          break; // No need to check further if one condition fails
         }
       }
 
       // Unlock nếu đủ điều kiện
-      if (shouldUnlock) {
+      if (allConditionsMet) {
         const userAchievement = await UserAchievement.create({
           userId,
           achievementId: achievement._id,
@@ -381,11 +578,20 @@ exports.checkAndUnlockAchievements = async (req, res) => {
           notified: false,
         });
 
+        // 🆕 Cập nhật achievementsUnlocked trong UserProgress
+        userProgress.achievementsUnlocked =
+          (userProgress.achievementsUnlocked || 0) + 1;
+
         newlyUnlocked.push({
           ...achievement.toObject(),
           unlockedAt: userAchievement.unlockedAt,
         });
       }
+    }
+
+    // Lưu userProgress nếu có achievement mới
+    if (newlyUnlocked.length > 0) {
+      await userProgress.save();
     }
 
     res.json({

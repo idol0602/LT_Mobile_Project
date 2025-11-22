@@ -124,12 +124,25 @@ export default function ReadingLessonDetail() {
 
     setShowResults(true);
 
+    // Calculate score
+    let correctCount = 0;
+    lesson?.questions?.forEach((question, index) => {
+      if (selectedAnswers[index] === question.correctAnswerIndex) {
+        correctCount++;
+      }
+    });
+    const scorePercentage =
+      totalQuestions > 0
+        ? Math.round((correctCount / totalQuestions) * 100)
+        : 0;
+
     // Update progress khi hoàn thành bài đọc và check achievements
     try {
       if (user?._id && id) {
         const newAchievements = await completeLessonWithAchievementCheck(
           id,
-          "reading"
+          "reading",
+          scorePercentage // ✅ Pass score
         );
 
         // Navigate to achievement page if any achievements were unlocked

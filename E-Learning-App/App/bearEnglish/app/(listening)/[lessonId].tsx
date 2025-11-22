@@ -351,9 +351,13 @@ export default function ListeningPractice() {
   async function updateLessonProgress() {
     try {
       if (user?._id && lessonId) {
+        // Calculate score
+        const score = calculateScore();
+
         const newAchievements = await completeLessonWithAchievementCheck(
           lessonId,
-          "listening"
+          "listening",
+          score.percentage // ✅ Pass score
         );
         console.log("Listening lesson completed, progress updated!");
 

@@ -13,6 +13,12 @@ const achievementController = require("../controllers/achievementController");
 router.get("/", achievementController.getAllAchievements);
 
 /**
+ * GET /api/achievements/metadata
+ * Lấy metadata cho achievement (valid keys, operators)
+ */
+router.get("/metadata", achievementController.getAchievementMetadata);
+
+/**
  * GET /api/achievements/:id
  * Lấy chi tiết một achievement
  */

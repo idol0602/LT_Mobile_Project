@@ -236,14 +236,25 @@ class API {
         }
     }
 
-    async completeLesson(userId: string, lessonId: string, category: string): Promise<any> {
+    async completeLesson(
+      userId: string, 
+      lessonId: string, 
+      category: string, 
+      score?: number, 
+      completionTime?: number
+    ): Promise<any> {
         try {
           const response = await fetch(`${API_BASE}/api/progress/${userId}/complete-lesson`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ lessonId, category }),
+            body: JSON.stringify({ 
+              lessonId, 
+              category, 
+              score, 
+              completionTime 
+            }),
           });
           
           if (!response.ok) {

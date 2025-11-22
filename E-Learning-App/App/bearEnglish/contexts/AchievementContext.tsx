@@ -7,7 +7,9 @@ interface AchievementContextType {
   achievementQueue: Achievement[];
   completeLessonWithAchievementCheck: (
     lessonId: string,
-    category: string
+    category: string,
+    score?: number,
+    completionTime?: number
   ) => Promise<Achievement[]>; // Return achievements instead of void
   setAchievementQueue: React.Dispatch<React.SetStateAction<Achievement[]>>;
   clearQueue: () => void;
@@ -31,17 +33,31 @@ export function AchievementProvider({
    * Returns array of newly unlocked achievements
    */
   const completeLessonWithAchievementCheck = useCallback(
-    async (lessonId: string, category: string): Promise<Achievement[]> => {
+    async (
+      lessonId: string,
+      category: string,
+      score?: number,
+      completionTime?: number
+    ): Promise<Achievement[]> => {
       if (!user?._id) {
         console.warn("User not logged in");
         return [];
       }
 
       try {
-        console.log(`Completing ${category} lesson:`, lessonId);
+        console.log(`Completing ${category} lesson:`, lessonId, {
+          score,
+          completionTime,
+        });
 
         // Complete the lesson
-        const response = await API.completeLesson(user._id, lessonId, category);
+        const response = await API.completeLesson(
+          user._id,
+          lessonId,
+          category,
+          score,
+          completionTime
+        );
         console.log("Lesson completed:", response);
 
         if (response.success) {

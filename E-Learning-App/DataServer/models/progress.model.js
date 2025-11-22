@@ -34,6 +34,13 @@ const UserProgressSchema = new mongoose.Schema(
     streak: { type: Number, default: 0 },
     lastStudyDate: { type: Date },
 
+    // Achievement-related tracking
+    lastLessonScore: { type: Number, default: 0 }, // Điểm bài học vừa hoàn thành
+    lastCategory: { type: String }, // Category của bài học vừa hoàn thành
+    lessonsToday: { type: Number, default: 0 }, // Số bài đã học trong ngày
+    lastCompletionTime: { type: Number, default: 0 }, // Thời gian hoàn thành bài (giây)
+    achievementsUnlocked: { type: Number, default: 0 }, // Tổng số achievements đã unlock
+
     totalLessons: {
       reading: Number,
       vocab: Number,

@@ -70,7 +70,7 @@ exports.getUserProgress = async (req, res) => {
 exports.completeLesson = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { lessonId, category } = req.body;
+    const { lessonId, category, score, completionTime } = req.body;
 
     if (!lessonId || !category) {
       return res.status(400).json({
@@ -118,12 +118,25 @@ exports.completeLesson = async (req, res) => {
         progress.streak = 1;
       }
       // diffDays === 0 nghĩa là học cùng ngày, không thay đổi streak
+
+      // Reset lessonsToday if new day
+      if (diffDays >= 1) {
+        progress.lessonsToday = 1;
+      } else {
+        progress.lessonsToday = (progress.lessonsToday || 0) + 1;
+      }
     } else {
       // Lần đầu học
       progress.streak = 1;
+      progress.lessonsToday = 1;
     }
 
     progress.lastStudyDate = new Date();
+
+    // 🆕 Lưu thông tin achievement-related
+    progress.lastLessonScore = score || 0;
+    progress.lastCategory = category;
+    progress.lastCompletionTime = completionTime || 0;
 
     // 🆕 Tự động tính completedPercent dựa trên tổng lessons trong DB
     progress[category].completedPercent = await calculateCompletedPercent(

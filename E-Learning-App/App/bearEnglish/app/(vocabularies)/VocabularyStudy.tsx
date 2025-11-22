@@ -705,7 +705,8 @@ export default function VocabularyStudy() {
       if (user?._id && lessonId) {
         const newAchievements = await completeLessonWithAchievementCheck(
           lessonId,
-          "vocab"
+          "vocab",
+          100 // ✅ Vocab lesson always 100% when completed
         );
         console.log("Lesson completed, progress updated!");
 
