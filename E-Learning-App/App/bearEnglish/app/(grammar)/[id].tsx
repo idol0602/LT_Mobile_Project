@@ -19,6 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import RenderHTML from "react-native-render-html";
 import API from "../../api";
 import type { GrammarLesson } from "../../types";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Component to render AI response with basic markdown formatting
 const MarkdownText = ({ text }: { text: string }) => {
@@ -67,6 +68,7 @@ export default function GrammarLessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { user } = useAuth();
 
   const [lesson, setLesson] = useState<GrammarLesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,7 +188,7 @@ export default function GrammarLessonDetail() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const totalQuestions = lesson?.questions?.length || 0;
     const answeredQuestions = Object.keys(selectedAnswers).length;
 
@@ -200,8 +202,30 @@ export default function GrammarLessonDetail() {
 
     playSoundEffect("complete");
 
-    // Calculate score and navigate to results screen
+    // Calculate score
     const score = calculateScore();
+
+    // 🆕 Update currentLesson progress to 100%
+    if (user?._id) {
+      try {
+        await API.updateCurrentLesson(
+          user._id as any,
+          id as string,
+          "grammar",
+          100
+        );
+
+        // 🆕 Mark lesson as completed if score >= 70%
+        if (score.percentage >= 70) {
+          await API.completeLesson(user._id as any, id as string, "grammar");
+          console.log("✅ Grammar lesson marked as completed");
+        }
+      } catch (error) {
+        console.error("Error updating progress:", error);
+      }
+    }
+
+    // Navigate to results screen
     router.push({
       pathname: "/(grammar)/results",
       params: {
