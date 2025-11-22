@@ -24,11 +24,15 @@ const AchievementSchema = new mongoose.Schema(
       required: true,
     },
 
-    condition: {
-      minLessonsCompleted: { type: Number },
-      minWordsLearned: { type: Number },
-      minStreak: { type: Number },
-      category: { type: String },
+    conditions: {
+      type: [
+        {
+          key: { type: String, required: true }, // VD: "lessonScore", "streak", "totalLessons", "category"
+          operator: { type: String, required: true }, // VD: "=", ">=", "<=", "<", ">", "in", "contains"
+          value: { type: mongoose.Schema.Types.Mixed }, // VD: 100, 7, ["reading","vocab"], "reading"
+        },
+      ],
+      default: [],
     },
 
     difficulty: {
