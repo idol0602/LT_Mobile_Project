@@ -10,7 +10,7 @@ const sampleAchievements = [
     code: "FIRST_STEP",
     description: "Hoàn thành 1 bài học",
     type: "first",
-    condition: { minLessonsCompleted: 1 },
+    conditions: [{ key: "totalLessons", operator: ">=", value: 1 }],
     difficulty: "easy",
     icon: "🎯",
     hidden: false,
@@ -20,7 +20,7 @@ const sampleAchievements = [
     code: "WEEK_WARRIOR",
     description: "Streak 7 ngày",
     type: "streak",
-    condition: { minStreak: 7 },
+    conditions: [{ key: "streak", operator: ">=", value: 7 }],
     difficulty: "normal",
     icon: "🔥",
     hidden: false,
@@ -30,7 +30,7 @@ const sampleAchievements = [
     code: "MARATHON_MASTER",
     description: "Streak 30 ngày",
     type: "streak",
-    condition: { minStreak: 30 },
+    conditions: [{ key: "streak", operator: ">=", value: 30 }],
     difficulty: "hard",
     icon: "👑",
     hidden: false,
@@ -40,7 +40,7 @@ const sampleAchievements = [
     code: "VOCAB_ROOKIE",
     description: "Học 50 từ",
     type: "vocab",
-    condition: { minWordsLearned: 50 },
+    conditions: [{ key: "wordsLearned", operator: ">=", value: 50 }],
     difficulty: "easy",
     icon: "📚",
     hidden: false,
@@ -50,7 +50,7 @@ const sampleAchievements = [
     code: "VOCAB_PRO",
     description: "Học 200 từ",
     type: "vocab",
-    condition: { minWordsLearned: 200 },
+    conditions: [{ key: "wordsLearned", operator: ">=", value: 200 }],
     difficulty: "normal",
     icon: "🎓",
     hidden: false,
@@ -60,7 +60,10 @@ const sampleAchievements = [
     code: "LISTENER_BEGINNER",
     description: "Hoàn thành 5 bài listening",
     type: "progress",
-    condition: { minLessonsCompleted: 5, category: "listening" },
+    conditions: [
+      { key: "totalLessons", operator: ">=", value: 5 },
+      { key: "category", operator: "=", value: "listening" },
+    ],
     difficulty: "easy",
     icon: "🎧",
     hidden: false,
@@ -70,7 +73,10 @@ const sampleAchievements = [
     code: "READER_EXPLORER",
     description: "Hoàn thành 10 bài reading",
     type: "progress",
-    condition: { minLessonsCompleted: 10, category: "reading" },
+    conditions: [
+      { key: "totalLessons", operator: ">=", value: 10 },
+      { key: "category", operator: "=", value: "reading" },
+    ],
     difficulty: "normal",
     icon: "📖",
     hidden: false,
@@ -80,7 +86,10 @@ const sampleAchievements = [
     code: "GRAMMAR_KNIGHT",
     description: "Hoàn thành 10 bài grammar",
     type: "progress",
-    condition: { minLessonsCompleted: 10, category: "grammar" },
+    conditions: [
+      { key: "totalLessons", operator: ">=", value: 10 },
+      { key: "category", operator: "=", value: "grammar" },
+    ],
     difficulty: "normal",
     icon: "✍️",
     hidden: false,
@@ -90,7 +99,7 @@ const sampleAchievements = [
     code: "EARLY_BIRD",
     description: "Học trước 8:00 sáng",
     type: "global",
-    condition: { timeBefore: "08:00" }, // tùy bạn xử lý logic
+    conditions: [{ key: "timeBefore", operator: "<", value: "08:00" }],
     difficulty: "easy",
     icon: "🌅",
     hidden: false,
@@ -100,7 +109,7 @@ const sampleAchievements = [
     code: "NIGHT_OWL",
     description: "Học sau 23:00",
     type: "global",
-    condition: { timeAfter: "23:00" },
+    conditions: [{ key: "timeAfter", operator: ">", value: "23:00" }],
     difficulty: "easy",
     icon: "🌙",
     hidden: false,
@@ -110,7 +119,7 @@ const sampleAchievements = [
     code: "CONSISTENCY_HERO",
     description: "Học liên tục 90 ngày",
     type: "streak",
-    condition: { minStreak: 90 },
+    conditions: [{ key: "streak", operator: ">=", value: 90 }],
     difficulty: "hard",
     icon: "🔥",
     hidden: false,
@@ -120,7 +129,7 @@ const sampleAchievements = [
     code: "PERFECTIONIST",
     description: "Hoàn thành 1 bài với 100%",
     type: "global",
-    condition: { perfectScore: true },
+    conditions: [{ key: "lessonScore", operator: "=", value: 100 }],
     difficulty: "normal",
     icon: "💯",
     hidden: false,
@@ -130,7 +139,7 @@ const sampleAchievements = [
     code: "TRIPLE_SHOT",
     description: "Học 3 bài trong 1 ngày",
     type: "global",
-    condition: { lessonsInOneDay: 3 },
+    conditions: [{ key: "lessonsInOneDay", operator: ">=", value: 3 }],
     difficulty: "normal",
     icon: "📌",
     hidden: false,
@@ -140,7 +149,7 @@ const sampleAchievements = [
     code: "SPEED_RUNNER",
     description: "Hoàn thành bài dưới 1 phút",
     type: "global",
-    condition: { maxTimeSeconds: 60 },
+    conditions: [{ key: "completionTime", operator: "<=", value: 60 }],
     difficulty: "hard",
     icon: "⚡",
     hidden: false,
@@ -150,7 +159,7 @@ const sampleAchievements = [
     code: "COLLECTOR",
     description: "Đạt 10 achievements",
     type: "global",
-    condition: { minAchievements: 10 },
+    conditions: [{ key: "achievementsCount", operator: ">=", value: 10 }],
     difficulty: "normal",
     icon: "🏅",
     hidden: false,
@@ -160,7 +169,7 @@ const sampleAchievements = [
     code: "MASTER_COLLECTOR",
     description: "Đạt 50 achievements",
     type: "global",
-    condition: { minAchievements: 50 },
+    conditions: [{ key: "achievementsCount", operator: ">=", value: 50 }],
     difficulty: "hard",
     icon: "🏆",
     hidden: false,
@@ -172,16 +181,15 @@ async function seedAchievements() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ Connected to MongoDB");
 
-    for (const achievement of sampleAchievements) {
-      const exists = await Achievement.findOne({ code: achievement.code });
+    // Xóa tất cả achievements cũ
+    const deleteResult = await Achievement.deleteMany({});
+    console.log(`🗑️  Deleted ${deleteResult.deletedCount} old achievements`);
 
-      if (!exists) {
-        await Achievement.create(achievement);
-        console.log(`✅ Created: ${achievement.name}`);
-      } else {
-        console.log(`⏭️  Skipped (already exists): ${achievement.name}`);
-      }
-    }
+    // Thêm achievements mới
+    const createdAchievements = await Achievement.insertMany(
+      sampleAchievements
+    );
+    console.log(`✅ Created ${createdAchievements.length} new achievements`);
 
     console.log("\n🎉 Seeding complete!");
     process.exit(0);

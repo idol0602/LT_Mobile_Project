@@ -175,20 +175,18 @@ export default function AchievementsPage() {
   };
 
   const getConditionSummary = (achievement: Achievement): string => {
-    const conditions: string[] = [];
-    if (achievement.condition?.minLessonsCompleted) {
-      conditions.push(`${achievement.condition.minLessonsCompleted} lessons`);
+    if (!achievement.conditions || achievement.conditions.length === 0) {
+      return "No conditions";
     }
-    if (achievement.condition?.minWordsLearned) {
-      conditions.push(`${achievement.condition.minWordsLearned} words`);
-    }
-    if (achievement.condition?.minStreak) {
-      conditions.push(`${achievement.condition.minStreak} days streak`);
-    }
-    if (achievement.condition?.category) {
-      conditions.push(`(${achievement.condition.category})`);
-    }
-    return conditions.join(", ") || "No conditions";
+
+    return achievement.conditions
+      .map((cond) => {
+        const valueStr = Array.isArray(cond.value)
+          ? `[${cond.value.join(", ")}]`
+          : cond.value;
+        return `${cond.key} ${cond.operator} ${valueStr}`;
+      })
+      .join(" AND ");
   };
 
   const paginatedAchievements = achievements.slice(

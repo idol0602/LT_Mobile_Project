@@ -10,7 +10,6 @@ import {
   Select,
   MenuItem,
   Box,
-  Chip,
   FormControlLabel,
   Switch,
   type SelectChangeEvent,
@@ -38,7 +37,7 @@ export const AchievementFormModal = ({
     code: "",
     description: "",
     type: "global",
-    condition: {},
+    conditions: [],
     difficulty: "easy",
     icon: "🏆",
     hidden: false,
@@ -53,7 +52,7 @@ export const AchievementFormModal = ({
         code: "",
         description: "",
         type: "global",
-        condition: {},
+        conditions: [],
         difficulty: "easy",
         icon: "🏆",
         hidden: false,
@@ -86,27 +85,36 @@ export const AchievementFormModal = ({
     }));
   };
 
-  const handleConditionChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleAddCondition = () => {
     setFormData((prev) => ({
       ...prev,
-      condition: {
-        ...prev.condition,
-        [name]: value ? Number(value) : undefined,
-      },
+      conditions: [
+        ...(prev.conditions || []),
+        { key: "", operator: ">=", value: "" },
+      ],
     }));
   };
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRemoveCondition = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      condition: {
-        ...prev.condition,
-        category: e.target.value || undefined,
-      },
+      conditions: prev.conditions?.filter((_, i) => i !== index) || [],
     }));
+  };
+
+  const handleConditionFieldChange = (
+    index: number,
+    field: "key" | "operator" | "value",
+    value: string
+  ) => {
+    setFormData((prev) => {
+      const newConditions = [...(prev.conditions || [])];
+      newConditions[index] = {
+        ...newConditions[index],
+        [field]: value,
+      };
+      return { ...prev, conditions: newConditions };
+    });
   };
 
   const handleSubmit = () => {
@@ -211,50 +219,102 @@ export const AchievementFormModal = ({
               backgroundColor: "#f9f9f9",
             }}
           >
-            <InputLabel sx={{ mb: 1, fontWeight: "bold" }}>
-              Unlock Conditions
-            </InputLabel>
-
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField
-                label="Min Lessons Completed"
-                name="minLessonsCompleted"
-                type="number"
-                value={formData.condition?.minLessonsCompleted || ""}
-                onChange={handleConditionChange}
-                fullWidth
-                helperText="Minimum lessons to unlock"
-              />
-
-              <TextField
-                label="Min Words Learned"
-                name="minWordsLearned"
-                type="number"
-                value={formData.condition?.minWordsLearned || ""}
-                onChange={handleConditionChange}
-                fullWidth
-                helperText="For vocabulary achievements"
-              />
-
-              <TextField
-                label="Min Streak"
-                name="minStreak"
-                type="number"
-                value={formData.condition?.minStreak || ""}
-                onChange={handleConditionChange}
-                fullWidth
-                helperText="Consecutive days required"
-              />
-
-              <TextField
-                label="Category (Optional)"
-                name="category"
-                value={formData.condition?.category || ""}
-                onChange={handleCategoryChange}
-                fullWidth
-                helperText="reading, vocab, listening, grammar"
-              />
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <InputLabel sx={{ fontWeight: "bold" }}>
+                Unlock Conditions
+              </InputLabel>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleAddCondition}
+              >
+                + Add Condition
+              </Button>
             </Box>
+
+            {formData.conditions && formData.conditions.length > 0 ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {formData.conditions.map((condition, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                      alignItems: "center",
+                      p: 1,
+                      border: "1px solid #ddd",
+                      borderRadius: 1,
+                      backgroundColor: "white",
+                    }}
+                  >
+                    <TextField
+                      label="Key"
+                      value={condition.key}
+                      onChange={(e) =>
+                        handleConditionFieldChange(index, "key", e.target.value)
+                      }
+                      size="small"
+                      sx={{ flex: 1 }}
+                      placeholder="e.g., totalLessons, streak"
+                    />
+                    <FormControl size="small" sx={{ minWidth: 100 }}>
+                      <InputLabel>Operator</InputLabel>
+                      <Select
+                        value={condition.operator}
+                        onChange={(e) =>
+                          handleConditionFieldChange(
+                            index,
+                            "operator",
+                            e.target.value
+                          )
+                        }
+                        label="Operator"
+                      >
+                        <MenuItem value="=">=</MenuItem>
+                        <MenuItem value=">=">&gt;=</MenuItem>
+                        <MenuItem value="<=">&lt;=</MenuItem>
+                        <MenuItem value="<">&lt;</MenuItem>
+                        <MenuItem value=">">&gt;</MenuItem>
+                        <MenuItem value="in">in</MenuItem>
+                        <MenuItem value="contains">contains</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="Value"
+                      value={condition.value}
+                      onChange={(e) =>
+                        handleConditionFieldChange(
+                          index,
+                          "value",
+                          e.target.value
+                        )
+                      }
+                      size="small"
+                      sx={{ flex: 1 }}
+                      placeholder='e.g., 10 or ["reading","vocab"]'
+                    />
+                    <Button
+                      color="error"
+                      size="small"
+                      onClick={() => handleRemoveCondition(index)}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: "center", py: 2, color: "text.secondary" }}>
+                No conditions added. Click "Add Condition" to create one.
+              </Box>
+            )}
           </Box>
 
           {/* Hidden Switch */}

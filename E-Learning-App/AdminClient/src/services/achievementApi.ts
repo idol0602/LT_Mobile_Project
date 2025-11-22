@@ -14,12 +14,11 @@ export interface Achievement {
   code: string;
   description: string;
   type: "progress" | "vocab" | "streak" | "global" | "first";
-  condition: {
-    minLessonsCompleted?: number;
-    minWordsLearned?: number;
-    minStreak?: number;
-    category?: string;
-  };
+  conditions: Array<{
+    key: string;
+    operator: string;
+    value: any;
+  }>;
   difficulty: "easy" | "normal" | "hard";
   icon: string;
   hidden: boolean;
