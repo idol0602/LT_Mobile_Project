@@ -50,7 +50,7 @@ export default function ReadingLessonDetail() {
       // Set current lesson when user opens the lesson
       if (user?._id && id) {
         try {
-          await API.updateCurrentLesson(user._id, id as string, "reading", 0);
+          await API.setCurrentLesson(user._id, id as string, "reading");
           console.log("✅ Current lesson set to reading:", id);
         } catch (error) {
           console.error("Error setting current lesson:", error);

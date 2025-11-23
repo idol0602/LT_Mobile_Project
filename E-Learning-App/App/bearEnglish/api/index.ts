@@ -291,6 +291,28 @@ class API {
         }
     }
 
+    async setCurrentLesson(userId: string, lessonId: string, category: string): Promise<any> {
+        try {
+          const response = await fetch(`${API_BASE}/api/progress/${userId}/set-current-lesson`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lessonId, category }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error setting current lesson:', error);
+          throw error;
+        }
+    }
+
     // ============ APP SESSION TIME TRACKING ============
 
     async startAppSession(userId: string): Promise<any> {

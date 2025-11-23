@@ -20,6 +20,9 @@ router.post("/:userId/complete-lesson", progressController.completeLesson);
 // Cập nhật lesson hiện tại đang học
 router.put("/:userId/current-lesson", progressController.updateCurrentLesson);
 
+// Thiết lập lesson hiện tại khi vào trang (không cần progress)
+router.put("/:userId/set-current-lesson", progressController.setCurrentLesson);
+
 // Cập nhật tổng số lessons (để tính percent)
 router.put("/:userId/total-lessons", progressController.updateTotalLessons);
 

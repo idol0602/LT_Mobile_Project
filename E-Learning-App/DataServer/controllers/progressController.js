@@ -278,10 +278,72 @@ exports.startLesson = async (req, res) => {
 };
 
 /**
+ * PUT /api/progress/:userId/set-current-lesson
+ * Thiết lập lesson hiện tại khi user vào trang lesson (không cần progress)
+ * Body: { lessonId, category }
+ */
+exports.setCurrentLesson = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { lessonId, category } = req.body;
+
+    if (!lessonId || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "lessonId and category are required",
+      });
+    }
+
+    const validCategories = ["reading", "vocab", "listening", "grammar"];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Must be one of: ${validCategories.join(
+          ", "
+        )}`,
+      });
+    }
+
+    let userProgress = await UserProgress.findOne({ userId });
+
+    if (!userProgress) {
+      userProgress = new UserProgress({ userId });
+    }
+
+    // Cập nhật currentLesson ngay lập tức khi vào trang lesson
+    userProgress.currentLesson = {
+      lessonId,
+      category,
+      progress: 0, // Chưa có progress nhưng đã được set là current
+    };
+
+    await userProgress.save();
+
+    console.log(
+      `✅ Set current lesson: ${category} - ${lessonId} for user ${userId}`
+    );
+
+    res.json({
+      success: true,
+      message: "Current lesson set successfully",
+      data: userProgress,
+    });
+  } catch (error) {
+    console.error("Error setting current lesson:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to set current lesson",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * PUT /api/progress/:userId/current-lesson
- * Cập nhật lesson hiện tại đang học
+ * Cập nhật lesson hiện tại với progress thực tế (dùng trong quá trình làm bài)
  * Body: { lessonId, category, progress }
  * CHỈ cập nhật khi có progress thực tế (> 0) để tránh ghi nhận lesson chưa bắt đầu
+ * ⚠️ Khác với setCurrentLesson: hàm này cần progress > 0
  */
 exports.updateCurrentLesson = async (req, res) => {
   try {

@@ -97,7 +97,7 @@ export default function GrammarLessonDetail() {
       // Set current lesson when user opens the lesson
       if (user?._id && id) {
         try {
-          await API.updateCurrentLesson(user._id, id as string, "grammar", 0);
+          await API.setCurrentLesson(user._id, id as string, "grammar");
           console.log("✅ Current lesson set to grammar:", id);
         } catch (error) {
           console.error("Error setting current lesson:", error);

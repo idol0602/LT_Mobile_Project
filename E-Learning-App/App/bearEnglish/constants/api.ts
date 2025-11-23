@@ -1,8 +1,8 @@
 // Central API base - using deployed Render URLs
-export const API_BASE = "http://192.168.1.5:5050"; // DataServer running on 192.168.1.52:5050
+export const API_BASE = process.env.EXPO_PUBLIC_API_DATA_SERVER; // DataServer running on 192.168.1.52:5050
 
 // Utils Server for AI features (chat, translate, pronoun recognition)
-export const UTILS_BASE = "http://192.168.1.5:3000";
+export const UTILS_BASE = process.env.EXPO_PUBLIC_API_UTILS_SERVER;
 // Debug logging
 console.log("🚀 API Configuration:");
 console.log("📊 DATA SERVER:", API_BASE);

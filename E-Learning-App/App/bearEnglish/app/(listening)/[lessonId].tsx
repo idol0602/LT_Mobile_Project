@@ -107,7 +107,7 @@ export default function ListeningPractice() {
       // Set current lesson when user opens the lesson
       if (user?._id && lessonId) {
         try {
-          await API.updateCurrentLesson(user._id, lessonId, "listening", 0);
+          await API.setCurrentLesson(user._id, lessonId, "listening");
           console.log("✅ Current lesson set to listening:", lessonId);
         } catch (error) {
           console.error("Error setting current lesson:", error);
