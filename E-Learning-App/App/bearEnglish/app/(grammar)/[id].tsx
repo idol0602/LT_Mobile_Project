@@ -137,7 +137,7 @@ export default function GrammarLessonDetail() {
           ? require("../../assets/sounds/correct.mp3")
           : soundFile === "incorrect"
           ? require("../../assets/sounds/incorrect.mp3")
-          : require("../../assets/sounds/complete.mp3"),
+          : require("../../assets/sounds/winning.mp3"),
         { shouldPlay: true }
       );
 
@@ -212,7 +212,7 @@ export default function GrammarLessonDetail() {
       return;
     }
 
-    playSoundEffect("complete");
+    playSoundEffect("winning");
 
     // Calculate score
     const score = calculateScore();

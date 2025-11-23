@@ -9,6 +9,9 @@ import {
   Alert,
   TextInput,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,9 +50,26 @@ export default function ListeningPractice() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [soundEffect, setSoundEffect] = useState<Audio.Sound | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     fetchLesson();
+
+    // Keyboard event listeners
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setIsKeyboardVisible(true);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setIsKeyboardVisible(false);
+      }
+    );
+
     return () => {
       // Cleanup audio when component unmounts
       if (sound) {
@@ -58,7 +78,11 @@ export default function ListeningPractice() {
       if (soundEffect) {
         soundEffect.unloadAsync();
       }
+      // Cleanup keyboard listeners
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
 
   async function fetchLesson() {
@@ -151,6 +175,8 @@ export default function ListeningPractice() {
           ? require("../../assets/sounds/correct.mp3")
           : soundFile === "incorrect"
           ? require("../../assets/sounds/incorrect.mp3")
+          : soundFile === "winning"
+          ? require("../../assets/sounds/winning.mp3")
           : require("../../assets/sounds/complete.mp3"),
         { shouldPlay: true }
       );
@@ -345,7 +371,8 @@ export default function ListeningPractice() {
             text: "Submit",
             onPress: async () => {
               setShowResults(true);
-              // Update progress
+              // Play winning sound effect and update progress
+              playSoundEffect("winning");
               await updateLessonProgress();
             },
           },
@@ -353,7 +380,8 @@ export default function ListeningPractice() {
       );
     } else {
       setShowResults(true);
-      // Update progress
+      // Play winning sound effect and update progress
+      playSoundEffect("winning");
       updateLessonProgress();
     }
   }
@@ -543,208 +571,228 @@ export default function ListeningPractice() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ArrowLeft size={24} color="#e0e0e0" />
-        </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {lesson?.name || "Listening Practice"}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {lesson?.topic || "Practice"}
-          </Text>
-        </View>
-      </View>
-
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
-        </View>
-        <Text style={styles.progressText}>
-          Question {currentQuestionIndex + 1} of {lesson.questions.length}
-        </Text>
-      </View>
-
-      {/* Question Content */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.questionCard}>
-          <Text style={styles.questionNumber}>
-            Question {currentQuestionIndex + 1}
-          </Text>
-
-          {/* Audio Player */}
-          {currentQuestion.audioFileId && (
-            <View style={styles.audioPlayer}>
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={() =>
-                  isPlaying
-                    ? stopAudio()
-                    : playAudio(currentQuestion.audioFileId!)
-                }
-              >
-                <Ionicons
-                  name={isPlaying ? "pause" : "play"}
-                  size={48}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-              <Text style={styles.audioHint}>
-                {isPlaying ? "Playing..." : "Tap to listen"}
-              </Text>
-            </View>
-          )}
-
-          {/* Answer Input */}
-          <View style={styles.answerSection}>
-            <Text style={styles.answerLabel}>Your Answer:</Text>
-            <TextInput
-              style={styles.answerInput}
-              value={userAnswers[currentQuestionIndex]}
-              onChangeText={handleAnswerChange}
-              placeholder="Type what you hear..."
-              placeholderTextColor="#666"
-              multiline
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-
-            {/* Check Answer Button */}
-            <TouchableOpacity
-              style={styles.checkButton}
-              onPress={checkCurrentAnswer}
-              disabled={!userAnswers[currentQuestionIndex]?.trim()}
-            >
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={20}
-                color="#fff"
-              />
-              <Text style={styles.checkButtonText}>Check Answer</Text>
-            </TouchableOpacity>
-
-            {/* Feedback */}
-            {checkedAnswers[currentQuestionIndex] && (
-              <View
-                style={[
-                  styles.feedbackContainer,
-                  isCurrentAnswerCorrect()
-                    ? styles.correctFeedback
-                    : styles.incorrectFeedback,
-                ]}
-              >
-                <Ionicons
-                  name={
-                    isCurrentAnswerCorrect()
-                      ? "checkmark-circle"
-                      : "close-circle"
-                  }
-                  size={24}
-                  color={isCurrentAnswerCorrect() ? "#10B981" : "#EF4444"}
-                />
-                <View style={styles.feedbackTextContainer}>
-                  {isCurrentAnswerCorrect() ? (
-                    <Text style={styles.feedbackText}>Correct! Well done!</Text>
-                  ) : (
-                    <>
-                      <Text style={styles.feedbackText}>Your answer:</Text>
-                      <View style={styles.coloredAnswerContainer}>
-                        {renderColoredAnswer(
-                          userAnswers[currentQuestionIndex],
-                          lesson?.questions[currentQuestionIndex].answerText ||
-                            ""
-                        )}
-                      </View>
-
-                      {/* Show/Hide Answer Button */}
-                      <TouchableOpacity
-                        style={styles.showAnswerButton}
-                        onPress={toggleShowCorrectAnswer}
-                      >
-                        <Ionicons
-                          name={
-                            showCorrectAnswer[currentQuestionIndex]
-                              ? "eye-off"
-                              : "eye"
-                          }
-                          size={16}
-                          color="#EF4444"
-                        />
-                        <Text style={styles.showAnswerButtonText}>
-                          {showCorrectAnswer[currentQuestionIndex]
-                            ? "Hide answer"
-                            : "Show answer"}
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* Correct Answer (only shown when toggled) */}
-                      {showCorrectAnswer[currentQuestionIndex] && (
-                        <View style={styles.correctAnswerContainer}>
-                          <Text style={styles.correctAnswerLabel}>
-                            Correct answer:
-                          </Text>
-                          <Text style={styles.correctAnswerText}>
-                            {lesson?.questions[currentQuestionIndex].answerText}
-                          </Text>
-                        </View>
-                      )}
-                    </>
-                  )}
-                </View>
-              </View>
-            )}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <ArrowLeft size={24} color="#e0e0e0" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {lesson?.name || "Listening Practice"}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {lesson?.topic || "Practice"}
+            </Text>
           </View>
         </View>
-      </ScrollView>
 
-      {/* Navigation Buttons */}
-      <View style={styles.navigation}>
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            currentQuestionIndex === 0 && styles.navButtonDisabled,
-          ]}
-          onPress={goToPreviousQuestion}
-          disabled={currentQuestionIndex === 0}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={24}
-            color={currentQuestionIndex === 0 ? "#666" : "#fff"}
-          />
-          <Text
-            style={[
-              styles.navButtonText,
-              currentQuestionIndex === 0 && styles.navButtonTextDisabled,
-            ]}
-          >
-            Previous
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          </View>
+          <Text style={styles.progressText}>
+            Question {currentQuestionIndex + 1} of {lesson.questions.length}
           </Text>
-        </TouchableOpacity>
+        </View>
 
-        {currentQuestionIndex === lesson.questions.length - 1 ? (
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit</Text>
-            <Ionicons name="checkmark" size={24} color="#fff" />
+        {/* Question Content */}
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+        >
+          <View style={styles.questionCard}>
+            <Text style={styles.questionNumber}>
+              Question {currentQuestionIndex + 1}
+            </Text>
+
+            {/* Audio Player */}
+            {currentQuestion.audioFileId && (
+              <View style={styles.audioPlayer}>
+                <TouchableOpacity
+                  style={styles.playButton}
+                  onPress={() =>
+                    isPlaying
+                      ? stopAudio()
+                      : playAudio(currentQuestion.audioFileId!)
+                  }
+                >
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={48}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+                <Text style={styles.audioHint}>
+                  {isPlaying ? "Playing..." : "Tap to listen"}
+                </Text>
+              </View>
+            )}
+
+            {/* Answer Input */}
+            <View style={styles.answerSection}>
+              <Text style={styles.answerLabel}>Your Answer:</Text>
+              <TextInput
+                style={[
+                  styles.answerInput,
+                  isKeyboardVisible && styles.answerInputFocused,
+                ]}
+                value={userAnswers[currentQuestionIndex]}
+                onChangeText={handleAnswerChange}
+                placeholder="Type what you hear..."
+                placeholderTextColor="#666"
+                multiline
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+
+              {/* Check Answer Button */}
+              <TouchableOpacity
+                style={styles.checkButton}
+                onPress={checkCurrentAnswer}
+                disabled={!userAnswers[currentQuestionIndex]?.trim()}
+              >
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.checkButtonText}>Check Answer</Text>
+              </TouchableOpacity>
+
+              {/* Feedback */}
+              {checkedAnswers[currentQuestionIndex] && (
+                <View
+                  style={[
+                    styles.feedbackContainer,
+                    isCurrentAnswerCorrect()
+                      ? styles.correctFeedback
+                      : styles.incorrectFeedback,
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      isCurrentAnswerCorrect()
+                        ? "checkmark-circle"
+                        : "close-circle"
+                    }
+                    size={24}
+                    color={isCurrentAnswerCorrect() ? "#10B981" : "#EF4444"}
+                  />
+                  <View style={styles.feedbackTextContainer}>
+                    {isCurrentAnswerCorrect() ? (
+                      <Text style={styles.feedbackText}>
+                        Correct! Well done!
+                      </Text>
+                    ) : (
+                      <>
+                        <Text style={styles.feedbackText}>Your answer:</Text>
+                        <View style={styles.coloredAnswerContainer}>
+                          {renderColoredAnswer(
+                            userAnswers[currentQuestionIndex],
+                            lesson?.questions[currentQuestionIndex]
+                              .answerText || ""
+                          )}
+                        </View>
+
+                        {/* Show/Hide Answer Button */}
+                        <TouchableOpacity
+                          style={styles.showAnswerButton}
+                          onPress={toggleShowCorrectAnswer}
+                        >
+                          <Ionicons
+                            name={
+                              showCorrectAnswer[currentQuestionIndex]
+                                ? "eye-off"
+                                : "eye"
+                            }
+                            size={16}
+                            color="#EF4444"
+                          />
+                          <Text style={styles.showAnswerButtonText}>
+                            {showCorrectAnswer[currentQuestionIndex]
+                              ? "Hide answer"
+                              : "Show answer"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* Correct Answer (only shown when toggled) */}
+                        {showCorrectAnswer[currentQuestionIndex] && (
+                          <View style={styles.correctAnswerContainer}>
+                            <Text style={styles.correctAnswerLabel}>
+                              Correct answer:
+                            </Text>
+                            <Text style={styles.correctAnswerText}>
+                              {
+                                lesson?.questions[currentQuestionIndex]
+                                  .answerText
+                              }
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Navigation Buttons */}
+        <View style={styles.navigation}>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              currentQuestionIndex === 0 && styles.navButtonDisabled,
+            ]}
+            onPress={goToPreviousQuestion}
+            disabled={currentQuestionIndex === 0}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={currentQuestionIndex === 0 ? "#666" : "#fff"}
+            />
+            <Text
+              style={[
+                styles.navButtonText,
+                currentQuestionIndex === 0 && styles.navButtonTextDisabled,
+              ]}
+            >
+              Previous
+            </Text>
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.navButton} onPress={goToNextQuestion}>
-            <Text style={styles.navButtonText}>Next</Text>
-            <Ionicons name="chevron-forward" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
-      </View>
-    </SafeAreaView>
+
+          {currentQuestionIndex === lesson.questions.length - 1 ? (
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmit}
+            >
+              <Text style={styles.submitButtonText}>Submit</Text>
+              <Ionicons name="checkmark" size={24} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={goToNextQuestion}
+            >
+              <Text style={styles.navButtonText}>Next</Text>
+              <Ionicons name="chevron-forward" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -885,6 +933,14 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     borderWidth: 2,
     borderColor: "#4a4b55",
+  },
+  answerInputFocused: {
+    minHeight: 120,
+    borderColor: "#8B5CF6",
+    shadowColor: "#8B5CF6",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   navigation: {
     flexDirection: "row",

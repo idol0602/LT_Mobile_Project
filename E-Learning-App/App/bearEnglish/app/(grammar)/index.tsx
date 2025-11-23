@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { ArrowLeft, BookText } from "lucide-react-native";
 import API from "../../api";
@@ -23,10 +24,19 @@ export default function GrammarLessons() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [completedPercent, setCompletedPercent] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
 
   useEffect(() => {
     fetchLessons();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?._id) {
+        fetchLessons();
+      }
+    }, [user])
+  );
 
   async function fetchLessons() {
     try {
@@ -50,6 +60,7 @@ export default function GrammarLessons() {
             setCompletedPercent(
               progressResponse.data.grammar.completedPercent || 0
             );
+            setCompletedLessons(progressResponse.data.grammar.data || []);
             console.log(
               "Grammar progress:",
               progressResponse.data.grammar.completedPercent
@@ -82,6 +93,7 @@ export default function GrammarLessons() {
 
   function renderItem({ item }: { item: Lesson }) {
     const questionCount = (item.questions || []).length;
+    const isCompleted = completedLessons.includes(item._id);
 
     return (
       <TouchableOpacity
@@ -89,16 +101,24 @@ export default function GrammarLessons() {
         onPress={() => router.push(`/(grammar)/${item._id}` as any)}
       >
         <LinearGradient
-          colors={["#2d2d2d", "#3a3a3a"]}
+          colors={isCompleted ? ["#1a5f3f", "#2d7a4f"] : ["#2d2d2d", "#3a3a3a"]}
           style={styles.cardGradient}
         >
           <View style={styles.cardHeader}>
             <View style={styles.iconContainer}>
               <BookText size={24} color="#F59E0B" />
             </View>
-            <View style={styles.levelBadge}>
-              <Ionicons name="star" size={14} color="#ffd700" />
-              <Text style={styles.levelText}>{item.level}</Text>
+            <View style={styles.cardRightHeader}>
+              {isCompleted && (
+                <View style={styles.completedBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  <Text style={styles.completedText}>Completed</Text>
+                </View>
+              )}
+              <View style={styles.levelBadge}>
+                <Ionicons name="star" size={14} color="#ffd700" />
+                <Text style={styles.levelText}>{item.level}</Text>
+              </View>
             </View>
           </View>
           <Text style={styles.title}>{item.name}</Text>
@@ -108,7 +128,9 @@ export default function GrammarLessons() {
               📝 {questionCount}{" "}
               {questionCount === 1 ? "question" : "questions"}
             </Text>
-            <Text style={styles.studyLabel}>Tap to study →</Text>
+            <Text style={styles.studyLabel}>
+              {isCompleted ? "Review →" : "Tap to study →"}
+            </Text>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -330,6 +352,25 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(245, 158, 11, 0.2)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  cardRightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  completedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  completedText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#10B981",
+    marginLeft: 4,
   },
   levelBadge: {
     flexDirection: "row",

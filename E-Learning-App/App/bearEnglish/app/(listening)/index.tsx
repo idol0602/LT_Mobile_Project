@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { ArrowLeft, Headphones } from "lucide-react-native";
 import API from "../../api/index";
@@ -23,10 +24,19 @@ export default function ListeningLessons() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [completedPercent, setCompletedPercent] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
 
   useEffect(() => {
     fetchLessons();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?._id) {
+        fetchLessons(); // Refresh progress when screen comes into focus
+      }
+    }, [user])
+  );
 
   async function fetchLessons() {
     try {
@@ -50,6 +60,7 @@ export default function ListeningLessons() {
             setCompletedPercent(
               progressResponse.data.listening.completedPercent || 0
             );
+            setCompletedLessons(progressResponse.data.listening.data || []);
             console.log(
               "Listening progress:",
               progressResponse.data.listening.completedPercent
@@ -69,6 +80,7 @@ export default function ListeningLessons() {
 
   function renderItem({ item }: { item: Lesson }) {
     const questionCount = (item.questions || []).length;
+    const isCompleted = completedLessons.includes(item._id);
 
     return (
       <TouchableOpacity
@@ -81,16 +93,24 @@ export default function ListeningLessons() {
         }
       >
         <LinearGradient
-          colors={["#2d2d2d", "#3a3a3a"]}
+          colors={isCompleted ? ["#1a5f3f", "#2d7a4f"] : ["#2d2d2d", "#3a3a3a"]}
           style={styles.cardGradient}
         >
           <View style={styles.cardHeader}>
             <View style={styles.iconContainer}>
               <Headphones size={24} color="#8B5CF6" />
             </View>
-            <View style={styles.levelBadge}>
-              <Ionicons name="star" size={14} color="#ffd700" />
-              <Text style={styles.levelText}>{item.level}</Text>
+            <View style={styles.cardRightHeader}>
+              {isCompleted && (
+                <View style={styles.completedBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  <Text style={styles.completedText}>Completed</Text>
+                </View>
+              )}
+              <View style={styles.levelBadge}>
+                <Ionicons name="star" size={14} color="#ffd700" />
+                <Text style={styles.levelText}>{item.level}</Text>
+              </View>
             </View>
           </View>
           <Text style={styles.title}>{item.name}</Text>
@@ -102,7 +122,9 @@ export default function ListeningLessons() {
               🎧 {questionCount}{" "}
               {questionCount === 1 ? "question" : "questions"}
             </Text>
-            <Text style={styles.studyLabel}>Tap to study →</Text>
+            <Text style={styles.studyLabel}>
+              {isCompleted ? "Review →" : "Tap to study →"}
+            </Text>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -268,6 +290,25 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(139, 92, 246, 0.2)",
     padding: 12,
     borderRadius: 12,
+  },
+  cardRightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  completedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  completedText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#10B981",
+    marginLeft: 4,
   },
   levelBadge: {
     flexDirection: "row",

@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  Keyboard,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Send, Sparkles } from "lucide-react-native";
@@ -141,6 +142,8 @@ export default function AIChatScreen() {
   const [inputText, setInputText] = useState("");
   const [messageIdCounter, setMessageIdCounter] = useState(1);
   const [userId, setUserId] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -148,7 +151,33 @@ export default function AIChatScreen() {
       const newId = generateUserId();
       setUserId(newId);
     }
-  }, []);
+
+    // Keyboard event listeners
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        setIsKeyboardVisible(true);
+        // Scroll to bottom when keyboard appears
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardHeight(0);
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, [userId]);
 
   const sendMessageToAI = useCallback(
     async (text: string) => {
@@ -206,7 +235,7 @@ export default function AIChatScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 10}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.container}>
@@ -276,10 +305,17 @@ export default function AIChatScreen() {
           </ScrollView>
 
           {/* Modern Input Area */}
-          <View style={styles.inputArea}>
+          <View
+            style={[
+              styles.inputArea,
+              isKeyboardVisible && {
+                paddingBottom: Platform.OS === "android" ? 16 : 90,
+              },
+            ]}
+          >
             <View style={styles.inputWrapper}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, isKeyboardVisible && styles.inputFocused]}
                 placeholder="Ask White Bear about English..."
                 placeholderTextColor="#a0a0a0"
                 value={inputText}
@@ -287,6 +323,11 @@ export default function AIChatScreen() {
                 editable={!isLoading}
                 onSubmitEditing={handleSendPress}
                 multiline
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 200);
+                }}
               />
               <TouchableOpacity
                 style={[
@@ -482,6 +523,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: "#40407a",
+  },
+  inputFocused: {
+    maxHeight: 120,
+    borderColor: "#4CAF50",
+    shadowColor: "#4CAF50",
+    shadowOpacity: 0.3,
   },
   sendButtonWrapper: {
     alignSelf: "flex-end",

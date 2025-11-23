@@ -193,9 +193,6 @@ const SignIn: React.FC = () => {
         </TouchableOpacity>
 
         {/* Demo account quick login */}
-        <TouchableOpacity style={styles.demoButton} onPress={handleUseDemo}>
-          <Text style={styles.demoText}>Use demo account</Text>
-        </TouchableOpacity>
 
         {/* Forgot password */}
         <View style={styles.forgotPasswordContainer}>
@@ -206,20 +203,6 @@ const SignIn: React.FC = () => {
             <Text style={styles.linkText}>Reset your password</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.line} />
-          <Text style={styles.orText}>OR</Text>
-          <View style={styles.line} />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.socialButton, { backgroundColor: "#DB4437" }]}
-        >
-          <Ionicons name="logo-google" size={20} color="#fff" />
-          <Text style={styles.socialText}>Sign in with Google</Text>
-        </TouchableOpacity>
 
         {/* Register link */}
         <View style={styles.registerContainer}>

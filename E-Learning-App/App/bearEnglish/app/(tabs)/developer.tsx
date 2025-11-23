@@ -126,7 +126,7 @@ const DeveloperScreen = () => {
       role: "Lead Developer",
       description:
         "Full-stack developer với 5+ năm kinh nghiệm phát triển ứng dụng di động.",
-      email: "nguyenvana@bearenglish.com",
+      email: "nguyenquan06022004@gmail.com",
       image: require("../../assets/images/dev1.jpg"),
       skills: ["React Native", "Node.js", "Firebase"],
     },
@@ -135,7 +135,7 @@ const DeveloperScreen = () => {
       name: "Thanh Phú",
       role: "UI/UX Designer & Developer",
       description: "Chuyên tạo giao diện đẹp và trực quan cho người dùng.",
-      email: "tranthib@bearenglish.com",
+      email: "phulam03@gmail.com",
       image: require("../../assets/images/dev2.jpg"),
       skills: ["UI Design", "React Native", "Animation"],
     },
@@ -210,7 +210,7 @@ const DeveloperScreen = () => {
               <Text style={styles.bearEmoji}>🐻‍❄️</Text>
               <Text style={styles.appTitle}>bearEnglish</Text>
             </View>
-            <Text style={styles.appSubtitle}>HỌC TIẾNG ANH, NÓI TỰ TIN</Text>
+            <Text style={styles.appSubtitle}>TIẾNG ANH TRONG TẦM TAY</Text>
           </LinearGradient>
         </Animated.View>
 
@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1a1a2e",
+    marginBottom: 40,
   },
   modernHeader: {
     paddingTop: 44,
