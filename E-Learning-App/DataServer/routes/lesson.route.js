@@ -4,6 +4,17 @@ const lessonController = require("../controllers/lessonController");
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+// Import lesson từ Excel
+router.post(
+  "/import",
+  upload.fields([
+    { name: "excel", maxCount: 1 },
+    { name: "audios", maxCount: 50 },
+  ]),
+  lessonController.importLesson
+);
+
 // CRUD cho Lesson
 router.post("/", upload.array("audios", 10), lessonController.createLesson);
 router.get("/", lessonController.getAllLessons); // Lấy tất cả (có phân trang)

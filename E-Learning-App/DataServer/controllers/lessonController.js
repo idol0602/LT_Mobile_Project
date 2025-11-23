@@ -1,8 +1,10 @@
 // controllers/lessonController.js
 const Lesson = require("../models/lesson.model");
+const Vocabulary = require("../models/vocabulary.model");
 const multer = require("multer");
 const mongoose = require("mongoose");
 const { Readable } = require("stream");
+const XLSX = require("xlsx");
 
 const storage = multer.memoryStorage();
 const uploadStreamToGridFS = (buffer, filename, bucket) => {
@@ -348,6 +350,203 @@ exports.getLessonCountByType = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to get lesson count",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Import Lesson từ Excel file (3 sheets: Lesson Info, Vocabularies, Questions)
+ * POST /api/lessons/import
+ * Body: FormData with 'excel' file and optional 'audios' files
+ */
+exports.importLesson = async (req, res) => {
+  try {
+    // Kiểm tra file Excel
+    if (!req.files || !req.files.excel || req.files.excel.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Excel file is required",
+      });
+    }
+
+    const excelFile = req.files.excel[0];
+    const audioFiles = req.files.audios || [];
+
+    // Đọc Excel file
+    const workbook = XLSX.read(excelFile.buffer, { type: "buffer" });
+
+    // SHEET 1: Lesson Info
+    if (!workbook.SheetNames.includes("Lesson Info")) {
+      return res.status(400).json({
+        success: false,
+        message: "Sheet 'Lesson Info' not found",
+      });
+    }
+
+    const lessonInfoSheet = workbook.Sheets["Lesson Info"];
+    const lessonInfoData = XLSX.utils.sheet_to_json(lessonInfoSheet);
+
+    if (lessonInfoData.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Lesson Info sheet is empty",
+      });
+    }
+
+    const lessonInfo = lessonInfoData[0];
+    const { name, level, topic, type, readingContent } = lessonInfo;
+
+    // Validate lesson info
+    if (!name || !level || !topic || !type) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: name, level, topic, type",
+      });
+    }
+
+    if (!["vocab", "listen", "grammar", "reading"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid type. Must be: vocab, listen, grammar, or reading",
+      });
+    }
+
+    let vocabularyIds = [];
+    let questions = [];
+
+    // SHEET 2: Vocabularies (for vocab type)
+    if (type === "vocab") {
+      if (!workbook.SheetNames.includes("Vocabularies")) {
+        return res.status(400).json({
+          success: false,
+          message: "Sheet 'Vocabularies' not found for vocab lesson",
+        });
+      }
+
+      const vocabSheet = workbook.Sheets["Vocabularies"];
+      const vocabData = XLSX.utils.sheet_to_json(vocabSheet);
+
+      if (vocabData.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Vocabularies sheet is empty",
+        });
+      }
+
+      // Tạo từng vocabulary và lưu vào DB
+      const vocabPromises = vocabData.map(async (row) => {
+        const vocab = new Vocabulary({
+          word: row.word || row.Word,
+          definition: row.meaning || row.Meaning,
+          partOfSpeech: "noun", // Default, có thể thêm vào Excel
+          exampleSentence: row.exampleSentence || row.ExampleSentence || "",
+        });
+        await vocab.save();
+        return vocab._id;
+      });
+
+      vocabularyIds = await Promise.all(vocabPromises);
+      console.log(`✅ Created ${vocabularyIds.length} vocabularies`);
+    }
+
+    // SHEET 3: Questions (for listen, grammar, reading)
+    if (["listen", "grammar", "reading"].includes(type)) {
+      if (!workbook.SheetNames.includes("Questions")) {
+        return res.status(400).json({
+          success: false,
+          message: `Sheet 'Questions' not found for ${type} lesson`,
+        });
+      }
+
+      const questionSheet = workbook.Sheets["Questions"];
+      const questionData = XLSX.utils.sheet_to_json(questionSheet);
+
+      if (questionData.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Questions sheet is empty",
+        });
+      }
+
+      // Tạo GridFS bucket cho audio
+      const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+        bucketName: "audios",
+      });
+
+      // Map audio files by filename
+      const audioMap = {};
+      if (audioFiles.length > 0) {
+        for (const file of audioFiles) {
+          const fileId = await uploadStreamToGridFS(
+            file.buffer,
+            file.originalname,
+            bucket
+          );
+          audioMap[file.originalname] = fileId;
+          console.log(`✅ Uploaded audio: ${file.originalname}`);
+        }
+      }
+
+      // Parse questions
+      questions = questionData.map((row) => {
+        const optionsString = row.options || row.Options || "";
+        const optionsArray = optionsString.split("|").map((opt) => opt.trim());
+
+        const question = {
+          questionText: row.questionText || row.QuestionText || "",
+          options: optionsArray,
+          correctAnswerIndex:
+            Number(row.correctAnswerIndex || row.CorrectAnswerIndex) || 0,
+          answerText: row.answerText || row.AnswerText || "",
+        };
+
+        // Map audio file nếu có
+        const audioFileName = row.audioFileName || row.AudioFileName;
+        if (audioFileName && audioMap[audioFileName]) {
+          question.audioFileId = audioMap[audioFileName];
+        }
+
+        return question;
+      });
+
+      console.log(`✅ Parsed ${questions.length} questions`);
+    }
+
+    // Tạo Lesson
+    const lessonData = {
+      name,
+      level,
+      topic,
+      type,
+    };
+
+    if (type === "vocab") {
+      lessonData.vocabularies = vocabularyIds;
+    } else if (type === "reading" || type === "grammar") {
+      // Cả reading và grammar đều cần readingContent
+      lessonData.readingContent = readingContent || "";
+      lessonData.questions = questions;
+    } else if (type === "listen") {
+      // Listen chỉ cần questions
+      lessonData.questions = questions;
+    }
+
+    const lesson = new Lesson(lessonData);
+    await lesson.save();
+
+    console.log(`✅ Created lesson: ${lesson.name} (${lesson.type})`);
+
+    res.json({
+      success: true,
+      message: "Lesson imported successfully",
+      data: lesson,
+    });
+  } catch (error) {
+    console.error("❌ Error importing lesson:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to import lesson",
       error: error.message,
     });
   }

@@ -42,8 +42,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SchoolIcon from "@mui/icons-material/School"; // Icon cho tiêu đề
 import FilterListIcon from "@mui/icons-material/FilterList"; // Icon cho bộ lọc
 import SearchIcon from "@mui/icons-material/Search";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 import { LessonWizardModal } from "../components/lesson/lessonWizardModal/LessonWizardModal";
+import { LessonImportModal } from "../components/lesson/LessonImportModal";
 import {
   getLessons,
   deleteLesson,
@@ -68,6 +70,7 @@ export default function LessonPage() {
 
   // States cho Modal
   const [openWizard, setOpenWizard] = useState(false);
+  const [openImportModal, setOpenImportModal] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [openVocabModal, setOpenVocabModal] = useState(false);
   const [openReadingModal, setOpenReadingModal] = useState(false);
@@ -258,17 +261,31 @@ export default function LessonPage() {
         >
           <SchoolIcon fontSize="large" /> Quản lý Bài học
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" } }}
-          onClick={() => {
-            setSelectedLesson(null);
-            setOpenWizard(true);
-          }}
-        >
-          Bài học mới
-        </Button>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            onClick={() => setOpenImportModal(true)}
+            sx={{
+              borderColor: "#088395",
+              color: "#088395",
+              "&:hover": { borderColor: "#0a9ca2", bgcolor: "#f0f9fa" },
+            }}
+          >
+            Import Excel
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{ bgcolor: "#088395", "&:hover": { bgcolor: "#0a9ca2" } }}
+            onClick={() => {
+              setSelectedLesson(null);
+              setOpenWizard(true);
+            }}
+          >
+            Bài học mới
+          </Button>
+        </Box>
       </Box>
 
       {/* Filters & Search */}
@@ -447,6 +464,19 @@ export default function LessonPage() {
         onClose={() => setOpenListeningModal(false)}
         selectedLesson={selectedLesson as any}
         onSaveSuccess={handleSaveSuccess}
+      />
+
+      {/* Import Modal */}
+      <LessonImportModal
+        open={openImportModal}
+        onClose={() => setOpenImportModal(false)}
+        onImportSuccess={(message) => {
+          setSnackbar({ open: true, message, severity: "success" });
+          setRefetchTrigger((prev) => prev + 1);
+        }}
+        onImportError={(message) => {
+          setSnackbar({ open: true, message, severity: "error" });
+        }}
       />
 
       {/* Delete Confirmation Dialog */}
