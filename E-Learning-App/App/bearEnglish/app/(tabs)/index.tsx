@@ -178,7 +178,7 @@ export default function HomeScreen() {
         break;
       case "vocab":
         router.push({
-          pathname: "/(vocabularies)/VocabularyStudy",
+          pathname: "/(vocabularies)/[lessonId]",
           params: { lessonId, lessonName: currentLessonName || "Vocabulary" },
         } as any);
         break;
@@ -189,8 +189,7 @@ export default function HomeScreen() {
         } as any);
         break;
       case "grammar":
-        // TODO: Add grammar route when ready
-        console.log("Grammar lessons coming soon!");
+        router.push(`/(grammar)/${lessonId}` as any);
         break;
       default:
         console.warn("Unknown category:", category);

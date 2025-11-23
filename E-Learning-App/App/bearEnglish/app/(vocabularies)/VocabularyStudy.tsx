@@ -126,88 +126,16 @@ const ConfettiPiece = ({
   );
 };
 
-// Emoji Confetti Component
-const EmojiConfetti = ({
-  emoji,
-  index,
-  screenWidth,
-  screenHeight,
-}: {
-  emoji: string;
-  index: number;
-  screenWidth: number;
-  screenHeight: number;
-}) => {
-  const animatedY = useRef(new Animated.Value(-50)).current;
-  const animatedOpacity = useRef(new Animated.Value(1)).current;
-
-  React.useEffect(() => {
-    const startAnimation = () => {
-      animatedY.setValue(-50);
-      animatedOpacity.setValue(1);
-
-      const fallAnimation = Animated.timing(animatedY, {
-        toValue: screenHeight + 50,
-        duration: 3000 + Math.random() * 2000,
-        useNativeDriver: true,
-      });
-
-      const fadeAnimation = Animated.timing(animatedOpacity, {
-        toValue: 0,
-        duration: 1000,
-        delay: 2000 + Math.random() * 1000,
-        useNativeDriver: true,
-      });
-
-      Animated.parallel([fallAnimation, fadeAnimation]).start(() => {
-        setTimeout(() => {
-          if (Math.random() > 0.4) {
-            startAnimation();
-          }
-        }, Math.random() * 3000);
-      });
-    };
-
-    setTimeout(startAnimation, index * 100);
-  }, [animatedY, animatedOpacity, index, screenHeight]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.confettiEmoji,
-        {
-          left: Math.random() * screenWidth,
-          opacity: animatedOpacity,
-          transform: [{ translateY: animatedY }],
-        },
-      ]}
-    >
-      <Text style={styles.emojiText}>{emoji}</Text>
-    </Animated.View>
-  );
-};
-
-// Enhanced Animated Confetti Component
+// Enhanced Animated Confetti Component - Only colored paper pieces
 const AnimatedConfetti = () => {
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height;
 
-  const emojis = ["🎉", "🎊", "🏆", "⭐", "💎", "🎯", "✨", "🌟"];
-
   return (
     <View style={styles.confettiContainer}>
-      {Array.from({ length: 50 }, (_, index) => (
+      {Array.from({ length: 80 }, (_, index) => (
         <ConfettiPiece
           key={`confetti-${index}`}
-          index={index}
-          screenWidth={screenWidth}
-          screenHeight={screenHeight}
-        />
-      ))}
-      {Array.from({ length: 20 }, (_, index) => (
-        <EmojiConfetti
-          key={`emoji-${index}`}
-          emoji={emojis[Math.floor(Math.random() * emojis.length)]}
           index={index}
           screenWidth={screenWidth}
           screenHeight={screenHeight}
@@ -462,6 +390,8 @@ export default function VocabularyStudy() {
             `Bạn cần ôn tập lại ${incompleteWords.length} từ chưa nhớ.`
           );
         } else {
+          // Finalize stage 1 stats
+          finalizeStageStats(1);
           // advance
           setStage(2);
           setCurrentWords([...allWords]);
@@ -532,6 +462,8 @@ export default function VocabularyStudy() {
                 `Bạn cần ôn tập lại ${incomplete.length} từ chưa ghép đúng.`
               );
             } else {
+              // Finalize stage 2 stats
+              finalizeStageStats(2);
               setStage(3);
               setCurrentWords([...allWords]);
               setCompletedWords(new Set());
@@ -632,7 +564,7 @@ export default function VocabularyStudy() {
 
   // Exit to lesson screen
   const exitToLesson = () => {
-    router.back(); // Navigate back to the previous screen (lesson)
+    router.push("/(vocabularies)");
   };
 
   // Play audio for pronunciation
@@ -679,34 +611,54 @@ export default function VocabularyStudy() {
     }
   };
 
-  // Update statistics - only count incorrect once per word per stage
-  const updateStats = (stage: number, isCorrect: boolean, wordId?: string) => {
-    if (isCorrect) {
-      setStageStats((prev) => ({
-        ...prev,
-        [stage]: {
-          ...prev[stage],
-          correct: prev[stage].correct + 1,
-        },
-      }));
-    } else {
-      // Only increment incorrect count if this word hasn't been marked wrong before in this stage
-      if (wordId && !incorrectWords[stage].has(wordId)) {
-        setStageStats((prev) => ({
-          ...prev,
-          [stage]: {
-            ...prev[stage],
-            incorrect: prev[stage].incorrect + 1,
-          },
-        }));
+  // Calculate final stats when completing a stage
+  const finalizeStageStats = (stage: number) => {
+    const totalWords = allWords.length;
+    const incorrectCount = incorrectWords[stage].size;
+    const correctCount = Math.max(0, totalWords - incorrectCount);
 
+    setStageStats((prev) => ({
+      ...prev,
+      [stage]: {
+        correct: correctCount,
+        incorrect: incorrectCount,
+      },
+    }));
+  };
+
+  // Update statistics - only track incorrect answers, correct = total - incorrect
+  const updateStats = (stage: number, isCorrect: boolean, wordId?: string) => {
+    if (!wordId) return;
+
+    if (!isCorrect) {
+      // Only increment incorrect count if this word hasn't been marked wrong before in this stage
+      if (!incorrectWords[stage].has(wordId)) {
         // Mark this word as incorrect for this stage
-        setIncorrectWords((prev) => ({
-          ...prev,
-          [stage]: new Set([...prev[stage], wordId]),
-        }));
+        setIncorrectWords((prev) => {
+          const newIncorrectWords = {
+            ...prev,
+            [stage]: new Set([...prev[stage], wordId]),
+          };
+
+          // Calculate correct = total words - incorrect
+          const totalWords = allWords.length;
+          const incorrectCount = newIncorrectWords[stage].size;
+          const correctCount = Math.max(0, totalWords - incorrectCount);
+
+          // Update stage stats
+          setStageStats((prevStats) => ({
+            ...prevStats,
+            [stage]: {
+              correct: correctCount,
+              incorrect: incorrectCount,
+            },
+          }));
+
+          return newIncorrectWords;
+        });
       }
     }
+    // For correct answers, we don't need to do anything since correct = total - incorrect
   };
 
   const uploadAndCheckPronunciation = async (audioUri: string) => {
@@ -809,6 +761,8 @@ export default function VocabularyStudy() {
               {
                 text: "OK",
                 onPress: () => {
+                  // Finalize current stage stats
+                  finalizeStageStats(stage);
                   setStage(nextStage);
                   setCurrentWords([...allWords]);
                   setCompletedWords(new Set());
@@ -818,6 +772,8 @@ export default function VocabularyStudy() {
             ]
           );
         } else {
+          // Finalize final stage (4) stats
+          finalizeStageStats(4);
           // Hoàn thành tất cả stages - Gọi API để update progress
           handleLessonComplete();
         }
@@ -1001,7 +957,7 @@ export default function VocabularyStudy() {
               style={styles.finishButtonGradient}
             >
               <MaterialIcons name="home" size={24} color="white" />
-              <Text style={styles.finishButtonText}>Về trang chủ</Text>
+              <Text style={styles.finishButtonText}>Về trang bài học</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -1920,17 +1876,7 @@ const styles = StyleSheet.create({
     pointerEvents: "none",
     overflow: "hidden",
   },
-  confettiEmoji: {
-    position: "absolute",
-    top: -50,
-    opacity: 0.9,
-  },
-  emojiText: {
-    fontSize: 24,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
+
   confettiPaper: {
     position: "absolute",
     top: -20,

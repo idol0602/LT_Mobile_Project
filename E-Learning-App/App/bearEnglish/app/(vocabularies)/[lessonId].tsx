@@ -48,8 +48,8 @@ export default function VocabularyFlashcards() {
       // Set current lesson when user opens the lesson
       if (user?._id && lessonId) {
         try {
-          await API.updateCurrentLesson(user._id, lessonId, "vocabulary", 0);
-          console.log("✅ Current lesson set to vocabulary:", lessonId);
+          await API.updateCurrentLesson(user._id, lessonId, "vocab", 0);
+          console.log("✅ Current lesson set to vocab:", lessonId);
         } catch (error) {
           console.error("Error setting current lesson:", error);
         }

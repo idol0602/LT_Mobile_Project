@@ -77,6 +77,17 @@ exports.getUserProgress = async (req, res) => {
       );
     }
 
+    // Debug logs
+    console.log("=== USER PROGRESS DEBUG ===");
+    console.log("UserId:", userId);
+    console.log("Vocab progress:", {
+      dataLength: progress.vocab?.data?.length || 0,
+      completedPercent: progress.vocab?.completedPercent || 0,
+      lessonType: categoryToLessonType.vocab,
+    });
+    console.log("Current lesson:", progress.currentLesson);
+    console.log("===========================");
+
     // Save updated progress
     await progress.save();
 
@@ -227,9 +238,50 @@ exports.completeLesson = async (req, res) => {
 };
 
 /**
+ * POST /api/progress/:userId/start-lesson
+ * Bắt đầu một lesson mới (chỉ khi user thực sự bắt đầu làm bài)
+ * Body: { lessonId, category }
+ */
+exports.startLesson = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { lessonId, category } = req.body;
+
+    let userProgress = await UserProgress.findOne({ userId });
+
+    if (!userProgress) {
+      userProgress = new UserProgress({ userId });
+    }
+
+    // Chỉ set currentLesson khi user thực sự bắt đầu lesson
+    userProgress.currentLesson = {
+      lessonId,
+      category,
+      progress: 1, // 1% để đánh dấu đã bắt đầu
+    };
+
+    await userProgress.save();
+
+    res.json({
+      success: true,
+      message: "Lesson started",
+      data: userProgress,
+    });
+  } catch (error) {
+    console.error("Error starting lesson:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error starting lesson",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * PUT /api/progress/:userId/current-lesson
  * Cập nhật lesson hiện tại đang học
  * Body: { lessonId, category, progress }
+ * CHỈ cập nhật khi có progress thực tế (> 0) để tránh ghi nhận lesson chưa bắt đầu
  */
 exports.updateCurrentLesson = async (req, res) => {
   try {
@@ -242,19 +294,30 @@ exports.updateCurrentLesson = async (req, res) => {
       userProgress = new UserProgress({ userId });
     }
 
-    userProgress.currentLesson = {
-      lessonId,
-      category,
-      progress: lessonProgress || 0,
-    };
+    // CHỈ cập nhật currentLesson khi có progress thực tế (> 0)
+    // Tránh tình trạng vào lesson nhưng chưa làm gì đã được coi là current lesson
+    if (lessonProgress > 0) {
+      userProgress.currentLesson = {
+        lessonId,
+        category,
+        progress: lessonProgress,
+      };
 
-    await userProgress.save();
+      await userProgress.save();
 
-    res.json({
-      success: true,
-      message: "Current lesson updated",
-      data: userProgress,
-    });
+      res.json({
+        success: true,
+        message: "Current lesson updated",
+        data: userProgress,
+      });
+    } else {
+      // Nếu progress = 0, không cập nhật currentLesson
+      res.json({
+        success: true,
+        message: "No progress to update - lesson not started",
+        data: userProgress,
+      });
+    }
   } catch (error) {
     console.error("Error updating current lesson:", error);
     res.status(500).json({
