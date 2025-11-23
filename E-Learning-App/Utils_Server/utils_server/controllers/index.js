@@ -4,28 +4,58 @@ const fs = require("fs");
 const { AssemblyAI } = require("assemblyai");
 const { createClient } = require("redis");
 
-const aaiClient = new AssemblyAI({
-  apiKey: process.env.ASSEMBLYAI_API_KEY,
+// Check for required environment variables
+const requiredEnvVars = {
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  AI_MODEL: process.env.AI_MODEL,
+  API_CONTEXT_APP: process.env.API_CONTEXT_APP,
+  REDIS_URL: process.env.REDIS_URL,
+  ASSEMBLYAI_API_KEY: process.env.ASSEMBLYAI_API_KEY,
+};
+
+console.log("🔍 Environment Variables Check:");
+Object.entries(requiredEnvVars).forEach(([key, value]) => {
+  console.log(`${key}: ${value ? "✅ Set" : "❌ Missing"}`);
 });
 
-const redisClient = createClient({
-  url: process.env.REDIS_URL,
-});
+const aaiClient = process.env.ASSEMBLYAI_API_KEY
+  ? new AssemblyAI({
+      apiKey: process.env.ASSEMBLYAI_API_KEY,
+    })
+  : null;
+
+const redisClient = process.env.REDIS_URL
+  ? createClient({
+      url: process.env.REDIS_URL,
+    })
+  : null;
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const AI_MODEL = process.env.AI_MODEL;
-const API_CONTEXT_APP = process.env.API_CONTEXT_APP;
+const API_CONTEXT_APP =
+  process.env.API_CONTEXT_APP || "Bạn là một trợ lý AI thân thiện.";
+
+let redisConnected = false;
 
 async function connectRedis() {
+  if (!redisClient) {
+    console.log("⚠️ Redis not configured - chat history will not be saved");
+    return;
+  }
+
   try {
     await redisClient.connect();
+    redisConnected = true;
     console.log("✅ Redis connected!");
   } catch (err) {
     console.error("❌ Redis connection failed:", err);
+    redisConnected = false;
   }
 }
 
-connectRedis();
+if (redisClient) {
+  connectRedis();
+}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -78,37 +108,70 @@ function calculateStringSimilarityPercentage(string1, string2) {
 class UtilsController {
   aswerQuestion = async (req, res) => {
     try {
+      console.log("📨 Chat request received:", req.body);
+
+      // Check if required services are available
+      if (!API_KEY || !AI_MODEL) {
+        console.error("❌ Missing Gemini API configuration");
+        return res.status(500).json({
+          error: "Chat service not configured",
+          message: "Missing API keys for AI service",
+        });
+      }
+
       const MAX_MESSAGES = 15;
       const EXPIRE_TIME = 3600;
       const userMessage = req.body.message;
       const userId = req.body.userId || "guest";
 
-      // 1️⃣ Lưu tin nhắn người dùng vào Redis
-      await redisClient.rPush(
-        `chat:${userId}`,
-        JSON.stringify({ role: "user", text: userMessage })
-      );
-      await redisClient.lTrim(`chat:${userId}`, -MAX_MESSAGES, -1);
-      await redisClient.expire(`chat:${userId}`, EXPIRE_TIME);
+      if (!userMessage) {
+        return res.status(400).json({
+          error: "Bad Request",
+          message: "Message is required",
+        });
+      }
 
-      // 2️⃣ Lấy context gần nhất (ví dụ 10 tin)
-      const history = await redisClient.lRange(`chat:${userId}`, -10, -1);
-      const parsedHistory = history
-        .map((msg) => {
-          const { role, text } = JSON.parse(msg);
-          return `${role === "user" ? "Người dùng" : "Bot"}: ${text}`;
-        })
-        .join("\n");
+      let parsedHistory = "";
+
+      // Try to use Redis for chat history if available
+      if (redisClient && redisConnected) {
+        try {
+          // 1️⃣ Lưu tin nhắn người dùng vào Redis
+          await redisClient.rPush(
+            `chat:${userId}`,
+            JSON.stringify({ role: "user", text: userMessage })
+          );
+          await redisClient.lTrim(`chat:${userId}`, -MAX_MESSAGES, -1);
+          await redisClient.expire(`chat:${userId}`, EXPIRE_TIME);
+
+          // 2️⃣ Lấy context gần nhất (ví dụ 10 tin)
+          const history = await redisClient.lRange(`chat:${userId}`, -10, -1);
+          parsedHistory = history
+            .map((msg) => {
+              const { role, text } = JSON.parse(msg);
+              return `${role === "user" ? "Người dùng" : "Bot"}: ${text}`;
+            })
+            .join("\n");
+        } catch (redisError) {
+          console.warn(
+            "⚠️ Redis operation failed, continuing without history:",
+            redisError.message
+          );
+        }
+      } else {
+        console.log("ℹ️ Redis not available, chat will work without history");
+      }
 
       // 3️⃣ Chuẩn bị prompt gửi lên Gemini
       const fullPrompt = `
 ${API_CONTEXT_APP}
-Cuộc trò chuyện trước đó:
-${parsedHistory}
+${parsedHistory ? `Cuộc trò chuyện trước đó:\n${parsedHistory}` : ""}
 
 Người dùng: ${userMessage}
 Bot:
 `;
+
+      console.log("🚀 Calling Gemini API...");
 
       // 4️⃣ Gọi Gemini API
       const response = await fetch(
@@ -122,24 +185,53 @@ Bot:
         }
       );
 
+      if (!response.ok) {
+        console.error(
+          "❌ Gemini API error:",
+          response.status,
+          response.statusText
+        );
+        return res.status(500).json({
+          error: "AI service error",
+          message: `API returned ${response.status}: ${response.statusText}`,
+        });
+      }
+
       const data = await response.json();
+      console.log("✅ Gemini API response received");
+
       const botMessage =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Xin lỗi, tôi chưa hiểu.";
+        "Xin lỗi, tôi chưa hiểu câu hỏi của bạn.";
 
-      // 5️⃣ Lưu phản hồi của bot vào Redis
-      await redisClient.rPush(
-        `chat:${userId}`,
-        JSON.stringify({ role: "bot", text: botMessage })
-      );
-      await redisClient.lTrim(`chat:${userId}`, -MAX_MESSAGES, -1);
-      await redisClient.expire(`chat:${userId}`, EXPIRE_TIME);
+      // 5️⃣ Lưu phản hồi của bot vào Redis (nếu có)
+      if (redisClient && redisConnected) {
+        try {
+          await redisClient.rPush(
+            `chat:${userId}`,
+            JSON.stringify({ role: "bot", text: botMessage })
+          );
+          await redisClient.lTrim(`chat:${userId}`, -MAX_MESSAGES, -1);
+          await redisClient.expire(`chat:${userId}`, EXPIRE_TIME);
+        } catch (redisError) {
+          console.warn(
+            "⚠️ Failed to save bot response to Redis:",
+            redisError.message
+          );
+        }
+      }
 
       // 6️⃣ Trả phản hồi về client
+      console.log("✅ Sending response to client");
       res.json({ reply: botMessage });
     } catch (error) {
       console.error("❌ Lỗi xử lý chatbot:", error);
-      res.status(500).json({ error: "Server error" });
+      console.error("❌ Error stack:", error.stack);
+      res.status(500).json({
+        error: "Internal server error",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
     }
   };
 
