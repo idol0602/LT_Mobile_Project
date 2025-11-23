@@ -93,6 +93,16 @@ export default function GrammarLessonDetail() {
       const response = await API.getLessonById(id as string);
       console.log("Grammar lesson fetched successfully:", response.data?.name);
       setLesson(response.data as GrammarLesson);
+
+      // Set current lesson when user opens the lesson
+      if (user?._id && id) {
+        try {
+          await API.updateCurrentLesson(user._id, id as string, "grammar", 0);
+          console.log("✅ Current lesson set to grammar:", id);
+        } catch (error) {
+          console.error("Error setting current lesson:", error);
+        }
+      }
     } catch (error) {
       console.error("Error fetching grammar lesson:", error);
       Alert.alert(
@@ -104,7 +114,7 @@ export default function GrammarLessonDetail() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, user?._id]);
 
   useEffect(() => {
     fetchLesson();

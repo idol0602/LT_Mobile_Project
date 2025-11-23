@@ -33,8 +33,10 @@ import {
   CheckCircle as CheckCircleIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { PageHeader } from "../components/ui/PageHeader";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { UserDetailDialog } from "../../components/user/UserDetailDialog";
 
 interface User {
   _id: string;
@@ -61,6 +63,7 @@ const UsersPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createAdminDialogOpen, setCreateAdminDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
   // Form state for editing
@@ -248,6 +251,11 @@ const UsersPage: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
+  const openDetailDialog = (user: User) => {
+    setSelectedUser(user);
+    setDetailDialogOpen(true);
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -419,6 +427,15 @@ const UsersPage: React.FC = () => {
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
+                  <Tooltip title="Xem chi tiết">
+                    <IconButton
+                      size="small"
+                      color="info"
+                      onClick={() => openDetailDialog(user)}
+                    >
+                      <VisibilityIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Chỉnh sửa">
                     <IconButton
                       size="small"
@@ -530,6 +547,16 @@ const UsersPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* User Detail Dialog */}
+      <UserDetailDialog
+        open={detailDialogOpen}
+        onClose={() => {
+          setDetailDialogOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+      />
 
       {/* Create Admin Dialog */}
       <Dialog

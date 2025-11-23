@@ -79,6 +79,16 @@ export default function ListeningPractice() {
       setShowCorrectAnswer(
         new Array(lessonData.questions?.length || 0).fill(false)
       );
+
+      // Set current lesson when user opens the lesson
+      if (user?._id && lessonId) {
+        try {
+          await API.updateCurrentLesson(user._id, lessonId, "listening", 0);
+          console.log("✅ Current lesson set to listening:", lessonId);
+        } catch (error) {
+          console.error("Error setting current lesson:", error);
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch lesson", err);
       Alert.alert("Error", "Failed to load lesson");

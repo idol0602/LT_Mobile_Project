@@ -46,6 +46,16 @@ export default function ReadingLessonDetail() {
       const response = await API.getLessonById(id as string);
       console.log("Lesson fetched successfully:", response.data?.name);
       setLesson(response.data as ReadingLesson);
+
+      // Set current lesson when user opens the lesson
+      if (user?._id && id) {
+        try {
+          await API.updateCurrentLesson(user._id, id as string, "reading", 0);
+          console.log("✅ Current lesson set to reading:", id);
+        } catch (error) {
+          console.error("Error setting current lesson:", error);
+        }
+      }
     } catch (error) {
       console.error("Error fetching lesson:", error);
       Alert.alert(
@@ -57,7 +67,7 @@ export default function ReadingLessonDetail() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, user?._id]);
 
   useEffect(() => {
     fetchLesson();

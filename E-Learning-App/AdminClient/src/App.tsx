@@ -11,7 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import VocabulariesPage from "./pages/vocabulary/VocabulariesPage";
 import TopicsPage from "./pages/TopicsPage";
 import LessonPage from "./pages/LessonPage";
-import UsersPage from "./pages/UsersPage";
+import UsersPage from "./pages/user/UsersPage";
 import AchievementsPage from "./pages/Achievement/AchievementsPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";

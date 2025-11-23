@@ -14,6 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import API from "../../api/index";
+import { useAuth } from "../../contexts/AuthContext";
 import VocabularyCard from "./VocabularyCard";
 import type { Vocabulary } from "../../types";
 
@@ -24,6 +25,7 @@ export default function VocabularyFlashcards() {
   const params = useLocalSearchParams();
   const lessonId = params.lessonId as string;
   const lessonTitle = params.lessonTitle as string;
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
@@ -42,13 +44,23 @@ export default function VocabularyFlashcards() {
 
       const data = response.data || response;
       setVocabularies(data || []);
+
+      // Set current lesson when user opens the lesson
+      if (user?._id && lessonId) {
+        try {
+          await API.updateCurrentLesson(user._id, lessonId, "vocabulary", 0);
+          console.log("✅ Current lesson set to vocabulary:", lessonId);
+        } catch (error) {
+          console.error("Error setting current lesson:", error);
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch vocabularies", err);
       Alert.alert("Error", "Failed to load vocabularies");
     } finally {
       setLoading(false);
     }
-  }, [lessonId]);
+  }, [lessonId, user?._id]);
 
   useEffect(() => {
     if (lessonId) {
