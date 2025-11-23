@@ -434,20 +434,43 @@ exports.importLesson = async (req, res) => {
         });
       }
 
-      // Tạo từng vocabulary và lưu vào DB
-      const vocabPromises = vocabData.map(async (row) => {
-        const vocab = new Vocabulary({
-          word: row.word || row.Word,
-          definition: row.meaning || row.Meaning,
-          partOfSpeech: "noun", // Default, có thể thêm vào Excel
-          exampleSentence: row.exampleSentence || row.ExampleSentence || "",
-        });
-        await vocab.save();
-        return vocab._id;
-      });
+      // Tìm các từ vựng đã tồn tại trong DB
+      const notFoundWords = [];
+      const foundIds = [];
 
-      vocabularyIds = await Promise.all(vocabPromises);
-      console.log(`✅ Created ${vocabularyIds.length} vocabularies`);
+      for (const row of vocabData) {
+        const word = (row.word || row.Word || "").trim().toLowerCase();
+
+        if (!word) {
+          continue; // Skip empty words
+        }
+
+        // Tìm từ trong DB (case-insensitive)
+        const existingVocab = await Vocabulary.findOne({
+          word: { $regex: new RegExp(`^${word}$`, "i") },
+        });
+
+        if (existingVocab) {
+          foundIds.push(existingVocab._id);
+          console.log(`✅ Found existing word: ${existingVocab.word}`);
+        } else {
+          notFoundWords.push(word);
+        }
+      }
+
+      // Nếu có từ không tồn tại, trả về lỗi
+      if (notFoundWords.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `The following words do not exist in database: ${notFoundWords.join(
+            ", "
+          )}`,
+          notFoundWords,
+        });
+      }
+
+      vocabularyIds = foundIds;
+      console.log(`✅ Found ${vocabularyIds.length} existing vocabularies`);
     }
 
     // SHEET 3: Questions (for listen, grammar, reading)
