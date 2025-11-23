@@ -600,3 +600,85 @@ exports.getAppTime = async (req, res) => {
     });
   }
 };
+
+/**
+ * GET /api/progress/:userId/completed-lessons
+ * Lấy danh sách bài học đã hoàn thành từ reading.data, listening.data, grammar.data, vocab.data
+ */
+exports.getCompletedLessons = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const progress = await UserProgress.findOne({ userId });
+
+    if (!progress) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Collect all lesson IDs from all categories
+    const lessonsByCategory = [
+      ...progress.reading.data.map((id) => ({
+        lessonId: id,
+        category: "reading",
+      })),
+      ...progress.listening.data.map((id) => ({
+        lessonId: id,
+        category: "listening",
+      })),
+      ...progress.grammar.data.map((id) => ({
+        lessonId: id,
+        category: "grammar",
+      })),
+      ...progress.vocab.data.map((id) => ({
+        lessonId: id,
+        category: "vocabulary",
+      })),
+    ];
+
+    // Get all lesson IDs
+    const allLessonIds = lessonsByCategory.map((item) => item.lessonId);
+
+    // Populate lesson details
+    const lessons = await Lesson.find({ _id: { $in: allLessonIds } });
+
+    // Map lessons with their categories
+    const completedLessons = lessonsByCategory
+      .map((item) => {
+        const lesson = lessons.find(
+          (l) => l._id.toString() === item.lessonId.toString()
+        );
+        if (!lesson) return null;
+
+        return {
+          _id: lesson._id,
+          lessonId: {
+            _id: lesson._id,
+            name: lesson.name,
+            type: lesson.type,
+            level: lesson.level,
+            topic: lesson.topic,
+          },
+          category: item.category,
+          score: 0, // Not tracked in current model
+          completionTime: 0, // Not tracked in current model
+          completedAt: lesson.createdAt, // Use lesson creation date as fallback
+        };
+      })
+      .filter((item) => item !== null);
+
+    res.json({
+      success: true,
+      data: completedLessons,
+    });
+  } catch (error) {
+    console.error("Error getting completed lessons:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get completed lessons",
+      error: error.message,
+    });
+  }
+};

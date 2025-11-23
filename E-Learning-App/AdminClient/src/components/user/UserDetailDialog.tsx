@@ -304,7 +304,7 @@ export const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
             {tabValue === 0 && (
               <Box>
                 <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid sx={{ xs: 6 }}>
+                  <Grid sx={{sx:6, md:12}}>
                     <Card
                       variant="outlined"
                       sx={{
@@ -682,7 +682,7 @@ export const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
                 ) : (
                   <Grid container spacing={2.5}>
                     {achievements.map((achievement) => (
-                      <Grid sx={{ xs: 12, sm: 6 }} key={achievement._id}>
+                      <Grid sx={{xs:12,md:6}} key={achievement._id}>
                         <Card
                           variant="outlined"
                           sx={{

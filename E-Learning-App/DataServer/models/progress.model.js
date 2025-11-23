@@ -25,6 +25,17 @@ const UserProgressSchema = new mongoose.Schema(
       completedPercent: { type: Number, default: 0 },
     },
 
+    // Detailed completed lessons tracking
+    completedLessons: [
+      {
+        lessonId: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson" },
+        category: String,
+        score: Number,
+        completionTime: Number,
+        completedAt: { type: Date, default: Date.now },
+      },
+    ],
+
     currentLesson: {
       lessonId: String,
       category: String,

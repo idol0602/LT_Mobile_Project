@@ -8,6 +8,12 @@ router.get("/:userId", progressController.getUserProgress);
 // Lấy thống kê tổng quan
 router.get("/:userId/stats", progressController.getProgressStats);
 
+// Lấy danh sách bài học đã hoàn thành
+router.get(
+  "/:userId/completed-lessons",
+  progressController.getCompletedLessons
+);
+
 // Đánh dấu lesson hoàn thành
 router.post("/:userId/complete-lesson", progressController.completeLesson);
 

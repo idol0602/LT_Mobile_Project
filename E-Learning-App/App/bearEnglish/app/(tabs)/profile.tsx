@@ -502,8 +502,9 @@ export default function ProfileScreen() {
                   {achievementStats && (
                     <Text style={styles.cardSubtitle}>
                       {achievementStats.unlockedAchievements} /{" "}
-                      {achievementStats.totalAchievements} unlocked (
-                      {(achievementStats.percentageUnlocked || 0).toFixed(0)}%)
+                      {achievementStats.totalAchievements}
+                      {/* unlocked (
+                      {(achievementStats.percentageUnlocked || 0).toFixed(0)}%) */}
                     </Text>
                   )}
                 </View>
